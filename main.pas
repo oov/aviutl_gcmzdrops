@@ -548,6 +548,12 @@ var
   FileNames: array of UTF8String;
 begin
   try
+    if DST = dstHDROP then begin
+      // In this case, we need detect the processing mode accurately,
+      // so we don't process it here.
+      Effect := DROPEFFECT_NONE;
+      Exit;
+    end;
     SetLength(Streams, 1);
     SetLength(FileNames, 1);
     Streams[0] := Stream;
