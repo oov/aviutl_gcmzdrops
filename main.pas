@@ -679,13 +679,12 @@ end;
 
 constructor TPlugin.Create;
 const
-  CSIDLs: array[0..11] of longint = (
+  CSIDLs: array[0..10] of longint = (
     CSIDL_APPDATA,
     CSIDL_LOCAL_APPDATA,
     CSIDL_COMMON_APPDATA,
     CSIDL_COOKIES,
     CSIDL_INTERNET_CACHE,
-    CSIDL_LOCAL_APPDATA,
     CSIDL_PROGRAM_FILES,
     CSIDL_PROGRAM_FILES_COMMON,
     CSIDL_STARTMENU,
