@@ -1,0 +1,4 @@
+*.bak
+lib/
+aviutl/
+manualtest/
