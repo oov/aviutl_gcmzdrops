@@ -145,8 +145,8 @@ begin
 
       Height := FFontHeight + GetSystemMetrics(SM_CYFIXEDFRAME) * 2;
       FEditHWND := CreateWindowExW(WS_EX_CLIENTEDGE, 'EDIT', '',
-        WS_CHILD or WS_VISIBLE or WS_TABSTOP or ES_LEFT, 8, Y, 400,
-        Height, Window, 3, Filter^.DLLHInst, nil);
+        WS_CHILD or WS_VISIBLE or WS_TABSTOP or ES_AUTOHSCROLL or
+        ES_LEFT, 8, Y, 400, Height, Window, 3234, Filter^.DLLHInst, nil);
       SendMessageW(FEditHWND, WM_SETFONT, WPARAM(FFont), 0);
       Inc(Y, Height);
 
