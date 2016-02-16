@@ -197,16 +197,22 @@ begin
       case LOWORD(WP) of
         4:
         begin
-          if LP <> LPARAM(FButtonHWND) then
-            exit;
-          S := SaveDir;
-          hs := DisableFamilyWindows(Window);
           try
-            if not SelectDir(Window, S) then
+            if LP <> LPARAM(FButtonHWND) then
               exit;
-            SetWindowTextW(FEditHWND, PWideChar(WideString(S)));
-          finally
-            EnableFamilyWindows(hs);
+            S := SaveDir;
+            hs := DisableFamilyWindows(Window);
+            try
+              if not SelectDir(Window, S) then
+                exit;
+              SetWindowTextW(FEditHWND, PWideChar(WideString(S)));
+            finally
+              EnableFamilyWindows(hs);
+            end;
+          except
+            on E: Exception do
+              MessageBoxW(FExEditHWND, PWideChar(WideString(E.Message)),
+                PWideChar(WideString('エラー - ' + PluginName)), MB_ICONERROR);
           end;
         end;
         else;
@@ -250,7 +256,8 @@ begin
     if I <> -1 then
       Mode := StrToIntDef(SL.ValueFromIndex[I], 0);
     I := SL.IndexOfName('savepath');
-    if I <> -1 then begin
+    if I <> -1 then
+    begin
       S := SL.ValueFromIndex[I];
       SetCodePage(S, 65001, False);
       SaveDir := S;

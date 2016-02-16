@@ -425,7 +425,7 @@ end;
 function SelectDirCallback(Window: THandle; Message: UINT; LParam: LPARAM;
   Data: LPARAM): LRESULT; stdcall;
 begin
-  if Message = BFFM_INITIALIZED then
+  if (Message = BFFM_INITIALIZED) and (Data <> 0) then
   begin
     SendMessageW(Window, BFFM_SETSELECTION, 0, Data);
   end;
@@ -451,8 +451,9 @@ begin
     BIF_VALIDATE or BIF_EDITBOX;
   OleCheck(SHGetDesktopFolder(ShellFolder));
   try
-    OleCheck(ShellFolder.ParseDisplayName(0, nil, PWideChar(WideString(Directory)),
-      eaten, InitialPIDL, eaten));
+    if Failed(ShellFolder.ParseDisplayName(0, nil, PWideChar(WideString(Directory)),
+      eaten, InitialPIDL, eaten)) then
+      InitialPIDL := nil;
   finally
     ShellFolder := nil;
   end;
