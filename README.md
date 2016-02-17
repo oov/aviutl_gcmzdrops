@@ -35,7 +35,9 @@ MIT license: http://opensource.org/licenses/mit-license.php
 ダウンロード
 ------------
 
-あとで書く
+https://github.com/oov/aviutl_oledd/releases
+
+この辺からダウンロードできます。
 
 インストール
 ------------
