@@ -60,7 +60,7 @@ uses
 const
   PluginName = 'ごちゃまぜドロップス';
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
-  PluginInfoANSI = PluginNameANSI + ' v0.1.1';
+  PluginInfoANSI = PluginNameANSI + ' v0.1.2';
   ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57; // '拡張編集'
 
 var
@@ -399,6 +399,10 @@ begin
               finally
                 FS.Free;
               end;
+            end
+            else
+            begin
+              ThrowFileNames[I] := FileNames[I];
             end;
             NeedCopy[I] := False;
             continue;
@@ -548,7 +552,8 @@ var
   FileNames: array of UTF8String;
 begin
   try
-    if DST = dstHDROP then begin
+    if DST = dstHDROP then
+    begin
       // In this case, we need detect the processing mode accurately,
       // so we don't process it here.
       Effect := DROPEFFECT_NONE;
