@@ -59,7 +59,8 @@ function ReadFileContents(const DataObject: IDataObject; const Index: integer): 
 function ReadURL(const DataObject: IDataObject): UTF8String;
 function ReadTextUTF8(const DataObject: IDataObject): UTF8String;
 function ReadHDROP(const DataObject: IDataObject): TFileNames;
-function DataURISchemeToStream(const S: RawByteString): TStream;
+function DataURISchemeToStream(const S: RawByteString;
+  out FileName: UTF8String): TStream;
 
 implementation
 
@@ -326,7 +327,7 @@ begin
     EndPos := P + Length(S);
     while (P < EndPos) do
     begin
-      if (P^ = $35) and (P + 2 < EndPos) then
+      if (P^ = $25) and (P + 2 < EndPos) then
       begin
         Result.WriteByte((Table[(P + 1)^] shl 4) or Table[(P + 2)^]);
         Inc(P, 3);
@@ -366,9 +367,14 @@ begin
   end;
 end;
 
-function DataURISchemeToStream(const S: RawByteString): TStream;
+function DataURISchemeToStream(const S: RawByteString;
+  out FileName: UTF8String): TStream;
 var
-  Left: integer;
+  Stream: TStream;
+  I, Left: integer;
+  SL: TStringList;
+  Mime: string;
+  IsBase64: boolean;
 begin
   Result := nil;
   if Copy(S, 1, 5) <> 'data:' then
@@ -376,18 +382,55 @@ begin
   Left := Pos(',', S) + 1;
   if Left = 1 then
     exit;
-  if Pos('base64', Copy(S, 6, Left - 6)) = 0 then
-    Result := DecodePercentEncoding(Copy(S, Left, Length(S) - Left))
-  else
-    Result := DecodeBase64(Copy(S, Left, Length(S) - Left));
-end;
 
-function ExtractFileNameFromBase64(const S: RawByteString;
-  const FileNameLen: integer): UTF8String;
-begin
-  Result := Copy(S, Length(S) - FileNameLen, FileNameLen);
-  Result := StringReplace(Result, '+', '-', [rfReplaceAll]);
-  Result := StringReplace(Result, '/', '_', [rfReplaceAll]);
+  SL := TStringList.Create;
+  try
+    SL.Delimiter := ';';
+    SL.StrictDelimiter := True;
+    SL.DelimitedText := Copy(S, 6, Left - 7);
+    for I := 0 to SL.Count - 1 do
+    begin
+      SL[I] := LowerCase(Trim(SL[I]));
+      IsBase64 := IsBase64 or (SL[I] = 'base64');
+      if (FileName = '') and (Pos('filename=', SL[I]) = 1) then begin
+        Stream := DecodePercentEncoding(Trim(Copy(SL[I], 10, Length(SL[I]) - 9)));
+        try
+          SetLength(FileName, Stream.Size);
+          Stream.Position:=0;
+          Stream.ReadBuffer(FileName[1], Stream.Size);
+        finally
+          Stream.Free;
+        end;
+      end;
+    end;
+    Mime := LowerCase(Trim(SL[0]));
+  finally
+    SL.Free;
+  end;
+
+  if FileName = '' then
+  begin
+    if Length(S) > 24 then
+    begin
+      FileName := Copy(S, Length(S) - 24, 24);
+      FileName := StringReplace(FileName, '+', '-', [rfReplaceAll]);
+      FileName := StringReplace(FileName, '/', '_', [rfReplaceAll]);
+    end
+    else
+      FileName := 'noname';
+    case Mime of
+      'image/jpeg': FileName := FileName + '.jpg';
+      'image/png': FileName := FileName + '.png';
+      'image/gif': FileName := FileName + '.gif';
+      'image/webp': FileName := FileName + '.webp';
+      else FileName := FileName + '.bin';
+    end;
+  end;
+
+  if IsBase64 then
+    Result := DecodeBase64(Copy(S, Left, Length(S) - Left))
+  else
+    Result := DecodePercentEncoding(Copy(S, Left, Length(S) - Left));
 end;
 
 function FindImage(const DataObject: IDataObject; Sniffer: TSniffer;
@@ -464,7 +507,7 @@ begin
   end;
 
   S := ReadTextUTF8(DataObject);
-  Stream := DataURISchemeToStream(S);
+  Stream := DataURISchemeToStream(S, FileName);
   if Assigned(Stream) then
   begin
     try
@@ -472,7 +515,7 @@ begin
       SR := Sniffer(Stream, '');
       if SR <> '' then
       begin
-        FileName := ExtractFileNameFromBase64(S, 24) + SR;
+        FileName := ChangeFileExt(FileName, SR);
         Stream.Position := 0;
         DST := dstText;
         Result := Stream;
