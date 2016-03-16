@@ -60,7 +60,7 @@ uses
 const
   PluginName = 'ごちゃまぜドロップス';
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
-  PluginInfoANSI = PluginNameANSI + ' v0.1.4';
+  PluginInfoANSI = PluginNameANSI + ' v0.1.5';
   ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57; // '拡張編集'
 
 var
@@ -682,8 +682,12 @@ begin
       SetLength(FileNames, 1);
       SetLength(Streams, 1);
       FileNames[0] := 'noname.txt';
-      Streams[0] := TStringStream.Create(S);
+      Streams[0] := TMemoryStream.Create;
       try
+        // write UTF-8 BOM for auto encoding detection.
+        Streams[0].WriteBuffer(#$ef#$bb#$bf[1], 3);
+        Streams[0].WriteBuffer(S[1], Length(S));
+        Streams[0].Position := 0;
         RethrowFiles(Streams, FileNames, KeyState, Point);
       finally
         FreeAndNil(Streams[0]);
