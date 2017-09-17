@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="9"/>
+    <Version Value="10"/>
     <PathDelim Value="\"/>
     <General>
       <Flags>
@@ -14,7 +14,7 @@
       </Flags>
       <SessionStorage Value="None"/>
       <MainUnit Value="0"/>
-      <Title Value="oledd"/>
+      <Title Value="ごちゃまぜドロップス for AviUtl"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -75,7 +75,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="oledd.auf" ApplyConventions="False"/>
+      <Filename Value="..\bin\oledd.auf" ApplyConventions="False"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
