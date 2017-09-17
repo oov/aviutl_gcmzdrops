@@ -40,7 +40,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="oledd.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -48,6 +48,7 @@
       <Unit1>
         <Filename Value="aviutl.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="AviUtl"/>
       </Unit1>
       <Unit2>
         <Filename Value="main.pas"/>
@@ -69,6 +70,10 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Util"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="lua.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

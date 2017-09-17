@@ -1,6 +1,7 @@
-unit aviutl;
+unit AviUtl;
 
 {$mode objfpc}{$H+}
+{$CODEPAGE UTF-8}
 
 interface
 
@@ -66,28 +67,154 @@ const
   FILTER_UPDATE_STATUS_CHECK = $20000;
   FILTER_WINDOW_SIZE_CLIENT = $10000000;
   FILTER_WINDOW_SIZE_ADD = $30000000;
+  ADD_MENU_ITEM_FLAG_KEY_SHIFT = 1;
+  ADD_MENU_ITEM_FLAG_KEY_CTRL = 2;
+  ADD_MENU_ITEM_FLAG_KEY_ALT = 4;
 
 type
+  AviUtlBool = integer;
+
   PFilter = ^TFilter;
+  PFilterProcInfo = ^TFilterProcInfo;
+  PFileInfo = ^TFileInfo;
+  PExFunc = ^TExFunc;
 
   // BOOL    (*func_proc)( FILTER *fp,FILTER_PROC_INFO *fpip );
-  TProcFunc = function(fp: PFilter; fpip: Pointer): integer; cdecl;
+  TProcFunc = function(fp: PFilter; fpip: PFilterProcInfo): AviUtlBool; cdecl;
 
   // BOOL    (*func_init)( FILTER *fp );
-  TInitFunc = function(fp: PFilter): integer; cdecl;
+  TInitFunc = function(fp: PFilter): AviUtlBool; cdecl;
 
   // BOOL    (*func_exit)( FILTER *fp );
-  TExitFunc = function(fp: PFilter): integer; cdecl;
+  TExitFunc = function(fp: PFilter): AviUtlBool; cdecl;
 
   TWndProcFunc = function(Hwnd: HWND; Message: UINT; wp: WPARAM;
     lp: LPARAM; edit: Pointer; filter: PFilter): LRESULT; cdecl;
 
   // BOOL    (*func_project_load)( FILTER *fp,void *editp,void *data,int size );
   TProjectLoadFunc = function(fp: PFilter; edit: Pointer; Data: Pointer;
-    size: integer): integer; cdecl;
+    size: integer): AviUtlBool; cdecl;
   // BOOL    (*func_project_save)( FILTER *fp,void *editp,void *data,int *size );
   TProjectSaveFunc = function(fp: PFilter; edit: Pointer; Data: Pointer;
-    var size: integer): integer; cdecl;
+    var size: integer): AviUtlBool; cdecl;
+
+  TGetFrameFunc = function(edit: Pointer): integer; cdecl;
+  TGetFrameNFunc = function(edit: Pointer): integer; cdecl;
+  TGetFileInfoFunc = function(edit: Pointer; fip: PFileInfo): AviUtlBool; cdecl;
+  TGetAudioFilteredFunc = function(edit: Pointer; N: integer;
+    Buf: Pointer): integer; cdecl;
+  TAddMenuItem = function(fp: PFilter; Name: PChar; h: THandle;
+    id: integer; def_key: integer; flag: integer): integer; cdecl;
+
+  TExFunc = record
+    GetYCPOfs: Pointer;
+    GetYCP: Pointer;
+    GetPixelP: Pointer;
+    GetAudio: Pointer;
+    IsEditing: Pointer;
+    IsSaving: Pointer;
+    GetFrame: TGetFrameFunc;
+    GetFrameN: TGetFrameNFunc;
+    GetFrameSize: Pointer;
+    SetFrame: Pointer;
+    SetFrameN: Pointer;
+    CopyFrame: Pointer;
+    CopyVideo: Pointer;
+    CopyAudio: Pointer;
+    CopyClip: Pointer;
+    PasteClip: Pointer;
+    GetFrameStatus: Pointer;
+    SetFrameStatus: Pointer;
+    IsSaveFrame: Pointer;
+    IsKeyFrame: Pointer;
+    IsRecompress: Pointer;
+    FilterWindowUpdate: Pointer;
+    IsFilterWindowDisp: Pointer;
+    GetFileInfo: TGetFileInfoFunc;
+    GetConfigName: Pointer;
+    IsFilterActive: Pointer;
+    GetPixelFiltered: Pointer;
+    GetAudioFiltered: TGetAudioFilteredFunc;
+    GetSelectFrame: Pointer;
+    SetSelectFrame: Pointer;
+    RGB2YC: Pointer;
+    YC2RGB: Pointer;
+    DlgGetLoadName: Pointer;
+    DlgGetSaveName: Pointer;
+    IniLoadInt: Pointer;
+    IniSaveInt: Pointer;
+    IniLoadStr: Pointer;
+    IniSaveStr: Pointer;
+    GetSourceFileInfo: Pointer;
+    GetSourceVideoNumber: Pointer;
+    GetSysInfo: Pointer;
+    GetFilterP: Pointer;
+    GetYCPFiltering: Pointer;
+    GetAudioFiltering: Pointer;
+    SetYCPFilteringCacheSize: Pointer;
+    GetYCPFilteringCache: Pointer;
+    GetYCPSourceCache: Pointer;
+    GetDispPixelP: Pointer;
+    GetPixelSource: Pointer;
+    GetPixelFilteredEx: Pointer;
+    GetYCPFilteringCacheEx: Pointer;
+    ExecMultiThreadFunc: Pointer;
+    CreateYC: Pointer;
+    DeleteYC: Pointer;
+    LoadImage: Pointer;
+    ResizeYC: Pointer;
+    CopyYC: Pointer;
+    DrawText: Pointer;
+    AVIFileOpen: Pointer;
+    AVIFileClose: Pointer;
+    AVIFileReadVideo: Pointer;
+    AVIFileReadAudio: Pointer;
+    AVIFileGetVideoPixelP: Pointer;
+    GetAVIFileFilter: Pointer;
+    AVIFileReadAudioSample: Pointer;
+    AVIFileSetAudioSampleRate: Pointer;
+    GetFrameStatusTable: Pointer;
+    SetUndo: Pointer;
+    AddMenuItem: TAddMenuItem;
+    EditOpen: Pointer;
+    EditClose: Pointer;
+    EditOutput: Pointer;
+    SetConfig: Pointer;
+    Reserved: array[0..6] of integer;
+  end;
+
+  TFileInfo = record
+    Flag: integer;
+    Name: PChar;
+    Width, Height: integer;
+    VideoRate, VideoScale: integer;
+    AudioRate: integer;
+    AudioCh: integer;
+    FrameN: integer;
+    VideoDecodeFormat: DWORD;
+    VideoDecodeBit: integer;
+    AudioN: integer;
+    Reserved: array[0..3] of integer;
+  end;
+
+  TFilterProcInfo = record
+    Flag: integer;
+    YCPEdit: Pointer;
+    YCPTemp: Pointer;
+    X, Y: integer;
+    MaxW, MaxH: integer;
+    Frame: integer;
+    FrameN: integer;
+    OrgW, OrgH: integer;
+    AudioP: PSmallint;
+    AudioN: integer;
+    AudioCh: integer;
+    PixelP: Pointer;
+    EditP: Pointer;
+    YCSize: integer;
+    LineSize: integer;
+    Reserved: array[0..7] of integer;
+  end;
 
   TFilter = record
     Flag: integer;
@@ -95,7 +222,7 @@ type
     Y: integer;
     Name: PChar;
     TrackN: integer;
-    TrackName: PChar;
+    TrackName: PPChar;
     TrackDefault: PInteger;
     TrackS: PInteger;
     TrackE: PInteger;
@@ -121,7 +248,7 @@ type
     FuncSaveStart: Pointer;
     // BOOL  (*func_save_end)( void *fp,void *editp );
     FuncSaveEnd: Pointer;
-    ExFunc: Pointer;
+    ExFunc: PExFunc;
     Hwnd: THandle;
     DLLHInst: THandle;
     ExDataDef: Pointer;
@@ -205,6 +332,7 @@ type
     Reserved: array[0..1] of integer;
   end;
   PFilterDLL = ^TFilterDLL;
+  PPFilterDLL = ^PFilterDLL;
 
 implementation
 

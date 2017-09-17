@@ -7,7 +7,7 @@ interface
 
 uses
   Windows, ActiveX, SysUtils, Classes, ComObj, ShlObj,
-  Aviutl, ImageDropTarget;
+  AviUtl, ImageDropTarget;
 
 type
 

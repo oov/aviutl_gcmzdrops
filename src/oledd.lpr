@@ -4,11 +4,11 @@ library oledd;
 {$CODEPAGE UTF-8}
 
 uses
-  Aviutl,
+  AviUtl,
   Main,
   ImageDropTarget,
   InputDialog,
-  Util;
+  Util, lua;
 
 exports
   GetFilterTable;
