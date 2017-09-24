@@ -1,4 +1,4 @@
-*.bak
-lib/
+src/lazarus/lib
 aviutl/
+bin/
 manualtest/

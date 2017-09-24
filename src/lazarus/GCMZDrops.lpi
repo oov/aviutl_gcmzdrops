@@ -40,9 +40,9 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="10">
       <Unit0>
-        <Filename Value="oledd.lpr"/>
+        <Filename Value="GCMZDrops.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
@@ -56,9 +56,9 @@
         <UnitName Value="Main"/>
       </Unit2>
       <Unit3>
-        <Filename Value="imagedroptarget.pas"/>
+        <Filename Value="droptarget.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ImageDropTarget"/>
+        <UnitName Value="DropTarget"/>
       </Unit3>
       <Unit4>
         <Filename Value="inputdialog.pas"/>
@@ -74,13 +74,28 @@
         <Filename Value="lua.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="luafuncs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LuaFuncs"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="luaobj.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LuaObj"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="usedfiles.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UsedFiles"/>
+      </Unit9>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\bin\oledd.auf" ApplyConventions="False"/>
+      <Filename Value="..\..\bin\GCMZDrops.auf" ApplyConventions="False"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
@@ -88,7 +103,6 @@
     </SearchPaths>
     <CodeGeneration>
       <SmartLinkUnit Value="True"/>
-      <RelocatableUnit Value="True"/>
       <Optimizations>
         <OptimizationLevel Value="4"/>
       </Optimizations>
@@ -96,10 +110,9 @@
     <Linking>
       <Debugging>
         <GenerateDebugInfo Value="False"/>
+        <UseLineInfoUnit Value="False"/>
         <StripSymbols Value="True"/>
-        <UseExternalDbgSyms Value="True"/>
       </Debugging>
-      <LinkSmart Value="True"/>
       <Options>
         <ExecutableType Value="Library"/>
       </Options>
