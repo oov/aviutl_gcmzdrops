@@ -642,7 +642,7 @@ begin
   if (SI.ProjectName = nil) or (SI.ProjectName = '') or (FI.FrameN = 0) then
     raise Exception.Create(
       'The project directory is unknown, please save the project first.'#13#10 +
-      'プロジェクトファイルが保存されていないため、処理を続行できません。');
+      'プロジェクトファイルがまだ保存されていないため、処理を続行できません。');
   SJIS := SI.ProjectName;
   ProjFile := SJIS;
   Result := StringReplace(SDir, '%PROJECTDIR%',
@@ -684,7 +684,7 @@ begin
     raise Exception.Create('cannot get project information from AviUtl');
   if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
     raise Exception.Create('A project must be editing to get a project file info.'#13#10 +
-      'プロジェクトファイルの情報を取得するにはプロジェクトが編集中でなければいけません。');
+      'プロジェクトが編集中ではないため処理を続行できません。');
 end;
 
 procedure TGCMZDrops.GetFileInfo(out FI: TFileInfo; out Samples: integer;
@@ -699,7 +699,7 @@ begin
     raise Exception.Create('cannot get project information from AviUtl');
   if (Proj.AudioRate = 0) or (Proj.AudioCh = 0) then
     raise Exception.Create('A project must be editing to get a media file info.'#13#10 +
-      'メディアファイルの情報を取得するにはプロジェクトが編集中でなければいけません。');
+      'プロジェクトが編集中ではないため処理を続行できません。');
 
   SJIS := ShiftJISString(FileName);
   FillChar(FI, SizeOf(FI), 0);
