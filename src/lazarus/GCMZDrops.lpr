@@ -4,6 +4,7 @@ library GCMZDrops;
 {$CODEPAGE UTF-8}
 
 uses
+  SysUtils,
   AviUtl,
   Main,
   DropTarget,
@@ -16,7 +17,7 @@ exports
 initialization
   OleInitialize(nil);
   Randomize();
-  LoadLua();
+  LoadLua(ExtractFilePath(GetDLLName())+'\lua51.dll');
 
 finalization
   FreeLua();
