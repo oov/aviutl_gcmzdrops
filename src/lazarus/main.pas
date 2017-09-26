@@ -81,7 +81,7 @@ uses
 const
   PluginName = 'ごちゃまぜドロップス';
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
-  PluginInfoANSI = PluginNameANSI + ' v0.2rc3';
+  PluginInfoANSI = PluginNameANSI + ' v0.2rc4';
   ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57; // '拡張編集'
   DefaultSaveDir = '%PROJECTDIR%\gcmz';
 
@@ -432,8 +432,7 @@ begin
   end;
 end;
 
-procedure TGCMZDrops.TextConvert(const Text: UTF8String; out DF: TDraggingFile
-  );
+procedure TGCMZDrops.TextConvert(const Text: UTF8String; out DF: TDraggingFile);
 var
   TFS: TTempFileStream;
   SJIS: ShiftJISString;
@@ -442,10 +441,10 @@ begin
   try
     SJIS := ShiftJISString(Text);
     TFS.WriteBuffer(SJIS[1], Length(SJIS));
-    DF.Type_:=dftFile;
-    DF.FilePathOrContent:= TFS.FilePath;
+    DF.Type_ := dftFile;
+    DF.FilePathOrContent := TFS.FilePath;
     DF.DeleteOnFinish := True;
-    DF.MediaType:='text/plain; charset=Shift_JIS';
+    DF.MediaType := 'text/plain; charset=Shift_JIS';
   finally
     TFS.Free;
   end;
@@ -561,7 +560,7 @@ begin
   FDropTarget.OnDragOver := @OnDragOver;
   FDropTarget.OnDragLeave := @OnDragLeave;
   FDropTarget.OnDrop := @OnDrop;
-  FDropTarget.TextConverter:=@TextConvert;
+  FDropTarget.TextConverter := @TextConvert;
   FDropTargetIntf := FDropTarget;
 
   SetLength(FKnownFolders, Length(CSIDLs) + 1);
@@ -629,6 +628,7 @@ var
   SDir, ProjFile: UTF8String;
   SI: TSysInfo;
   FI: TFileInfo;
+  hs: THandleDynArray;
 begin
   SDir := SaveDir;
   if Pos('%PROJECTDIR%', SDir) = 0 then
@@ -651,9 +651,14 @@ begin
 
   if not DirectoryExists(WideString(Result)) then
   begin
-    if MessageBoxW(FExEdit^.Hwnd, PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 +
-      WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idCancel then
-      raise EAbort.Create('destination directory is not exists, operation canceled');
+    hs := DisableFamilyWindows(FExEdit^.Hwnd);
+    try
+      if MessageBoxW(FExEdit^.Hwnd, PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 +
+        WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idCancel then
+        raise EAbort.Create('destination directory is not exists, operation canceled');
+    finally
+      EnableFamilyWindows(hs);
+    end;
     if not ForceDirectories(WideString(Result)) then
       raise Exception.Create(UTF8String(
         'cannot create a directory.'#13#10'フォルダーの作成に失敗しました。'#13#10) + Result);
@@ -712,14 +717,28 @@ begin
 end;
 
 function TGCMZDrops.Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
+var
+  hs: THandleDynArray;
 begin
-  Result := InputDialog.InputBox(FExEdit^.Hwnd, Caption, PluginName, Value);
+  hs := DisableFamilyWindows(FExEdit^.Hwnd);
+  try
+    Result := InputDialog.InputBox(FExEdit^.Hwnd, Caption, PluginName, Value);
+  finally
+    EnableFamilyWindows(hs);
+  end;
 end;
 
 function TGCMZDrops.Confirm(const Caption: UTF8String): boolean;
+var
+  hs: THandleDynArray;
 begin
-  Result := MessageBoxW(FExEdit^.Hwnd, PWideChar(WideString(Caption)),
-    PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idOk;
+  hs := DisableFamilyWindows(FExEdit^.Hwnd);
+  try
+    Result := MessageBoxW(FExEdit^.Hwnd, PWideChar(WideString(Caption)),
+      PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idOk;
+  finally
+    EnableFamilyWindows(hs);
+  end;
 end;
 
 initialization
