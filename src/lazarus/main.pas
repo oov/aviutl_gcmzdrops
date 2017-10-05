@@ -76,12 +76,12 @@ var
 implementation
 
 uses
-  InputDialog, UsedFiles, Util;
+  InputDialog, UsedFiles, Util, Ver;
 
 const
   PluginName = 'ごちゃまぜドロップス';
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
-  PluginInfoANSI = PluginNameANSI + ' v0.2rc4';
+  PluginInfoANSI = PluginNameANSI + ' ' + Version;
   ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57; // '拡張編集'
   DefaultSaveDir = '%PROJECTDIR%\gcmz';
 

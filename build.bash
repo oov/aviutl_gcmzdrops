@@ -5,6 +5,25 @@ mkdir bin bin/GCMZDrops
 # copy readme
 sed 's/\r$//' README.md | sed 's/$/\r/' > bin/README.txt
 
+# update version string
+VERSION='v0.2'
+GITHASH=`git rev-parse --short HEAD`
+cat << EOS | sed 's/\r$//' | sed 's/$/\r/' > 'src/lazarus/ver.pas'
+unit Ver;
+
+{\$mode objfpc}{\$H+}
+{\$CODEPAGE UTF-8}
+
+interface
+
+const
+  Version = '$VERSION ( $GITHASH )';
+
+implementation
+
+end.
+EOS
+
 # copy script files
 sed 's/\r$//' 'src/lua/_entrypoint.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/_entrypoint.lua'
 sed 's/\r$//' 'src/lua/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/example.lua'
