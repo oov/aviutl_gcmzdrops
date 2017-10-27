@@ -13,7 +13,7 @@ function LuaSetFuncs(L: Plua_State): integer; cdecl;
 implementation
 
 uses
-  Windows, SysUtils, Classes, crc, AviUtl, Main, UsedFiles, Util;
+  Windows, SysUtils, Classes, crc, AviUtl, Main, UsedFiles, LuaIni, Util;
 
 function LuaReturn(L: Plua_State; const Ret: integer): integer;
 begin
@@ -628,6 +628,54 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaIniString(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  var
+    SS: TStringStream;
+  begin
+    try
+      SS := TStringStream.Create(lua_tostring(L, -1));
+      try
+        Result := LuaIni.LuaIniInit(L, SS);
+      finally
+        SS.Free;
+      end;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
+function LuaIniFile(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  var
+    SJIS: ShiftJISString;
+    WFS: TWideFileStream;
+  begin
+    try
+      SJIS := lua_tostring(L, -1);
+      WFS := TWideFileStream.Create(WideString(SJIS), fmOpenRead);
+      try
+        Result := LuaIniInit(L, WFS);
+      finally
+        WFS.Free;
+      end;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaDrop(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -747,6 +795,7 @@ end;
 
 function LuaSetFuncs(L: Plua_State): integer; cdecl;
 begin
+  LuaIniRegisterMetaTable(L);
   lua_pushcfunction(L, @LuaDebugPrint);
   lua_setglobal(L, 'debug_print');
 
@@ -781,6 +830,10 @@ begin
   lua_setfield(L, -2, 'prompt');
   lua_pushcfunction(L, @LuaConfirm);
   lua_setfield(L, -2, 'confirm');
+  lua_pushcfunction(L, @LuaIniString);
+  lua_setfield(L, -2, 'inistring');
+  lua_pushcfunction(L, @LuaIniFile);
+  lua_setfield(L, -2, 'inifile');
   lua_pushcfunction(L, @LuaDrop);
   lua_setfield(L, -2, 'drop');
   lua_pushcfunction(L, @LuaDeleteOnFinish);

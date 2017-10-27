@@ -9,7 +9,7 @@ uses
   Main,
   DropTarget,
   InputDialog,
-  Util, lua, LuaFuncs, LuaObj, ActiveX, UsedFiles;
+  Util, lua, LuaFuncs, LuaObj, ActiveX, UsedFiles, LuaIni;
 
 exports
   GetFilterTable;

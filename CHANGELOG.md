@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1rc 2017-10-28
+
+- GCMZDrops.inistring を追加
+- GCMZDrops.inifile を追加
+
 ## 0.2 2017-10-05
 
 - 正式リリース
