@@ -45,6 +45,27 @@ begin
   Result := 0;
 end;
 
+
+function LuaScriptDir(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  var
+    SJIS: ShiftJISString;
+  begin
+    try
+      SJIS := ShiftJISString(ExtractFilePath(GetDLLName()) + 'GCMZDrops\');
+      lua_pushlstring(L, @SJIS[1], Length(SJIS));
+      Result := 1;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaCreateFile(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -800,6 +821,8 @@ begin
   lua_setglobal(L, 'debug_print');
 
   lua_newtable(L);
+  lua_pushcfunction(L, @LuaScriptDir);
+  lua_setfield(L, -2, 'scriptdir');
   lua_pushcfunction(L, @LuaCreateFile);
   lua_setfield(L, -2, 'createfile');
   lua_pushcfunction(L, @LuaCreateTempFile);

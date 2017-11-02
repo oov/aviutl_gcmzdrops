@@ -4,6 +4,7 @@
 
 - GCMZDrops.inistring を追加
 - GCMZDrops.inifile を追加
+- GCMZDrops.scriptdir を追加
 
 ## 0.2 2017-10-05
 

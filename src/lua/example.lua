@@ -172,6 +172,15 @@ end
 --   [戻り値]
 --     戻り値はありません。
 --
+-- scriptdir = GCMZDrops.scriptdir()
+--
+--   ごちゃまぜドロップス用のスクリプトファイルが格納されている
+--   GCMZDrops フォルダーの場所を返します。
+--
+--   [戻り値]
+--     GCMZDrops フォルダーの場所を返します。
+--     返されるパスの最後には必ず \ が付与されています。
+--
 -- filename = GCMZDrops.createfile(name, ext)
 --
 --   ごちゃまぜドロップスの保存用フォルダに
