@@ -504,17 +504,29 @@ const
     CSIDL_WINDOWS,
     CSIDL_SYSTEM);
 var
-  I: integer;
+  I, N: integer;
   S: WideString;
 begin
   Result := False;
   try
-    SetLength(FKnownFolders, Length(CSIDLs) + 1);
     SetLength(S, MAX_PATH);
     GetTempPathW(MAX_PATH, @S[1]);
+    SetLength(FKnownFolders, Length(CSIDLs) + 1);
     FKnownFolders[0] := UTF8String(S);
+    N := 1;
     for I := Low(CSIDLs) to High(CSIDLs) do
-      FKnownFolders[I + 1] := GetKnownFolderPath(CSIDLs[I]);
+    begin
+      try
+        FKnownFolders[N] := GetKnownFolderPath(CSIDLs[I]);
+        Inc(N);
+      except
+        on E: Exception do
+        begin
+          ODS('#%d error: %s', [I, WideString(E.Message)]);
+        end;
+      end;
+    end;
+    SetLength(FKnownFolders, N);
     Result := True;
   except
     on E: Exception do
