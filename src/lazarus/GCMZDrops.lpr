@@ -12,7 +12,7 @@ uses
   Util, lua, LuaFuncs, LuaObj, ActiveX, UsedFiles, LuaIni;
 
 exports
-  GetFilterTable;
+  GetFilterTableList;
 
 initialization
   OleInitialize(nil);

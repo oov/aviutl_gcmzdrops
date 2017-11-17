@@ -36,11 +36,13 @@ type
     procedure SetSaveDir(AValue: UTF8String);
 
     procedure ProcessDeleteFileQueue(const Error: boolean);
+    function InitProc(Filter: PFilter): boolean;
+    function ExitProc(Filter: PFilter): boolean;
     function MainProc(Window: HWND; Message: UINT; WP: WPARAM;
       LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
-    function ProjectLoad(Filter: PFilter; Edit: Pointer; Data: Pointer;
+    function ProjectLoadProc(Filter: PFilter; Edit: Pointer; Data: Pointer;
       Size: integer): boolean;
-    function ProjectSave(Filter: PFilter; Edit: Pointer; Data: Pointer;
+    function ProjectSaveProc(Filter: PFilter; Edit: Pointer; Data: Pointer;
       var Size: integer): boolean;
 
     procedure TextConvert(const Text: UTF8String; out DF: TDraggingFile);
@@ -68,7 +70,7 @@ type
     function Confirm(const Caption: UTF8String): boolean;
   end;
 
-function GetFilterTable(): PFilterDLL; stdcall;
+function GetFilterTableList(): PPFilterDLL; stdcall;
 
 var
   GCMZDrops: TGCMZDrops;
@@ -88,27 +90,40 @@ const
 const
   BoolConv: array[boolean] of AviUtlBool = (AVIUTL_FALSE, AVIUTL_TRUE);
 
-function GetFilterTable(): PFilterDLL; stdcall;
+var
+  FilterDLLList: array of PFilterDLL;
+
+function GetFilterTableList(): PPFilterDLL; stdcall;
 begin
-  Result := GCMZDrops.Entry;
+  Result := @FilterDLLList[0];
 end;
 
-function FilterWndProc(Window: HWND; Message: UINT; WP: WPARAM;
+function FilterFuncInit(fp: PFilter): AviUtlBool; cdecl;
+begin
+  Result := BoolConv[GCMZDrops.InitProc(fp)];
+end;
+
+function FilterFuncExit(fp: PFilter): AviUtlBool; cdecl;
+begin
+  Result := BoolConv[GCMZDrops.ExitProc(fp)];
+end;
+
+function FilterFuncWndProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): LRESULT; cdecl;
 begin
   Result := GCMZDrops.MainProc(Window, Message, WP, LP, Edit, Filter);
 end;
 
-function FilterProjectLoad(Filter: PFilter; Edit: Pointer; Data: Pointer;
-  Size: integer): AviUtlBool; cdecl;
+function FilterFuncProjectLoad(Filter: PFilter; Edit: Pointer;
+  Data: Pointer; Size: integer): AviUtlBool; cdecl;
 begin
-  Result := BoolConv[GCMZDrops.ProjectLoad(Filter, Edit, Data, Size)];
+  Result := BoolConv[GCMZDrops.ProjectLoadProc(Filter, Edit, Data, Size)];
 end;
 
-function FilterProjectSave(Filter: PFilter; Edit: Pointer; Data: Pointer;
-  var Size: integer): AviUtlBool; cdecl;
+function FilterFuncProjectSave(Filter: PFilter; Edit: Pointer;
+  Data: Pointer; var Size: integer): AviUtlBool; cdecl;
 begin
-  Result := BoolConv[GCMZDrops.ProjectSave(Filter, Edit, Data, Size)];
+  Result := BoolConv[GCMZDrops.ProjectSaveProc(Filter, Edit, Data, Size)];
 end;
 
 { TGCMZDrops }
@@ -370,7 +385,7 @@ begin
   end;
 end;
 
-function TGCMZDrops.ProjectLoad(Filter: PFilter; Edit: Pointer;
+function TGCMZDrops.ProjectLoadProc(Filter: PFilter; Edit: Pointer;
   Data: Pointer; Size: integer): boolean;
 var
   SL: TStringList;
@@ -404,7 +419,7 @@ begin
   end;
 end;
 
-function TGCMZDrops.ProjectSave(Filter: PFilter; Edit: Pointer;
+function TGCMZDrops.ProjectSaveProc(Filter: PFilter; Edit: Pointer;
   Data: Pointer; var Size: integer): boolean;
 var
   SL: TStringList;
@@ -474,6 +489,48 @@ begin
   CleanupUsedFile();
 end;
 
+function TGCMZDrops.InitProc(Filter: PFilter): boolean;
+const
+  CSIDLs: array[0..10] of longint = (
+    CSIDL_APPDATA,
+    CSIDL_LOCAL_APPDATA,
+    CSIDL_COMMON_APPDATA,
+    CSIDL_COOKIES,
+    CSIDL_INTERNET_CACHE,
+    CSIDL_PROGRAM_FILES,
+    CSIDL_PROGRAM_FILES_COMMON,
+    CSIDL_STARTMENU,
+    CSIDL_PROGRAMS,
+    CSIDL_WINDOWS,
+    CSIDL_SYSTEM);
+var
+  I: integer;
+  S: WideString;
+begin
+  Result := False;
+  try
+    SetLength(FKnownFolders, Length(CSIDLs) + 1);
+    SetLength(S, MAX_PATH);
+    GetTempPathW(MAX_PATH, @S[1]);
+    FKnownFolders[0] := UTF8String(S);
+    for I := Low(CSIDLs) to High(CSIDLs) do
+      FKnownFolders[I + 1] := GetKnownFolderPath(CSIDLs[I]);
+    Result := True;
+  except
+    on E: Exception do
+    begin
+      ODS('error: %s', [WideString(E.Message)]);
+      MessageBoxW(0, PWideChar('初期化中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+        PluginName, MB_ICONERROR);
+    end;
+  end;
+end;
+
+function TGCMZDrops.ExitProc(Filter: PFilter): boolean;
+begin
+  Result := True;
+end;
+
 procedure TGCMZDrops.OnDragEnter(Sender: TObject; const PDDI: PDragDropInfo);
 begin
   SendMessage(FWindow, FGCMZDropsMessageId, 0, {%H-}LPARAM(PDDI));
@@ -536,22 +593,6 @@ begin
 end;
 
 constructor TGCMZDrops.Create;
-const
-  CSIDLs: array[0..10] of longint = (
-    CSIDL_APPDATA,
-    CSIDL_LOCAL_APPDATA,
-    CSIDL_COMMON_APPDATA,
-    CSIDL_COOKIES,
-    CSIDL_INTERNET_CACHE,
-    CSIDL_PROGRAM_FILES,
-    CSIDL_PROGRAM_FILES_COMMON,
-    CSIDL_STARTMENU,
-    CSIDL_PROGRAMS,
-    CSIDL_WINDOWS,
-    CSIDL_SYSTEM);
-var
-  I: integer;
-  S: WideString;
 begin
   inherited Create;
   FGCMZDropsMessageId := RegisterWindowMessage('GCMZDrops');
@@ -562,13 +603,6 @@ begin
   FDropTarget.OnDrop := @OnDrop;
   FDropTarget.TextConverter := @TextConvert;
   FDropTargetIntf := FDropTarget;
-
-  SetLength(FKnownFolders, Length(CSIDLs) + 1);
-  SetLength(S, MAX_PATH);
-  GetTempPathW(MAX_PATH, @S[1]);
-  FKnownFolders[0] := UTF8String(S);
-  for I := Low(CSIDLs) to High(CSIDLs) do
-    FKnownFolders[I + 1] := GetKnownFolderPath(CSIDLs[I]);
 
   FillChar(FEntry, SizeOf(FEntry), 0);
   FEntry.Flag := FILTER_FLAG_ALWAYS_ACTIVE or FILTER_FLAG_EX_INFORMATION;
@@ -743,8 +777,17 @@ end;
 
 initialization
   GCMZDrops := TGCMZDrops.Create();
-  GCMZDrops.Entry^.FuncWndProc := @FilterWndProc;
-  GCMZDrops.Entry^.FuncProjectLoad := @FilterProjectLoad;
-  GCMZDrops.Entry^.FuncProjectSave := @FilterProjectSave;
+  GCMZDrops.Entry^.FuncInit := @FilterFuncInit;
+  GCMZDrops.Entry^.FuncExit := @FilterFuncExit;
+  GCMZDrops.Entry^.FuncWndProc := @FilterFuncWndProc;
+  GCMZDrops.Entry^.FuncProjectLoad := @FilterFuncProjectLoad;
+  GCMZDrops.Entry^.FuncProjectSave := @FilterFuncProjectSave;
+
+  SetLength(FilterDLLList, 2);
+  FilterDLLList[0] := GCMZDrops.Entry;
+  FilterDLLList[1] := nil;
+
+finalization
+  GCMZDrops.Free();
 
 end.
