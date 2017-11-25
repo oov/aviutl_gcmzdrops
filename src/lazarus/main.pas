@@ -59,6 +59,7 @@ type
     property ExEditWindow: THandle read GetExEditWindow;
     property ExEditLayerHeight: integer read GetExEditLayerHeight;
     function NeedCopy(FilePath: UTF8String): boolean;
+    function ExistsInGCMZDir(FilePath: UTF8String): boolean;
     function GetSavePath(): UTF8String;
     procedure RegisterDeleteOnFinish(S: UTF8String);
     procedure RegisterDeleteOnAbort(S: UTF8String);
@@ -666,6 +667,11 @@ begin
       Result := Contains(FKnownFolders[0], FilePath);
     end;
   end;
+end;
+
+function TGCMZDrops.ExistsInGCMZDir(FilePath: UTF8String): boolean;
+begin
+  Result := Contains(GetSavePath(), FilePath);
 end;
 
 function TGCMZDrops.GetSavePath(): UTF8String;

@@ -730,7 +730,7 @@ function LuaDrop(L: Plua_State): integer; cdecl;
         SJIS := lua_tostring(L, -1);
         FilePath := SJIS;
         lua_pop(L, 1);
-        if not GCMZDrops.NeedCopy(FilePath) then
+        if (not GCMZDrops.NeedCopy(FilePath)) or GCMZDrops.ExistsInGCMZDir(FilePath) then
           EmulateDropOne(H, pt, FilePath)
         else begin
           NewFilePath := IncludeTrailingPathDelimiter(GCMZDrops.GetSavePath()) +
