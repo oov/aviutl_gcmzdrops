@@ -735,7 +735,7 @@ function LuaDrop(L: Plua_State): integer; cdecl;
         else begin
           NewFilePath := IncludeTrailingPathDelimiter(GCMZDrops.GetSavePath()) +
             ExtractFileName(FilePath);
-          WFS := TWideFileStream.Create(WideString(NewFilePath), fmCreate);
+          NWFS := TWideFileStream.Create(WideString(NewFilePath), fmCreate);
           try
             try
               WFS := TWideFileStream.Create(WideString(FilePath), fmOpenRead);
