@@ -522,7 +522,7 @@ begin
     FFilePath := S;
     Exit;
   end;
-  raise Exception.Create('cannot create a temporary file');
+  raise Exception.Create('cannot create a unique file');
 end;
 
 destructor TWideFileStream.Destroy;
