@@ -87,7 +87,8 @@ function LuaCreateFile(L: Plua_State): integer; cdecl;
 
       lua_pop(L, 2);
 
-      WFS := TWideFileStream.CreateUnique(IncludeTrailingPathDelimiter(WideString(GCMZDrops.GetSavePath()))+WideString(Name), WideString(Ext));
+      WFS := TWideFileStream.CreateUnique(IncludeTrailingPathDelimiter(
+        WideString(GCMZDrops.GetSavePath())) + WideString(Name), WideString(Ext));
       try
         SJIS := ShiftJISString(WFS.FilePath);
         GCMZDrops.RegisterDeleteOnAbort(UTF8String(WFS.FilePath));
@@ -132,7 +133,8 @@ function LuaCreateTempFile(L: Plua_State): integer; cdecl;
       GetTempPathW(MAX_PATH, @TempPath[1]);
       TempPath := PWideChar(TempPath);
 
-      WFS := TWideFileStream.CreateUnique(IncludeTrailingPathDelimiter(TempPath)+WideString(Name), WideString(Ext));
+      WFS := TWideFileStream.CreateUnique(IncludeTrailingPathDelimiter(
+        TempPath) + WideString(Name), WideString(Ext));
       try
         SJIS := ShiftJISString(WFS.FilePath);
         GCMZDrops.RegisterDeleteOnFinish(UTF8String(WFS.FilePath));
@@ -391,11 +393,12 @@ function LuaEncodeExoText(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
   const
-    Chars: array[0..15] of Char = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
+    Chars: array[0..15] of char =
+      ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
   var
     SJIS: ShiftJISString;
     WS: WideString;
-    W: Word;
+    W: word;
     S, D, Len: integer;
   begin
     try
@@ -405,14 +408,16 @@ function LuaEncodeExoText(L: Plua_State): integer; cdecl;
       SetLength(SJIS, 1024 * 4);
       FillChar(SJIS[1], Length(SJIS), '0');
       Len := Length(WS);
-      if Len > 1024 then Len := 1024;
+      if Len > 1024 then
+        Len := 1024;
       D := 1;
-      for S := 1 to Len do begin
-        W := Word(WS[S]);
-        SJIS[D+0] := Chars[(W shr 4) and $0f];
-        SJIS[D+1] := Chars[(W shr 0) and $0f];
-        SJIS[D+2] := Chars[(W shr 12) and $0f];
-        SJIS[D+3] := Chars[(W shr 8) and $0f];
+      for S := 1 to Len do
+      begin
+        W := word(WS[S]);
+        SJIS[D + 0] := Chars[(W shr 4) and $0f];
+        SJIS[D + 1] := Chars[(W shr 0) and $0f];
+        SJIS[D + 2] := Chars[(W shr 12) and $0f];
+        SJIS[D + 3] := Chars[(W shr 8) and $0f];
         Inc(D, 4);
       end;
       lua_pushlstring(L, @SJIS[1], Length(SJIS));
@@ -432,13 +437,13 @@ function LuaEncodeLuaString(L: Plua_State): integer; cdecl;
   function Main(): integer;
   var
     SJIS, Escaped: ShiftJISString;
-    C: Char;
+    C: char;
     S, D: integer;
   begin
     try
       SJIS := lua_tostring(L, -1);
       lua_pop(L, 1);
-      SetLength(Escaped, Length(SJIS)*2 + 2);
+      SetLength(Escaped, Length(SJIS) * 2 + 2);
       Escaped[1] := '"';
       D := 2;
       for S := 1 to Length(SJIS) do
