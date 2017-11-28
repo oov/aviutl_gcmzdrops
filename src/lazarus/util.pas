@@ -41,11 +41,12 @@ function Contains(BasePath, Path: UTF8String): boolean;
 function GetKnownFolderPath(const CSIDL: longint): UTF8String;
 
 function GetDLLName(): WideString;
+function CalcFileHash(FilePath: WideString): QWORD;
 
 implementation
 
 uses
-  Windows, ActiveX, SysUtils, ComObj, ShlObj;
+  Windows, ActiveX, SysUtils, ComObj, ShlObj, crc;
 
 procedure ODS(const Fmt: string; const Args: array of const);
 begin
@@ -481,6 +482,25 @@ begin
   SetLength(Result, MAX_PATH);
   GetModuleFileNameW(hInstance, @Result[1], MAX_PATH);
   Result := PWideChar(Result);
+end;
+
+function CalcFileHash(FilePath: WideString): QWORD;
+var
+  WFS: TWideFileStream;
+  Buffer: array[0..4095] of byte;
+  Bytes: integer;
+begin
+  WFS := TWideFileStream.Create(FilePath, fmOpenRead);
+  try
+    Result := crc64(0, nil, 0);
+    repeat
+      Bytes := WFS.Read(Buffer[0], Length(Buffer));
+      if Bytes > 0 then
+        Result := crc64(Result, @Buffer[0], Bytes);
+    until Bytes <> Length(Buffer);
+  finally
+    WFS.Free;
+  end;
 end;
 
 { TWideFileStream }

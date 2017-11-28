@@ -256,26 +256,13 @@ function LuaCalcFileHash(L: Plua_State): integer; cdecl;
   var
     SJIS: ShiftJISString;
     FileName: UTF8String;
-    WFS: TWideFileStream;
     Q: QWORD;
-    Buffer: array[0..4095] of byte;
-    Bytes: integer;
   begin
     try
       SJIS := lua_tostring(L, -1);
       lua_pop(L, 1);
       FileName := SJIS;
-      WFS := TWideFileStream.Create(WideString(FileName), fmOpenRead);
-      try
-        Q := crc64(0, nil, 0);
-        repeat
-          Bytes := WFS.Read(Buffer[0], Length(Buffer));
-          if Bytes > 0 then
-            Q := crc64(Q, @Buffer[0], Bytes);
-        until Bytes <> Length(Buffer);
-      finally
-        WFS.Free;
-      end;
+      Q := CalcFileHash(WideString(FileName));
       lua_pushlstring(L, PChar(@Q), SizeOf(Q));
       Result := 1;
     except
@@ -732,25 +719,37 @@ function LuaDrop(L: Plua_State): integer; cdecl;
         lua_pop(L, 1);
         if (not GCMZDrops.NeedCopy(FilePath)) or GCMZDrops.ExistsInGCMZDir(FilePath) then
           EmulateDropOne(H, pt, FilePath)
-        else begin
+        else
+        begin
           NewFilePath := IncludeTrailingPathDelimiter(GCMZDrops.GetSavePath()) +
             ExtractFileName(FilePath);
-          NWFS := TWideFileStream.Create(WideString(NewFilePath), fmCreate);
-          try
+          if FileExists(WideString(NewFilePath)) then
+          begin
+            if CalcFileHash(WideString(NewFilePath)) =
+              CalcFileHash(WideString(FilePath)) then
+              EmulateDropOne(H, pt, NewFilePath)
+            else
+              raise Exception.Create('a same name different file already exists');
+          end
+          else
+          begin
+            NWFS := TWideFileStream.Create(WideString(NewFilePath), fmCreate);
             try
-              WFS := TWideFileStream.Create(WideString(FilePath), fmOpenRead);
               try
-                NWFS.CopyFrom(WFS, 0);
+                WFS := TWideFileStream.Create(WideString(FilePath), fmOpenRead);
+                try
+                  NWFS.CopyFrom(WFS, 0);
+                finally
+                  WFS.Free;
+                end;
               finally
-                WFS.Free;
+                NWFS.Free;
               end;
-            finally
-              NWFS.Free;
+              EmulateDropOne(H, pt, NewFilePath);
+            except
+              AddUsedFile(NewFilePath);
+              raise;
             end;
-            EmulateDropOne(H, pt, NewFilePath);
-          except
-            AddUsedFile(NewFilePath);
-            raise;
           end;
         end;
 
