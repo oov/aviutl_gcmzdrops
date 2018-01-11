@@ -1,12 +1,12 @@
 #!/bin/bash
 
-mkdir bin bin/GCMZDrops
+mkdir bin bin/GCMZDrops bin/GCMZDrops/dropper
 
 # copy readme
 sed 's/\r$//' README.md | sed 's/$/\r/' > bin/README.txt
 
 # update version string
-VERSION='v0.2.3'
+VERSION='v0.3beta'
 GITHASH=`git rev-parse --short HEAD`
 cat << EOS | sed 's/\r$//' | sed 's/$/\r/' > 'src/lazarus/ver.pas'
 unit Ver;
@@ -30,11 +30,13 @@ sed 's/\r$//' 'src/lua/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/example.lua
 sed 's/\r$//' 'src/lua/generic.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/generic.lua'
 sed 's/\r$//' 'src/lua/textsjis.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/textsjis.lua'
 sed 's/\r$//' 'src/lua/avoiddup.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/avoiddup.lua'
+sed 's/\r$//' 'src/lua/dropper/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/dropper/example.lua'
 
 # build lazarus project
 cmd.exe /c C:/lazarus/lazbuild.exe --build-all src/lazarus/GCMZDrops.lpi
 
 # install
-# mkdir aviutl/GCMZDrops
+# mkdir aviutl/GCMZDrops aviutl/GCMZDrops/dropper
 # cp bin/*.auf aviutl/
 # cp bin/GCMZDrops/* aviutl/GCMZDrops/
+# cp bin/GCMZDrops/dropper/* aviutl/GCMZDrops/dropper/

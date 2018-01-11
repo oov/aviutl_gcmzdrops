@@ -19,6 +19,7 @@ type
   public
     constructor Create();
     destructor Destroy(); override;
+    procedure InitDropper();
     function CallDragEnter(const DraggingFiles: TDraggingFiles;
       const Pt: TPoint; const KeyState: DWORD): boolean;
     function CallDragOver(const DraggingFiles: TDraggingFiles;
@@ -26,6 +27,7 @@ type
     procedure CallDragLeave();
     function CallDrop(const DraggingFiles: TDraggingFiles; const Pt: TPoint;
       const KeyState: DWORD): boolean;
+    property State: Plua_state read FState write FState;
   end;
 
 implementation
@@ -173,6 +175,36 @@ begin
     FState := nil;
   end;
   inherited Destroy;
+end;
+
+procedure TLua.InitDropper;
+var
+  I: integer;
+  L: Plua_state;
+  sr: TUnicodeSearchRec;
+  BasePath: WideString;
+  SJIS: ShiftJISString;
+begin
+  L := FState;
+  lua_getfield(L, 1, 'initdropper');
+  lua_newtable(L);
+  BasePath := ExtractFilePath(GetDLLName()) + 'GCMZDrops\dropper\';
+  I := 1;
+  if FindFirst(BasePath + '*.lua', 0, sr) = 0 then
+  begin
+    repeat
+      if (sr.Name = '..') or (sr.Name = '.') or
+        ((sr.Attr and faDirectory) = faDirectory) then
+        continue;
+      SJIS := ShiftJISString('dropper\' + ChangeFileExt(sr.Name, WideString('')));
+      lua_pushlstring(L, @SJIS[1], Length(SJIS));
+      lua_rawseti(L, -2, I);
+      Inc(I);
+    until FindNext(sr) <> 0;
+  end;
+  if lua_pcall(L, 1, 0, 0) <> 0 then
+    raise Exception.Create('failed to complete initdropper execution: ' +
+      UTF8String(ShiftJISString(lua_tostring(L, -1))));
 end;
 
 function TLua.CallDragEnter(const DraggingFiles: TDraggingFiles;

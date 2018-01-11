@@ -82,4 +82,61 @@ function P.ondrop(files, state)
   return false
 end
 
+P.droppers = {}
+
+function P.initdropper(droppers)
+  table.sort(droppers, function(a, b)
+    return a > b
+  end)
+  for i, v in ipairs(droppers) do
+    local d = require(v)
+    if (type(d.name) == "string")and
+      (type(d.oninitmenu) == "function")and
+      (type(d.onselect) == "function") then
+      table.insert(P.droppers, d)
+    end
+  end
+end
+
+function P.getdroppermenuitems()
+  local r = {}
+  for i, d in ipairs(P.droppers) do
+    local m = d.oninitmenu()
+    if type(m) == "table" then
+      m.name = d.name
+    end
+    table.insert(r, m)
+  end
+  return r
+end
+
+function P.selectdropper(dropperindex, menuindex, state)
+  local files, rstate = P.droppers[dropperindex].onselect(menuindex, state)
+  if files == nil then
+    return false
+  end
+  if type(rstate) ~= "table" then
+    rstate = {x = state.x, y = state.y}
+  end
+  rstate.control = rstate.control or false
+  rstate.shift = rstate.shift or false
+  rstate.alt = rstate.alt or false
+  rstate.lbutton = rstate.lbutton or false
+  rstate.mbutton = rstate.mbutton or false
+  rstate.rbutton = rstate.rbutton or false
+  if (not rstate.lbutton)and(not rstate.mbutton)and(not rstate.rbutton) then
+    rstate.lbutton = true
+  end
+  if not P.ondragenter(files, rstate) then
+    return false
+  end
+  if not P.ondragover(files, rstate) then
+    return false
+  end
+  if not P.ondrop(files, rstate) then
+    return false
+  end
+  return true
+end
+
 return P

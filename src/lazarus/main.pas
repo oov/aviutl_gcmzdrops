@@ -20,7 +20,7 @@ type
     FCurrentEditP: Pointer;
     FDropTarget: TDropTarget;
     FDropTargetIntf: IDropTarget;
-    FLua: TLua;
+    FLua, FSCDropperLua: TLua;
     FWindow, FFont: THandle;
     FFontHeight: integer;
     FSavePathEdit, FSaveMode, FFolderSelectButton, FRevertChangeButton: THandle;
@@ -50,6 +50,7 @@ type
     procedure OnDragOver(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnDragLeave(Sender: TObject);
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
+    procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
   public
     constructor Create();
     destructor Destroy(); override;
@@ -79,7 +80,7 @@ var
 implementation
 
 uses
-  InputDialog, UsedFiles, Util, Ver;
+  InputDialog, ScriptableDropper, UsedFiles, Util, Ver;
 
 const
   PluginName = 'ごちゃまぜドロップス';
@@ -224,6 +225,7 @@ begin
           raise Exception.Create('ExEdit plug-in not found.');
         DragAcceptFiles(FExEdit^.Hwnd, False);
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTarget));
+        SCDropper.InstallHook(FExEdit^.Hwnd);
       except
         on E: Exception do
         begin
@@ -304,6 +306,7 @@ begin
       begin
         OleCheck(RevokeDragDrop(FExEdit^.Hwnd));
         DragAcceptFiles(FExEdit^.Hwnd, True);
+        SCDropper.UninstallHook();
       end;
     end
     else
@@ -355,12 +358,22 @@ begin
               end;
               ProcessDeleteFileQueue(False);
             end;
+            100:
+            begin
+              FreeAndNil(FSCDropperLua);
+              FSCDropperLua := TLua.Create();
+              FSCDropperLua.InitDropper();
+              SCDropper.RecreateMenu(FSCDropperLua.State);
+              SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
+              FreeAndNil(FSCDropperLua);
+            end;
           end;
         except
           on E: EAbort do
           begin
             ODS('処理が中断されました: %s', [WideString(E.Message)]);
             FreeAndNil(FLua);
+            FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
               PDDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
@@ -373,6 +386,7 @@ begin
               WideString(E.Message)),
               PluginName, MB_ICONERROR);
             FreeAndNil(FLua);
+            FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
               PDDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
@@ -564,6 +578,11 @@ begin
   SendMessage(FWindow, FGCMZDropsMessageId, 3, {%H-}LPARAM(PDDI));
 end;
 
+procedure TGCMZDrops.OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
+begin
+  SendMessage(FWindow, FGCMZDropsMessageId, 100, {%H-}LPARAM(@Pt));
+end;
+
 function TGCMZDrops.GetMode: integer;
 begin
   Result := SendMessageW(FSaveMode, CB_GETCURSEL, 0, 0);
@@ -621,6 +640,8 @@ begin
   FEntry.Flag := FILTER_FLAG_ALWAYS_ACTIVE or FILTER_FLAG_EX_INFORMATION;
   FEntry.Name := PluginNameANSI;
   FEntry.Information := PluginInfoANSI;
+
+  SCDropper.OnNotify := @OnPopupSCDropperMenu;
 
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
