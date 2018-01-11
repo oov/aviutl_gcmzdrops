@@ -80,7 +80,7 @@ var
 implementation
 
 uses
-  InputDialog, ScriptableDropper, UsedFiles, Util, Ver;
+  InputDialog, ScriptableDropper, UsedFiles, Lua, Util, Ver;
 
 const
   PluginName = 'ごちゃまぜドロップス';
@@ -132,6 +132,9 @@ end;
 
 function TGCMZDrops.MainProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
+const
+  ExEditVersion = ' version 0.92 ';
+  ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67; // '字幕アシスト'
 var
   Label1, Label2: THandle;
   Y, Height: integer;
@@ -222,7 +225,23 @@ begin
 
       try
         if not Assigned(FExEdit) then
-          raise Exception.Create('ExEdit plug-in not found.');
+          raise Exception.Create('拡張編集プラグインが見つかりません。');
+
+        for Y := 0 to sinfo.FilterN - 1 do
+        begin
+          fp := Filter^.ExFunc^.GetFilterP(Y);
+          if fp = nil then
+            continue;
+          if StrPos(fp^.Name, ExTextNameANSI) <> nil then
+            raise Exception.Create(PluginName+' は「字幕テキスト」プラグインと同時に使用することはできません。');
+        end;
+
+        if StrPos(FExEdit^.Information, ExEditVersion) = nil then
+          raise Exception.Create(PluginName+' を使うには拡張編集'+ExEditVersion+'が必要です。');
+        if sinfo.Build < 10000 then
+          raise Exception.Create(PluginName+' を使うには AviUtl version 1.00 以降が必要です。');
+        if not LuaLoaded() then
+          raise Exception.Create('lua51.dll の読み込みに失敗しました。');
         DragAcceptFiles(FExEdit^.Hwnd, False);
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTarget));
         SCDropper.InstallHook(FExEdit^.Hwnd);
@@ -238,9 +257,7 @@ begin
           SetWindowTextW(Window,
             PWideChar(WideString(PluginName + ' - 初期化に失敗したため使用できません')));
           MessageBoxW(FExEdit^.Hwnd,
-            PWideChar(WideString(E.Message) + #13#10'なお、' +
-            PluginName + ' は「字幕アシスト」と同時に使用することはできません。'#13#10 +
-            'もし同時に使用していてこのメッセージが表示されている場合は、どちらかのプラグインを読み込まないようにしてください。'),
+            PWideChar(PluginName + ' の初期化中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
             PWideChar('初期化エラー - ' + PluginName), MB_ICONERROR);
         end;
       end;
@@ -304,7 +321,7 @@ begin
       FFont := 0;
       if Assigned(FExEdit) then
       begin
-        OleCheck(RevokeDragDrop(FExEdit^.Hwnd));
+        RevokeDragDrop(FExEdit^.Hwnd);
         DragAcceptFiles(FExEdit^.Hwnd, True);
         SCDropper.UninstallHook();
       end;
