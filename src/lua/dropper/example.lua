@@ -45,6 +45,17 @@ function P.onselect(index, state)
   -- それ以外の場所に永続的なファイルを作成するスクリプトを作成する場合は
   -- ユーザーにコンセンサスを得た上で（※）行うようにしてください。
   -- ※ドキュメントなどに記載する、GCMZDrops.confirm で確認する、など
+
+  -- -- 実装例
+  -- -- "Hello world!" と書かれたテキストファイルを作成し、拡張編集に投げ込む例
+  -- local filepath = GCMZDrops.createtempfile("helloworld", ".txt")
+  -- f, err = io.open(filepath, "wb")
+  -- if f == nil then
+  --   error(err)
+  -- end
+  -- f:write("Hello world!")
+  -- f:close()
+  -- return {{filepath=filepath}}, state
 end
 
 return P
