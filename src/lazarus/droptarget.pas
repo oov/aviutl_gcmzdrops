@@ -919,7 +919,8 @@ var
   I: integer;
 begin
   for I := Low(FDraggingFiles) to High(FDraggingFiles) do
-    if (FDraggingFiles[I].FilePathOrContent <> '') and FDraggingFiles[I].DeleteOnFinish then
+    if (FDraggingFiles[I].FilePathOrContent <> '') and
+      FDraggingFiles[I].DeleteOnFinish then
       AddUsedFile(FDraggingFiles[I].FilePathOrContent);
   SetLength(FDraggingFiles, 0);
 end;

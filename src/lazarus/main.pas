@@ -135,7 +135,8 @@ function TGCMZDrops.MainProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
 const
   ExEditVersion = ' version 0.92 ';
-  ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67; // '字幕アシスト'
+  ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67;
+  // '字幕アシスト'
 var
   Label1, Label2: THandle;
   Y, Height: integer;
@@ -188,8 +189,10 @@ begin
         WS_VISIBLE or CBS_DROPDOWNLIST, 8, Y, 400, Height + 300,
         Window, 1, Filter^.DLLHInst, nil);
       SendMessageW(FSaveMode, CB_ADDSTRING, 0, {%H-}LPARAM(PWideChar('自動判定')));
-      SendMessageW(FSaveMode, CB_ADDSTRING, 0, {%H-}LPARAM(PWideChar('コピーを作成')));
-      SendMessageW(FSaveMode, CB_ADDSTRING, 0, {%H-}LPARAM(PWideChar('直接読み込み')));
+      SendMessageW(FSaveMode, CB_ADDSTRING, 0,
+        {%H-}LPARAM(PWideChar('コピーを作成')));
+      SendMessageW(FSaveMode, CB_ADDSTRING, 0,
+        {%H-}LPARAM(PWideChar('直接読み込み')));
       SendMessageW(FSaveMode, WM_SETFONT, WPARAM(FFont), 0);
       Inc(Y, Height);
 
@@ -214,9 +217,9 @@ begin
         WS_CHILD or WS_TABSTOP or WS_VISIBLE, 8 + 400 - 256, Y, 128,
         Height, Window, 5, Filter^.DLLHInst, nil);
       SendMessageW(FRevertChangeButton, WM_SETFONT, WPARAM(FFont), 0);
-      FFolderSelectButton := CreateWindowW('BUTTON', PWideChar('フォルダーの選択...'),
-        WS_CHILD or WS_TABSTOP or WS_VISIBLE, 8 + 400 - 128, Y, 128,
-        Height, Window, 4, Filter^.DLLHInst, nil);
+      FFolderSelectButton := CreateWindowW('BUTTON',
+        PWideChar('フォルダーの選択...'), WS_CHILD or WS_TABSTOP or
+        WS_VISIBLE, 8 + 400 - 128, Y, 128, Height, Window, 4, Filter^.DLLHInst, nil);
       SendMessageW(FFolderSelectButton, WM_SETFONT, WPARAM(FFont), 0);
       Inc(Y, Height);
 
@@ -226,7 +229,8 @@ begin
 
       try
         if not Assigned(FExEdit) then
-          raise Exception.Create('拡張編集プラグインが見つかりません。');
+          raise Exception.Create(
+            '拡張編集プラグインが見つかりません。');
 
         for Y := 0 to sinfo.FilterN - 1 do
         begin
@@ -234,13 +238,16 @@ begin
           if fp = nil then
             continue;
           if StrPos(fp^.Name, ExTextNameANSI) <> nil then
-            raise Exception.Create(PluginName+' は「字幕テキスト」プラグインと同時に使用することはできません。');
+            raise Exception.Create(PluginName +
+              ' は「字幕テキスト」プラグインと同時に使用することはできません。');
         end;
 
         if StrPos(FExEdit^.Information, ExEditVersion) = nil then
-          raise Exception.Create(PluginName+' を使うには拡張編集'+ExEditVersion+'が必要です。');
+          raise Exception.Create(PluginName + ' を使うには拡張編集' +
+            ExEditVersion + 'が必要です。');
         if sinfo.Build < 10000 then
-          raise Exception.Create(PluginName+' を使うには AviUtl version 1.00 以降が必要です。');
+          raise Exception.Create(PluginName +
+            ' を使うには AviUtl version 1.00 以降が必要です。');
         if not LuaLoaded() then
           raise Exception.Create('lua51.dll の読み込みに失敗しました。');
         DragAcceptFiles(FExEdit^.Hwnd, False);
@@ -256,9 +263,12 @@ begin
           EnableWindow(FFolderSelectButton, False);
           EnableWindow(FRevertChangeButton, False);
           SetWindowTextW(Window,
-            PWideChar(WideString(PluginName + ' - 初期化に失敗したため使用できません')));
+            PWideChar(WideString(PluginName +
+            ' - 初期化に失敗したため使用できません')));
           MessageBoxW(FExEdit^.Hwnd,
-            PWideChar(PluginName + ' の初期化中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+            PWideChar(PluginName +
+            ' の初期化中にエラーが発生しました。'#13#10#13#10 +
+            WideString(E.Message)),
             PWideChar('初期化エラー - ' + PluginName), MB_ICONERROR);
         end;
       end;
@@ -378,7 +388,8 @@ begin
             end;
             100:
             begin
-              if IsEditing() then begin
+              if IsEditing() then
+              begin
                 FreeAndNil(FSCDropperLua);
                 FSCDropperLua := TLua.Create();
                 FSCDropperLua.InitDropper();
@@ -402,8 +413,7 @@ begin
           begin
             ODS('error: %s', [WideString(E.Message)]);
             MessageBoxW(FExEdit^.Hwnd,
-              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 +
-              WideString(E.Message)),
+              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
               PluginName, MB_ICONERROR);
             FreeAndNil(FLua);
             FreeAndNil(FSCDropperLua);
@@ -567,7 +577,9 @@ begin
     on E: Exception do
     begin
       ODS('error: %s', [WideString(E.Message)]);
-      MessageBoxW(0, PWideChar('初期化中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+      MessageBoxW(0, PWideChar(
+        '初期化中にエラーが発生しました。'#13#10#13#10 +
+        WideString(E.Message)),
         PluginName, MB_ICONERROR);
     end;
   end;
@@ -746,8 +758,9 @@ begin
   begin
     hs := DisableFamilyWindows(FExEdit^.Hwnd);
     try
-      if MessageBoxW(FExEdit^.Hwnd, PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 +
-        WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idCancel then
+      if MessageBoxW(FExEdit^.Hwnd,
+        PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 + WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) =
+        idCancel then
         raise EAbort.Create('destination directory is not exists, operation canceled');
     finally
       EnableFamilyWindows(hs);
@@ -790,7 +803,8 @@ var
   fi: TFileInfo;
 begin
   FillChar(FI, SizeOf(FI), 0);
-  Result := (FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) <> AVIUTL_FALSE)and(FI.AudioRate <> 0)and(FI.AudioCh <> 0);
+  Result := (FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) <>
+    AVIUTL_FALSE) and (FI.AudioRate <> 0) and (FI.AudioCh <> 0);
 end;
 
 procedure TGCMZDrops.GetFileInfo(out FI: TFileInfo; out Samples: integer;

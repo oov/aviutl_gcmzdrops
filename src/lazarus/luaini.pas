@@ -75,8 +75,7 @@ var
   S: string;
 begin
   P := LuaGetUserData(L, 1, MetaTableName);
-  S := P^.Ini.ReadString(lua_tostring(L, 2), lua_tostring(L, 3),
-    lua_tostring(L, 4));
+  S := P^.Ini.ReadString(lua_tostring(L, 2), lua_tostring(L, 3), lua_tostring(L, 4));
   lua_pop(L, 4);
   lua_pushlstring(L, @S[1], Length(S));
   Result := 1;
@@ -171,7 +170,7 @@ end;
 function LuaIniExists(L: Plua_State): integer; cdecl;
 var
   P: PLuaIni;
-  B: Boolean;
+  B: boolean;
 begin
   P := LuaGetUserData(L, 1, MetaTableName);
   B := P^.Ini.ValueExists(lua_tostring(L, 2), lua_tostring(L, 3));
@@ -183,7 +182,8 @@ end;
 function LuaIniSectionExists(L: Plua_State): integer; cdecl;
 var
   P: PLuaIni;
-  B: Boolean;
+  B: boolean;
+
 begin
   P := LuaGetUserData(L, 1, MetaTableName);
   B := P^.Ini.SectionExists(lua_tostring(L, 2));

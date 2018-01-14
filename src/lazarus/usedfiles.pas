@@ -19,22 +19,25 @@ uses
 var
   Files: TStringList;
 
-function Delete(const FilePath: UTF8String): Boolean;
+function Delete(const FilePath: UTF8String): boolean;
 var
   WS: WideString;
 begin
   WS := WideString(FilePath);
-  if DeleteFileW(PWideChar(WS)) then begin
-     Result := True;
-     Exit;
+  if DeleteFileW(PWideChar(WS)) then
+  begin
+    Result := True;
+    Exit;
   end;
-  if not FileExists(WS) then begin
-     Result := True;
-     Exit;
+  if not FileExists(WS) then
+  begin
+    Result := True;
+    Exit;
   end;
-  if MoveFileExW(PWideChar(WS), nil, MOVEFILE_DELAY_UNTIL_REBOOT) then begin
-     Result := True;
-     Exit;
+  if MoveFileExW(PWideChar(WS), nil, MOVEFILE_DELAY_UNTIL_REBOOT) then
+  begin
+    Result := True;
+    Exit;
   end;
   Result := False;
 end;
@@ -42,14 +45,14 @@ end;
 procedure AddUsedFile(const FilePath: UTF8String);
 begin
   if not Delete(FilePath) then
-     Files.Add(FilePath);
+    Files.Add(FilePath);
 end;
 
 procedure CleanupUsedFile();
 var
   I: integer;
 begin
-  for I := Files.Count-1 downto 0 do
+  for I := Files.Count - 1 downto 0 do
     if Delete(Files.Strings[I]) then
       Files.Delete(I);
 end;
@@ -62,4 +65,3 @@ finalization
   Files.Free();
 
 end.
-
