@@ -48,7 +48,6 @@ begin
       SetWindowTextW(GetDlgItem(Dialog, 0), PWideChar(DlgVars^.Value));
       Result := 1;
     end;
-    WM_ACTIVATE: SetForegroundWindow(Dialog);
     WM_COMMAND:
     begin
       case LOWORD(WP) of
