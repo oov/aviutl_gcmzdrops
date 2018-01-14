@@ -66,6 +66,7 @@ type
     procedure RegisterDeleteOnAbort(S: UTF8String);
     procedure GetAviUtlSysInfo(out SI: TSysInfo);
     procedure GetExEditFileInfo(out FI: TFileInfo);
+    function IsEditing(): boolean;
     procedure GetFileInfo(out FI: TFileInfo; out Samples: integer;
       const FileName: UTF8String);
     function Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
@@ -377,12 +378,14 @@ begin
             end;
             100:
             begin
-              FreeAndNil(FSCDropperLua);
-              FSCDropperLua := TLua.Create();
-              FSCDropperLua.InitDropper();
-              SCDropper.RecreateMenu(FSCDropperLua.State);
-              SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
-              FreeAndNil(FSCDropperLua);
+              if IsEditing() then begin
+                FreeAndNil(FSCDropperLua);
+                FSCDropperLua := TLua.Create();
+                FSCDropperLua.InitDropper();
+                SCDropper.RecreateMenu(FSCDropperLua.State);
+                SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
+                FreeAndNil(FSCDropperLua);
+              end;
             end;
           end;
         except
@@ -780,6 +783,14 @@ begin
   if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
     raise Exception.Create('A project must be editing to get a project file info.'#13#10 +
       'プロジェクトが編集中ではないため処理を続行できません。');
+end;
+
+function TGCMZDrops.IsEditing(): boolean;
+var
+  fi: TFileInfo;
+begin
+  FillChar(FI, SizeOf(FI), 0);
+  Result := (FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) <> AVIUTL_FALSE)and(FI.AudioRate <> 0)and(FI.AudioCh <> 0);
 end;
 
 procedure TGCMZDrops.GetFileInfo(out FI: TFileInfo; out Samples: integer;
