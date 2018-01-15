@@ -396,6 +396,7 @@ begin
                 SCDropper.RecreateMenu(FSCDropperLua.State);
                 SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
                 FreeAndNil(FSCDropperLua);
+                ProcessDeleteFileQueue(False);
               end;
             end;
           end;
