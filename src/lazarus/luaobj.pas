@@ -186,9 +186,27 @@ var
   SJIS: ShiftJISString;
 begin
   L := FState;
+
+  BasePath := ExtractFilePath(GetDLLName()) + 'GCMZDrops\dropper\';
+
+  lua_getglobal(L, 'package');
+
+  lua_getfield(L, -1, 'path');
+  SJIS := lua_tostring(L, -1) + ShiftJISString(';' + BasePath + '?.lua');
+  lua_pop(L, 1);
+  lua_pushlstring(L, @SJIS[1], Length(SJIS));
+  lua_setfield(L, -2, 'path');
+
+  lua_getfield(L, -1, 'cpath');
+  SJIS := lua_tostring(L, -1) + ShiftJISString(';' + BasePath + '?.dll');
+  lua_pop(L, 1);
+  lua_pushlstring(L, @SJIS[1], Length(SJIS));
+  lua_setfield(L, -2, 'cpath');
+
+  lua_pop(L, 1);
+
   lua_getfield(L, 1, 'initdropper');
   lua_newtable(L);
-  BasePath := ExtractFilePath(GetDLLName()) + 'GCMZDrops\dropper\';
   I := 1;
   if FindFirst(BasePath + '*.lua', 0, sr) = 0 then
   begin
