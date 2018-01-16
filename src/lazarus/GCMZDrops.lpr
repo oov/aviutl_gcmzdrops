@@ -16,6 +16,7 @@ exports
 
 initialization
   OleInitialize(nil);
+  SetMultiByteConversionCodePage(CP_UTF8);
   Randomize();
   LoadLua(ExtractFilePath(GetDLLName())+'\lua51.dll');
 
