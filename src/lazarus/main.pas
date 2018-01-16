@@ -344,84 +344,88 @@ begin
         PDDI := {%H-}PDragDropInfo(LP);
         FCurrentFilterP := Filter;
         FCurrentEditP := Edit;
+        hs := DisableFamilyWindows(0);
         try
-          case WP of
-            0:
-            begin
-              FreeAndNil(FLua);
-              FLua := TLua.Create();
-              if not FLua.CallDragEnter(PDDI^.DraggingFiles, PDDI^.Point,
-                PDDI^.KeyState) then
-                raise EAbort.Create('canceled ondragenter');
-              PDDI^.Effect := DROPEFFECT_COPY;
-            end;
-            1:
-            begin
-              if Assigned(FLua) then
+          try
+            case WP of
+              0:
               begin
-                if not FLua.CallDragOver(PDDI^.DraggingFiles,
-                  PDDI^.Point, PDDI^.KeyState) then
-                  raise EAbort.Create('canceled ondragover');
-                PDDI^.Effect := DROPEFFECT_COPY;
-              end;
-            end;
-            2:
-            begin
-              if Assigned(FLua) then
-              begin
-                FLua.CallDragLeave();
                 FreeAndNil(FLua);
-              end;
-              ProcessDeleteFileQueue(True);
-            end;
-            3:
-            begin
-              if Assigned(FLua) then
-              begin
-                if not FLua.CallDrop(PDDI^.DraggingFiles, PDDI^.Point,
+                FLua := TLua.Create();
+                if not FLua.CallDragEnter(PDDI^.DraggingFiles, PDDI^.Point,
                   PDDI^.KeyState) then
-                  raise EAbort.Create('canceled ondrop');
+                  raise EAbort.Create('canceled ondragenter');
                 PDDI^.Effect := DROPEFFECT_COPY;
-                FreeAndNil(FLua);
               end;
-              ProcessDeleteFileQueue(False);
-            end;
-            100:
-            begin
-              if IsEditing() then
+              1:
               begin
-                FreeAndNil(FSCDropperLua);
-                FSCDropperLua := TLua.Create();
-                FSCDropperLua.InitDropper();
-                SCDropper.RecreateMenu(FSCDropperLua.State);
-                SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
-                FreeAndNil(FSCDropperLua);
+                if Assigned(FLua) then
+                begin
+                  if not FLua.CallDragOver(PDDI^.DraggingFiles,
+                    PDDI^.Point, PDDI^.KeyState) then
+                    raise EAbort.Create('canceled ondragover');
+                  PDDI^.Effect := DROPEFFECT_COPY;
+                end;
+              end;
+              2:
+              begin
+                if Assigned(FLua) then
+                begin
+                  FLua.CallDragLeave();
+                  FreeAndNil(FLua);
+                end;
+                ProcessDeleteFileQueue(True);
+              end;
+              3:
+              begin
+                if Assigned(FLua) then
+                begin
+                  if not FLua.CallDrop(PDDI^.DraggingFiles, PDDI^.Point,
+                    PDDI^.KeyState) then
+                    raise EAbort.Create('canceled ondrop');
+                  PDDI^.Effect := DROPEFFECT_COPY;
+                  FreeAndNil(FLua);
+                end;
                 ProcessDeleteFileQueue(False);
               end;
+              100:
+              begin
+                if IsEditing() then
+                begin
+                  FSCDropperLua := TLua.Create();
+                  FSCDropperLua.InitDropper();
+                  SCDropper.RecreateMenu(FSCDropperLua.State);
+                  SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
+                  FreeAndNil(FSCDropperLua);
+                  ProcessDeleteFileQueue(False);
+                end;
+              end;
+            end;
+          except
+            on E: EAbort do
+            begin
+              ODS('処理が中断されました: %s', [WideString(E.Message)]);
+              FreeAndNil(FLua);
+              FreeAndNil(FSCDropperLua);
+              if Assigned(PDDI) then
+                PDDI^.Effect := DROPEFFECT_NONE;
+              ProcessDeleteFileQueue(True);
+            end;
+            on E: Exception do
+            begin
+              ODS('error: %s', [WideString(E.Message)]);
+              MessageBoxW(FExEdit^.Hwnd,
+                PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+                PluginName, MB_ICONERROR);
+              FreeAndNil(FLua);
+              FreeAndNil(FSCDropperLua);
+              if Assigned(PDDI) then
+                PDDI^.Effect := DROPEFFECT_NONE;
+              ProcessDeleteFileQueue(True);
             end;
           end;
-        except
-          on E: EAbort do
-          begin
-            ODS('処理が中断されました: %s', [WideString(E.Message)]);
-            FreeAndNil(FLua);
-            FreeAndNil(FSCDropperLua);
-            if Assigned(PDDI) then
-              PDDI^.Effect := DROPEFFECT_NONE;
-            ProcessDeleteFileQueue(True);
-          end;
-          on E: Exception do
-          begin
-            ODS('error: %s', [WideString(E.Message)]);
-            MessageBoxW(FExEdit^.Hwnd,
-              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
-              PluginName, MB_ICONERROR);
-            FreeAndNil(FLua);
-            FreeAndNil(FSCDropperLua);
-            if Assigned(PDDI) then
-              PDDI^.Effect := DROPEFFECT_NONE;
-            ProcessDeleteFileQueue(True);
-          end;
+        finally
+          EnableFamilyWindows(hs);
         end;
         Result := 0;
       end
@@ -734,7 +738,6 @@ var
   SDir, ProjFile: UTF8String;
   SI: TSysInfo;
   FI: TFileInfo;
-  hs: THandleDynArray;
 begin
   SDir := SaveDir;
   if Pos('%PROJECTDIR%', SDir) = 0 then
@@ -757,15 +760,10 @@ begin
 
   if not DirectoryExists(WideString(Result)) then
   begin
-    hs := DisableFamilyWindows(FExEdit^.Hwnd);
-    try
-      if MessageBoxW(FExEdit^.Hwnd,
-        PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 + WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) =
-        idCancel then
-        raise EAbort.Create('destination directory is not exists, operation canceled');
-    finally
-      EnableFamilyWindows(hs);
-    end;
+    if MessageBoxW(FExEdit^.Hwnd,
+      PWideChar('ファイルの保存先フォルダーが存在しません。作成しますか？'#13#10 + WideString(Result)), PluginName, MB_ICONQUESTION or MB_OKCANCEL) =
+      idCancel then
+      raise EAbort.Create('destination directory is not exists, operation canceled');
     if not ForceDirectories(WideString(Result)) then
       raise Exception.Create(UTF8String(
         'cannot create a directory.'#13#10'フォルダーの作成に失敗しました。'#13#10) + Result);
@@ -833,28 +831,14 @@ begin
 end;
 
 function TGCMZDrops.Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
-var
-  hs: THandleDynArray;
 begin
-  hs := DisableFamilyWindows(FExEdit^.Hwnd);
-  try
-    Result := InputDialog.InputBox(FExEdit^.Hwnd, Caption, PluginName, Value);
-  finally
-    EnableFamilyWindows(hs);
-  end;
+  Result := InputDialog.InputBox(FExEdit^.Hwnd, Caption, PluginName, Value);
 end;
 
 function TGCMZDrops.Confirm(const Caption: UTF8String): boolean;
-var
-  hs: THandleDynArray;
 begin
-  hs := DisableFamilyWindows(FExEdit^.Hwnd);
-  try
-    Result := MessageBoxW(FExEdit^.Hwnd, PWideChar(WideString(Caption)),
-      PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idOk;
-  finally
-    EnableFamilyWindows(hs);
-  end;
+  Result := MessageBoxW(FExEdit^.Hwnd, PWideChar(WideString(Caption)),
+    PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idOk;
 end;
 
 initialization

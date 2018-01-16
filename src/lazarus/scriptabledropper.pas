@@ -189,7 +189,6 @@ procedure TScriptableDropper.Popup(L: Plua_state; const hWnd: THandle; const Pt:
 var
   I: integer;
   CPt: TPoint;
-  hs: THandleDynArray;
 begin
   CPt := Pt;
   ClientToScreen(hWnd, CPt);
@@ -208,14 +207,9 @@ begin
   lua_setfield(L, -2, 'y');
   lua_pushinteger(L, hWnd);
   lua_setfield(L, -2, 'parent');
-  hs := DisableFamilyWindows(hWnd);
-  try
-    if lua_pcall(L, 3, 2, 0) <> 0 then
-      raise Exception.Create('problem occurred executing selectdropper:'#13#10 +
-        UTF8String(ShiftJISString(lua_tostring(L, -1))));
-  finally
-    EnableFamilyWindows(hs);
-  end;
+  if lua_pcall(L, 3, 2, 0) <> 0 then
+    raise Exception.Create('problem occurred executing selectdropper:'#13#10 +
+      UTF8String(ShiftJISString(lua_tostring(L, -1))));
 end;
 
 initialization
