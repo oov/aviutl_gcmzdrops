@@ -17,10 +17,10 @@ type
   private
     FOnNotify: TPopupEvent;
     FTarget: THandle;
-    FHook: THandle;
+    FOriginalProc: WNDPROC;
     FPopupMenu: THandle;
     FMenuIndices: array of LONG;
-    function HookProc(nCode: integer; wp: WPARAM; lp: LPARAM): LRESULT;
+    function SubClassProc(Hwnd: HWND; Message: UINT; WP: WPARAM; LP: LPARAM): LRESULT;
     constructor Create();
   public
     destructor Destroy(); override;
@@ -39,35 +39,30 @@ implementation
 uses
   SysUtils, Util;
 
-function HookProcTrampoline(nCode: integer; wp: WPARAM; lp: LPARAM): LRESULT; stdcall;
+function SubClassProcTrampoline(Hwnd: HWND; Message: UINT; WP: WPARAM;
+  LP: LPARAM): LRESULT; stdcall;
 begin
-  Result := SCDropper.HookProc(nCode, wp, lp);
+  Result := SCDropper.SubClassProc(Hwnd, Message, WP, LP);
 end;
 
 { TScriptableDropper }
 
-function TScriptableDropper.HookProc(nCode: integer; wp: WPARAM; lp: LPARAM): LRESULT;
+function TScriptableDropper.SubClassProc(Hwnd: HWND; Message: UINT;
+  WP: WPARAM; LP: LPARAM): LRESULT;
 const
   MB_MBUTTONDOWN = $0207;
 var
-  Msg: PMSG absolute lp;
   Pt: TPoint;
 begin
-  if (nCode < 0) or (nCode <> HC_ACTION) or (Msg^.hwnd <> FTarget) then
-  begin
-    Result := CallNextHookEx(FHook, nCode, wp, lp);
-    Exit;
-  end;
-  case Msg^.message of
+  case Message of
     WM_RBUTTONDOWN:
     begin
-      if ((Msg^.wParam and MK_SHIFT) = MK_SHIFT) and
-        ((Msg^.wParam and MK_CONTROL) = MK_CONTROL) then
+      if ((WP and MK_SHIFT) = MK_SHIFT) and
+        ((WP and MK_CONTROL) = MK_CONTROL) then
       begin
         Result := 0;
-        Msg^.message := WM_NULL;
-        Pt.x := Msg^.lParam and $ffff;
-        Pt.y := (Msg^.lParam shr 16) and $ffff;
+        Pt.x := LP and $ffff;
+        Pt.y := (LP shr 16) and $ffff;
         FOnNotify(Self, Pt);
         Exit;
       end;
@@ -75,22 +70,21 @@ begin
     MB_MBUTTONDOWN:
     begin
       Result := 0;
-      Msg^.message := WM_NULL;
-      Pt.x := Msg^.lParam and $ffff;
-      Pt.y := (Msg^.lParam shr 16) and $ffff;
+      Pt.x := LP and $ffff;
+      Pt.y := (LP shr 16) and $ffff;
       FOnNotify(Self, Pt);
       Exit;
     end;
   end;
-  Result := CallNextHookEx(FHook, nCode, wp, lp);
+  Result := CallWindowProc(FOriginalProc, Hwnd, Message, WP, LP);
 end;
 
-constructor TScriptableDropper.Create;
+constructor TScriptableDropper.Create();
 begin
   inherited Create();
 end;
 
-destructor TScriptableDropper.Destroy;
+destructor TScriptableDropper.Destroy();
 begin
   UninstallHook();
   if FPopupMenu <> 0 then
@@ -100,18 +94,19 @@ end;
 
 function TScriptableDropper.InstallHook(const Handle: THandle): boolean;
 begin
+  FOriginalProc := WNDPROC(GetWindowLong(Handle, GWL_WNDPROC));
+  SetWindowLong(Handle, GWL_WNDPROC, LONG(@SubClassProcTrampoline));
   FTarget := Handle;
-  FHook := SetWindowsHookEx(WH_GETMESSAGE, @HookProcTrampoline, hInstance, 0);
-  Result := FHook <> 0;
+  Result := True;
 end;
 
-procedure TScriptableDropper.UninstallHook;
+procedure TScriptableDropper.UninstallHook();
 begin
-  if FHook = 0 then
+  if not Assigned(FOriginalProc) then
     Exit;
-  UnhookWindowsHookEx(FHook);
-  FHook := 0;
+  SetWindowLong(FTarget, GWL_WNDPROC, LONG(FOriginalProc));
   FTarget := 0;
+  FOriginalProc := nil;
 end;
 
 procedure TScriptableDropper.RecreateMenu(L: Plua_state);
