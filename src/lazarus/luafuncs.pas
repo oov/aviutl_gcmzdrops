@@ -818,6 +818,31 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaDoEvents(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  var
+    msgMin, msgMax: UINT;
+    M: TMsg;
+  begin
+    try
+      msgMin := lua_tointeger(L, -2);
+      msgMax := lua_tointeger(L, -1);
+      while PeekMessageW(M, 0, msgMin, msgMax, PM_REMOVE) do begin
+        TranslateMessage(M);
+        DispatchMessageW(M);
+      end;
+      Result := 0;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaSetFuncs(L: Plua_State): integer; cdecl;
 begin
   LuaIniRegisterMetaTable(L);
@@ -867,6 +892,8 @@ begin
   lua_setfield(L, -2, 'deleteonfinish');
   lua_pushcfunction(L, @LuaDeleteOnAbort);
   lua_setfield(L, -2, 'deleteonabort');
+  lua_pushcfunction(L, @LuaDoEvents);
+  lua_setfield(L, -2, 'doevents');
   lua_setglobal(L, 'GCMZDrops');
 
   Result := 0;
