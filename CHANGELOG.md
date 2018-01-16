@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.3beta2 2018-01-15
+## 0.3beta2 2018-01-16
 
 - ドロッパーシステム周辺の処理を改善
+- GCMZDrops.doevents を追加
 
 ## 0.3beta 2018-01-12
 

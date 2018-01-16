@@ -6,7 +6,7 @@ mkdir bin bin/GCMZDrops bin/GCMZDrops/dropper
 sed 's/\r$//' README.md | sed 's/$/\r/' > bin/README.txt
 
 # update version string
-VERSION='v0.3beta'
+VERSION='v0.3beta2'
 GITHASH=`git rev-parse --short HEAD`
 cat << EOS | sed 's/\r$//' | sed 's/$/\r/' > 'src/lazarus/ver.pas'
 unit Ver;
