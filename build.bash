@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir bin bin/GCMZDrops bin/GCMZDrops/dropper
+mkdir -p bin/GCMZDrops bin/GCMZDrops/dropper
 
 # copy readme
 sed 's/\r$//' README.md | sed 's/$/\r/' > bin/GCMZDrops.txt
@@ -36,7 +36,7 @@ sed 's/\r$//' 'src/lua/dropper/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/dro
 cmd.exe /c C:/lazarus/lazbuild.exe --build-all src/lazarus/GCMZDrops.lpi
 
 # install
-# mkdir aviutl/GCMZDrops aviutl/GCMZDrops/dropper
+# mkdir -p aviutl/GCMZDrops aviutl/GCMZDrops/dropper
 # cp bin/*.auf aviutl/
 # cp bin/GCMZDrops/* aviutl/GCMZDrops/
 # cp bin/GCMZDrops/dropper/* aviutl/GCMZDrops/dropper/
