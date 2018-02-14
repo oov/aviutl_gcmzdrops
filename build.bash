@@ -3,7 +3,7 @@
 mkdir bin bin/GCMZDrops bin/GCMZDrops/dropper
 
 # copy readme
-sed 's/\r$//' README.md | sed 's/$/\r/' > bin/README.txt
+sed 's/\r$//' README.md | sed 's/$/\r/' > bin/GCMZDrops.txt
 
 # update version string
 VERSION='v0.3beta2'
