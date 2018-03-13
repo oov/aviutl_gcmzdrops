@@ -432,6 +432,49 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaEncodeExoTextUTF8(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  const
+    Chars: array[0..15] of char =
+      ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
+  var
+    U8: UTF8String;
+    WS: WideString;
+    W: word;
+    S, D, Len: integer;
+  begin
+    try
+      U8 := lua_tostring(L, -1);
+      WS := WideString(U8);
+      lua_pop(L, 1);
+      SetLength(U8, 1024 * 4);
+      FillChar(U8[1], Length(U8), '0');
+      Len := Length(WS);
+      if Len > 1024 then
+        Len := 1024;
+      D := 1;
+      for S := 1 to Len do
+      begin
+        W := word(WS[S]);
+        U8[D + 0] := Chars[(W shr 4) and $0f];
+        U8[D + 1] := Chars[(W shr 0) and $0f];
+        U8[D + 2] := Chars[(W shr 12) and $0f];
+        U8[D + 3] := Chars[(W shr 8) and $0f];
+        Inc(D, 4);
+      end;
+      lua_pushlstring(L, @U8[1], Length(U8));
+      Result := 1;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaEncodeLuaString(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -872,6 +915,8 @@ begin
   lua_setfield(L, -2, 'getfileinfo');
   lua_pushcfunction(L, @LuaEncodeExoText);
   lua_setfield(L, -2, 'encodeexotext');
+  lua_pushcfunction(L, @LuaEncodeExoTextUTF8);
+  lua_setfield(L, -2, 'encodeexotextutf8');
   lua_pushcfunction(L, @LuaEncodeLuaString);
   lua_setfield(L, -2, 'encodeluastring');
   lua_pushcfunction(L, @LuaDetectEncoding);
