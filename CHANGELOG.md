@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3rc 2018-03-14
+
+- GCMZDrops.encodeexotextutf8 を追加
+
 ## 0.3beta3 2018-02-15
 
 - README.txt を GCMZDrops.txt にリネーム
