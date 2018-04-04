@@ -586,88 +586,6 @@ begin
   end;
 end;
 
-procedure TDropTarget.SetSniffer(AValue: TSniffer);
-begin
-  if FSniffer = AValue then
-    Exit;
-  if AValue = nil then
-    FSniffer := @DefaultSniffer
-  else
-    FSniffer := AValue;
-end;
-
-function TDropTarget.DefaultSniffer(const Stream: TStream): TSniffResult;
-var
-  PB: array[0..15] of byte;
-begin
-  if Stream.Size < 16 then
-  begin
-    Result := '';
-    Exit;
-  end;
-  Stream.ReadBuffer(PB, 16);
-
-  // https://mimesniff.spec.whatwg.org/#matching-a-mime-type-pattern
-  // TODO: implement video/mp4, video/webm, audio/mpeg matcher
-  if (PB[0] = Ord('G')) and (PB[1] = Ord('I')) and (PB[2] = Ord('F')) and
-    (PB[3] = Ord('8')) and (((PB[4] = Ord('7')) or (PB[4] = Ord('9')))) and
-    (PB[5] = Ord('a')) then
-    Result := 'gif'
-  else if (PB[0] = $ff) and (PB[1] = $d8) and (PB[2] = $ff) then
-    Result := '.jpg'
-  else if (PB[0] = $89) and (PB[1] = Ord('P')) and (PB[2] = Ord('N')) and
-    (PB[3] = Ord('G')) and (PB[4] = $0d) and (PB[5] = $0a) and
-    (PB[6] = $1a) and (PB[7] = $0a) then
-    Result := '.png'
-  else if (PB[0] = Ord('R')) and (PB[1] = Ord('I')) and (PB[2] = Ord('F')) and
-    (PB[3] = Ord('F')) and (PB[8] = Ord('W')) and (PB[9] = Ord('E')) and
-    (PB[10] = Ord('B')) and (PB[11] = Ord('P')) then
-    Result := '.webp'
-  else if (PB[0] = $00) and (PB[1] = $00) and (PB[2] = $01) and (PB[3] = $00) then
-    Result := '.ico'
-  else if (PB[0] = $00) and (PB[1] = $00) and (PB[2] = $02) and (PB[3] = $00) then
-    Result := '.cur'
-  else if (PB[0] = $42) and (PB[1] = $4d) then
-    Result := '.bmp'
-  else if (PB[0] = $2e) and (PB[1] = $73) and (PB[2] = $6e) and (PB[3] = $64) then
-    Result := '.snd'
-  else if (PB[0] = $46) and (PB[1] = $4f) and (PB[2] = $52) and
-    (PB[3] = $4d) and (PB[8] = $41) and (PB[9] = $49) and (PB[10] = $46) and
-    (PB[11] = $46) then
-    Result := '.aiff'
-  else if (PB[0] = $49) and (PB[1] = $44) and (PB[2] = $33) then
-    Result := '.mp3'
-  else if (PB[0] = $4f) and (PB[1] = $67) and (PB[2] = $67) and
-    (PB[3] = $53) and (PB[4] = $00) then
-    Result := '.ogg'
-  else if (PB[0] = $4d) and (PB[1] = $54) and (PB[2] = $68) and
-    (PB[3] = $64) and (PB[4] = $00) and (PB[5] = $00) and (PB[6] = $00) and
-    (PB[7] = $06) then
-    Result := '.mid'
-  else if (PB[0] = $52) and (PB[1] = $49) and (PB[2] = $46) and
-    (PB[3] = $46) and (PB[8] = $41) and (PB[9] = $56) and (PB[10] = $49) and
-    (PB[11] = $20) then
-    Result := '.avi'
-  else if (PB[0] = $52) and (PB[1] = $49) and (PB[2] = $46) and
-    (PB[3] = $46) and (PB[8] = $57) and (PB[9] = $41) and (PB[10] = $56) and
-    (PB[11] = $45) then
-    Result := '.wav'
-  else if (PB[0] = $25) and (PB[1] = $50) and (PB[2] = $44) and
-    (PB[3] = $46) and (PB[4] = $2D) then
-    Result := '.pdf'
-  else
-    Result := '';
-end;
-
-procedure TDropTarget.DefaultTextConverter(const Text: UTF8String;
-  out DF: TDraggingFile);
-begin
-  DF.Type_ := dftText;
-  DF.FilePathOrContent := Text;
-  DF.DeleteOnFinish := False;
-  DF.MediaType := 'text/plain; charset=UTF-8';
-end;
-
 function TryReadFromDataURIScheme(const Text: UTF8String; const Sniffer: TSniffer;
   var DraggingFiles: TDraggingFiles): boolean;
 var
@@ -791,11 +709,118 @@ begin
   end;
 end;
 
-function TDropTarget.DragEnter(const DataObject: IDataObject;
-  KeyState: DWORD; Point: TPoint; var Effect: DWORD): HResult; stdcall;
+procedure ReadDataObject(const DataObject: IDataObject; const Sniffer: TSniffer;
+  const TextConverter: TTextConverter; var DraggingFiles: TDraggingFiles);
 var
   I: integer;
   Text: UTF8String;
+begin
+  Text := ReadTextUTF8(DataObject);
+  if not TryReadFromDataURIScheme(Text, Sniffer, DraggingFiles) then
+    if not TryReadFromFileContents(DataObject, DraggingFiles) then
+      if not TryReadFromHDROP(DataObject, DraggingFiles) then
+      begin
+        I := Length(DraggingFiles);
+        SetLength(DraggingFiles, I + 1);
+        TextConverter(Text, DraggingFiles[I]);
+      end;
+end;
+
+function StandardSniffer(const Stream: TStream): TSniffResult;
+var
+  PB: array[0..15] of byte;
+begin
+  if Stream.Size < 16 then
+  begin
+    Result := '';
+    Exit;
+  end;
+  Stream.ReadBuffer(PB, 16);
+
+  // https://mimesniff.spec.whatwg.org/#matching-a-mime-type-pattern
+  // TODO: implement video/mp4, video/webm, audio/mpeg matcher
+  if (PB[0] = Ord('G')) and (PB[1] = Ord('I')) and (PB[2] = Ord('F')) and
+    (PB[3] = Ord('8')) and (((PB[4] = Ord('7')) or (PB[4] = Ord('9')))) and
+    (PB[5] = Ord('a')) then
+    Result := 'gif'
+  else if (PB[0] = $ff) and (PB[1] = $d8) and (PB[2] = $ff) then
+    Result := '.jpg'
+  else if (PB[0] = $89) and (PB[1] = Ord('P')) and (PB[2] = Ord('N')) and
+    (PB[3] = Ord('G')) and (PB[4] = $0d) and (PB[5] = $0a) and
+    (PB[6] = $1a) and (PB[7] = $0a) then
+    Result := '.png'
+  else if (PB[0] = Ord('R')) and (PB[1] = Ord('I')) and (PB[2] = Ord('F')) and
+    (PB[3] = Ord('F')) and (PB[8] = Ord('W')) and (PB[9] = Ord('E')) and
+    (PB[10] = Ord('B')) and (PB[11] = Ord('P')) then
+    Result := '.webp'
+  else if (PB[0] = $00) and (PB[1] = $00) and (PB[2] = $01) and (PB[3] = $00) then
+    Result := '.ico'
+  else if (PB[0] = $00) and (PB[1] = $00) and (PB[2] = $02) and (PB[3] = $00) then
+    Result := '.cur'
+  else if (PB[0] = $42) and (PB[1] = $4d) then
+    Result := '.bmp'
+  else if (PB[0] = $2e) and (PB[1] = $73) and (PB[2] = $6e) and (PB[3] = $64) then
+    Result := '.snd'
+  else if (PB[0] = $46) and (PB[1] = $4f) and (PB[2] = $52) and
+    (PB[3] = $4d) and (PB[8] = $41) and (PB[9] = $49) and (PB[10] = $46) and
+    (PB[11] = $46) then
+    Result := '.aiff'
+  else if (PB[0] = $49) and (PB[1] = $44) and (PB[2] = $33) then
+    Result := '.mp3'
+  else if (PB[0] = $4f) and (PB[1] = $67) and (PB[2] = $67) and
+    (PB[3] = $53) and (PB[4] = $00) then
+    Result := '.ogg'
+  else if (PB[0] = $4d) and (PB[1] = $54) and (PB[2] = $68) and
+    (PB[3] = $64) and (PB[4] = $00) and (PB[5] = $00) and (PB[6] = $00) and
+    (PB[7] = $06) then
+    Result := '.mid'
+  else if (PB[0] = $52) and (PB[1] = $49) and (PB[2] = $46) and
+    (PB[3] = $46) and (PB[8] = $41) and (PB[9] = $56) and (PB[10] = $49) and
+    (PB[11] = $20) then
+    Result := '.avi'
+  else if (PB[0] = $52) and (PB[1] = $49) and (PB[2] = $46) and
+    (PB[3] = $46) and (PB[8] = $57) and (PB[9] = $41) and (PB[10] = $56) and
+    (PB[11] = $45) then
+    Result := '.wav'
+  else if (PB[0] = $25) and (PB[1] = $50) and (PB[2] = $44) and
+    (PB[3] = $46) and (PB[4] = $2D) then
+    Result := '.pdf'
+  else
+    Result := '';
+end;
+
+procedure StandardTextConverter(const Text: UTF8String; out DF: TDraggingFile);
+begin
+  DF.Type_ := dftText;
+  DF.FilePathOrContent := Text;
+  DF.DeleteOnFinish := False;
+  DF.MediaType := 'text/plain; charset=UTF-8';
+end;
+
+procedure TDropTarget.SetSniffer(AValue: TSniffer);
+begin
+  if FSniffer = AValue then
+    Exit;
+  if AValue = nil then
+    FSniffer := @DefaultSniffer
+  else
+    FSniffer := AValue;
+end;
+
+function TDropTarget.DefaultSniffer(const Stream: TStream): TSniffResult;
+begin
+  Result := StandardSniffer(Stream);
+end;
+
+procedure TDropTarget.DefaultTextConverter(const Text: UTF8String;
+  out DF: TDraggingFile);
+begin
+  StandardTextConverter(Text, DF);
+end;
+
+function TDropTarget.DragEnter(const DataObject: IDataObject;
+  KeyState: DWORD; Point: TPoint; var Effect: DWORD): HResult; stdcall;
+var
   DDI: TDragDropInfo;
 begin
   Result := S_OK;
@@ -808,15 +833,7 @@ begin
 
   try
     Cleanup();
-    Text := ReadTextUTF8(DataObject);
-    if not TryReadFromDataURIScheme(Text, FSniffer, FDraggingFiles) then
-      if not TryReadFromFileContents(DataObject, FDraggingFiles) then
-        if not TryReadFromHDROP(DataObject, FDraggingFiles) then
-        begin
-          I := Length(FDraggingFiles);
-          SetLength(FDraggingFiles, I + 1);
-          FTextConverter(Text, FDraggingFiles[I]);
-        end;
+    ReadDataObject(DataObject, FSniffer, FTextConverter, FDraggingFiles);
     if Assigned(FOnDragEnter) then
     begin
       DDI.Point := Point;
@@ -872,8 +889,6 @@ end;
 function TDropTarget.Drop(const DataObject: IDataObject; KeyState: DWORD;
   Point: TPoint; var Effect: DWORD): HResult; stdcall;
 var
-  I: integer;
-  Text: UTF8String;
   DDI: TDragDropInfo;
 begin
   Result := S_OK;
@@ -887,15 +902,7 @@ begin
 
   try
     Cleanup();
-    Text := ReadTextUTF8(DataObject);
-    if not TryReadFromDataURIScheme(Text, FSniffer, FDraggingFiles) then
-      if not TryReadFromFileContents(DataObject, FDraggingFiles) then
-        if not TryReadFromHDROP(DataObject, FDraggingFiles) then
-        begin
-          I := Length(FDraggingFiles);
-          SetLength(FDraggingFiles, I + 1);
-          FTextConverter(Text, FDraggingFiles[I]);
-        end;
+    ReadDataObject(DataObject, FSniffer, FTextConverter, FDraggingFiles);
     if Assigned(FOnDrop) then
     begin
       DDI.Point := Point;
