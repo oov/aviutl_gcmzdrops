@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3rc2 2018-04-05
+
+- ドロッパーのメニューが正しく追加できないことがあったのを修正
+- GCMZDrops.getclipboard を追加
+- ドロッパー用スクリプトを追加
+- その他細かいバグ修正など
+
 ## 0.3rc 2018-03-14
 
 - GCMZDrops.encodeexotextutf8 を追加
