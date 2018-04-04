@@ -560,8 +560,6 @@ begin
   end
   else
     Result := 'noname';
-  if Mime = '' then
-    Mime := Sniffer(Stream);
   case Mime of
     'image/x-icon': Result := Result + '.ico';
     'image/vnd.microsoft.icon': Result := Result + '.ico';
@@ -582,7 +580,19 @@ begin
     'application/pdf': Result := Result + '.pdf';
     'text/plain': Result := Result + '.txt';
     else
-      Result := Result + '.bin';
+    begin
+      if Mime = '' then
+      begin
+        Mime := Sniffer(Stream);
+        if Mime <> '' then
+          Result := Result + Mime;
+      end
+      else
+        Mime := '';
+
+      if Mime = '' then
+        Result := Result + '.bin';
+    end;
   end;
 end;
 
@@ -742,7 +752,7 @@ begin
   if (PB[0] = Ord('G')) and (PB[1] = Ord('I')) and (PB[2] = Ord('F')) and
     (PB[3] = Ord('8')) and (((PB[4] = Ord('7')) or (PB[4] = Ord('9')))) and
     (PB[5] = Ord('a')) then
-    Result := 'gif'
+    Result := '.gif'
   else if (PB[0] = $ff) and (PB[1] = $d8) and (PB[2] = $ff) then
     Result := '.jpg'
   else if (PB[0] = $89) and (PB[1] = Ord('P')) and (PB[2] = Ord('N')) and
