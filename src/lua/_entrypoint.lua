@@ -104,6 +104,8 @@ function P.getdroppermenuitems()
     local m = d.oninitmenu()
     if type(m) == "table" then
       m.name = d.name
+    elseif m == nil then
+      m = false
     end
     table.insert(r, m)
   end

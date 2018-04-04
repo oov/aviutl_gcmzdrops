@@ -131,7 +131,7 @@ begin
   for I := 1 to N do
   begin
     lua_rawgeti(L, -1, I);
-    if lua_isnil(L, -1) then
+    if lua_isboolean(L, -1) then
     begin
       lua_pop(L, 1);
       continue;
