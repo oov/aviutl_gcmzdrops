@@ -13,7 +13,7 @@ function LuaSetFuncs(L: Plua_State): integer; cdecl;
 implementation
 
 uses
-  Windows, SysUtils, Classes, crc, AviUtl, Main, UsedFiles, LuaIni, Util;
+  Windows, SysUtils, Classes, crc, AviUtl, Main, UsedFiles, DropTarget, LuaObj, LuaIni, Util;
 
 function LuaReturn(L: Plua_State; const Ret: integer): integer;
 begin
@@ -821,6 +821,26 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaGetClipboard(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  var
+    Files: TFiles;
+  begin
+    try
+      Files := GCMZDrops.GetClipboard();
+      LuaPushFiles(L, Files);
+      Result := 1;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaDeleteOnFinish(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -933,6 +953,8 @@ begin
   lua_setfield(L, -2, 'inifile');
   lua_pushcfunction(L, @LuaDrop);
   lua_setfield(L, -2, 'drop');
+  lua_pushcfunction(L, @LuaGetClipboard);
+  lua_setfield(L, -2, 'getclipboard');
   lua_pushcfunction(L, @LuaDeleteOnFinish);
   lua_setfield(L, -2, 'deleteonfinish');
   lua_pushcfunction(L, @LuaDeleteOnAbort);

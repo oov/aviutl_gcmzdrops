@@ -45,7 +45,7 @@ type
     function ProjectSaveProc(Filter: PFilter; Edit: Pointer; Data: Pointer;
       var Size: integer): boolean;
 
-    procedure TextConvert(const Text: UTF8String; out DF: TDraggingFile);
+    procedure TextConvert(const Text: UTF8String; out DF: TFile);
     procedure OnDragEnter(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnDragOver(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnDragLeave(Sender: TObject);
@@ -71,6 +71,7 @@ type
       const FileName: UTF8String);
     function Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
     function Confirm(const Caption: UTF8String): boolean;
+    function GetClipboard(): TFiles;
   end;
 
 function GetFilterTableList(): PPFilterDLL; stdcall;
@@ -251,7 +252,7 @@ begin
         if not LuaLoaded() then
           raise Exception.Create('lua51.dll の読み込みに失敗しました。');
         DragAcceptFiles(FExEdit^.Hwnd, False);
-        OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTarget));
+        OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTargetIntf));
         SCDropper.InstallHook(FExEdit^.Hwnd);
       except
         on E: Exception do
@@ -352,7 +353,7 @@ begin
               begin
                 FreeAndNil(FLua);
                 FLua := TLua.Create();
-                if not FLua.CallDragEnter(PDDI^.DraggingFiles, PDDI^.Point,
+                if not FLua.CallDragEnter(PDDI^.Files, PDDI^.Point,
                   PDDI^.KeyState) then
                   raise EAbort.Create('canceled ondragenter');
                 PDDI^.Effect := DROPEFFECT_COPY;
@@ -361,7 +362,7 @@ begin
               begin
                 if Assigned(FLua) then
                 begin
-                  if not FLua.CallDragOver(PDDI^.DraggingFiles,
+                  if not FLua.CallDragOver(PDDI^.Files,
                     PDDI^.Point, PDDI^.KeyState) then
                     raise EAbort.Create('canceled ondragover');
                   PDDI^.Effect := DROPEFFECT_COPY;
@@ -380,7 +381,7 @@ begin
               begin
                 if Assigned(FLua) then
                 begin
-                  if not FLua.CallDrop(PDDI^.DraggingFiles, PDDI^.Point,
+                  if not FLua.CallDrop(PDDI^.Files, PDDI^.Point,
                     PDDI^.KeyState) then
                     raise EAbort.Create('canceled ondrop');
                   PDDI^.Effect := DROPEFFECT_COPY;
@@ -497,7 +498,7 @@ begin
   end;
 end;
 
-procedure TGCMZDrops.TextConvert(const Text: UTF8String; out DF: TDraggingFile);
+procedure TGCMZDrops.TextConvert(const Text: UTF8String; out DF: TFile);
 var
   TFS: TTempFileStream;
   SJIS: ShiftJISString;
@@ -506,7 +507,7 @@ begin
   try
     SJIS := ShiftJISString(Text);
     TFS.WriteBuffer(SJIS[1], Length(SJIS));
-    DF.Type_ := dftFile;
+    DF.Type_ := ftFile;
     DF.FilePathOrContent := TFS.FilePath;
     DF.DeleteOnFinish := True;
     DF.MediaType := 'text/plain; charset=Shift_JIS';
@@ -620,7 +621,7 @@ begin
   SendMessage(FWindow, FGCMZDropsMessageId, 100, {%H-}LPARAM(@Pt));
 end;
 
-function TGCMZDrops.GetMode: integer;
+function TGCMZDrops.GetMode(): integer;
 begin
   Result := SendMessageW(FSaveMode, CB_GETCURSEL, 0, 0);
 end;
@@ -652,7 +653,7 @@ begin
   Result := FExEdit^.Hwnd;
 end;
 
-function TGCMZDrops.GetSaveDir: UTF8String;
+function TGCMZDrops.GetSaveDir(): UTF8String;
 var
   WS: WideString;
 begin
@@ -661,7 +662,7 @@ begin
   Result := ExcludeTrailingPathDelimiter(UTF8String(PWideChar(WS)));
 end;
 
-constructor TGCMZDrops.Create;
+constructor TGCMZDrops.Create();
 begin
   inherited Create;
   FGCMZDropsMessageId := RegisterWindowMessage('GCMZDrops');
@@ -684,7 +685,7 @@ begin
   FDeleteOnAbortFileQueue := TStringList.Create;
 end;
 
-destructor TGCMZDrops.Destroy;
+destructor TGCMZDrops.Destroy();
 begin
   ProcessDeleteFileQueue(False);
   FDeleteOnFinishFileQueue.Free;
@@ -839,6 +840,19 @@ function TGCMZDrops.Confirm(const Caption: UTF8String): boolean;
 begin
   Result := MessageBoxW(FExEdit^.Hwnd, PWideChar(WideString(Caption)),
     PluginName, MB_ICONQUESTION or MB_OKCANCEL) = idOk;
+end;
+
+function TGCMZDrops.GetClipboard(): TFiles;
+var
+  CB: TClipboard;
+begin
+  CB := TClipboard.Create();
+  try
+    CB.TextConverter := @TextConvert;
+    Result := CB.Get();
+  finally
+    CB.Free;
+  end;
 end;
 
 initialization

@@ -9,20 +9,20 @@ uses
   Windows, ActiveX, ShlObj, Classes;
 
 type
-  TDraggingFileType = (dftFile, dftText);
+  TFileType = (ftFile, ftText);
 
-  TDraggingFile = record
-    Type_: TDraggingFileType;
+  TFile = record
+    Type_: TFileType;
     FilePathOrContent: UTF8String;
     DeleteOnFinish: boolean;
     MediaType: UTF8String;
   end;
-  TDraggingFiles = array of TDraggingFile;
+  TFiles = array of TFile;
 
   TDragDropInfo = record
     Point: TPoint;
     KeyState: DWORD;
-    DraggingFiles: TDraggingFiles;
+    Files: TFiles;
     Effect: DWORD;
   end;
   PDragDropInfo = ^TDragDropInfo;
@@ -32,23 +32,34 @@ type
   TSniffResult = UTF8String;
   TSniffer = function(const Stream: TStream): TSniffResult of object;
 
-  TTextConverter = procedure(const Text: UTF8String; out DF: TDraggingFile) of object;
+  TTextConverter = procedure(const Text: UTF8String; out DF: TFile) of object;
+
+  { TOleBase }
+
+  TOleBase = class(TInterfacedObject)
+  private
+    FSniffer: TSniffer;
+    FTextConverter: TTextConverter;
+    function DefaultSniffer(const Stream: TStream): TSniffResult;
+    procedure DefaultTextConverter(const Text: UTF8String; out DF: TFile);
+    procedure SetSniffer(AValue: TSniffer);
+    procedure SetTextConverter(AValue: TTextConverter);
+  public
+    constructor Create();
+    property Sniffer: TSniffer read FSniffer write SetSniffer;
+    property TextConverter: TTextConverter read FTextConverter write SetTextConverter;
+  end;
 
   { TDropTarget }
 
-  TDropTarget = class(TInterfacedObject, IDropTarget)
+  TDropTarget = class(TOleBase, IDropTarget)
   private
     FOnDragEnter: TDragDropEvent;
     FOnDragLeave: TNotifyEvent;
     FOnDragOver: TDragDropEvent;
     FOnDrop: TDragDropEvent;
-    FSniffer: TSniffer;
     FEffect: DWORD;
-    FDraggingFiles: TDraggingFiles;
-    FTextConverter: TTextConverter;
-    procedure SetSniffer(AValue: TSniffer);
-    function DefaultSniffer(const Stream: TStream): TSniffResult;
-    procedure DefaultTextConverter(const Text: UTF8String; out DF: TDraggingFile);
+    FDraggingFiles: TFiles;
     function DragEnter(const DataObject: IDataObject; KeyState: DWORD;
       Point: TPoint; var Effect: DWORD): HResult; stdcall;
     function DragOver(KeyState: DWORD; Point: TPoint; var Effect: DWORD): HResult;
@@ -57,7 +68,6 @@ type
     function Drop(const DataObject: IDataObject; KeyState: DWORD;
       Point: TPoint; var Effect: DWORD): HResult; stdcall;
     procedure Cleanup();
-    procedure SetTextConverter(AValue: TTextConverter);
   public
     constructor Create();
     destructor Destroy(); override;
@@ -65,8 +75,16 @@ type
     property OnDragOver: TDragDropEvent read FOnDragOver write FOnDragOver;
     property OnDragLeave: TNotifyEvent read FOnDragLeave write FOnDragLeave;
     property OnDrop: TDragDropEvent read FOnDrop write FOnDrop;
-    property Sniffer: TSniffer read FSniffer write SetSniffer;
-    property TextConverter: TTextConverter read FTextConverter write SetTextConverter;
+  end;
+
+  { TClipboard }
+
+  TClipboard = class(TOleBase)
+  private
+    FDraggingFiles: TFiles;
+    procedure Cleanup();
+  public
+    function Get(): TFiles;
   end;
 
   { TTempFileStream }
@@ -254,12 +272,12 @@ begin
   end;
 end;
 
-function ReadFileContents(const DataObject: IDataObject; const Index: integer): TStream;
+function ReadCustomFormat(const DataObject: IDataObject; const Format: word;
+  const Index: integer = -1): TStream;
 var
   StgMedium: TStgMedium;
 begin
-  if Failed(GetData(StgMedium, DataObject, RegisterClipboardFormat('FileContents'),
-    Index)) then
+  if Failed(GetData(StgMedium, DataObject, Format, Index)) then
   begin
     Result := nil;
     exit;
@@ -597,7 +615,7 @@ begin
 end;
 
 function TryReadFromDataURIScheme(const Text: UTF8String; const Sniffer: TSniffer;
-  var DraggingFiles: TDraggingFiles): boolean;
+  var DraggingFiles: TFiles): boolean;
 var
   MediaType: UTF8String;
   Stream: TStream;
@@ -620,7 +638,40 @@ begin
 
       I := Length(DraggingFiles);
       SetLength(DraggingFiles, I + 1);
-      DraggingFiles[I].Type_ := dftFile;
+      DraggingFiles[I].Type_ := ftFile;
+      DraggingFiles[I].FilePathOrContent := TFS.FilePath;
+      DraggingFiles[I].DeleteOnFinish := True;
+      DraggingFiles[I].MediaType := MediaType;
+      Result := True;
+    finally
+      TFS.Free;
+    end;
+  finally
+    Stream.Free;
+  end;
+end;
+
+function TryReadFromCustomFormat(const DataObject: IDataObject;
+  const Format: word; const MediaType, Ext: UTF8String;
+  var DraggingFiles: TFiles): boolean;
+var
+  Stream: TStream;
+  I: integer;
+  TFS: TTempFileStream;
+begin
+  Result := False;
+  Stream := ReadCustomFormat(DataObject, Format);
+  if not Assigned(Stream) then
+    Exit;
+  try
+    TFS := TTempFileStream.Create('clipboard' + Ext);
+    try
+      TFS.CopyFrom(Stream, 0);
+      TFS.Position := 0;
+
+      I := Length(DraggingFiles);
+      SetLength(DraggingFiles, I + 1);
+      DraggingFiles[I].Type_ := ftFile;
       DraggingFiles[I].FilePathOrContent := TFS.FilePath;
       DraggingFiles[I].DeleteOnFinish := True;
       DraggingFiles[I].MediaType := MediaType;
@@ -634,7 +685,7 @@ begin
 end;
 
 function TryReadFromFileContents(const DataObject: IDataObject;
-  var DraggingFiles: TDraggingFiles): boolean;
+  var DraggingFiles: TFiles): boolean;
 var
   FDWA: TFileDescriptorWArray;
   I, J: integer;
@@ -657,7 +708,8 @@ begin
       begin
         FileName := ExtractFileNameLikeString(
           Sanitize(UTF8String(PWideChar(@FDWA[I].cFileName[0])), '-'));
-        Stream := ReadFileContents(DataObject, I);
+        Stream := ReadCustomFormat(DataObject,
+          RegisterClipboardFormat('FileContents'), I);
         if not Assigned(Stream) then
         begin
           Result := False;
@@ -676,7 +728,7 @@ begin
 
             J := Length(DraggingFiles);
             SetLength(DraggingFiles, J + 1);
-            DraggingFiles[J].Type_ := dftFile;
+            DraggingFiles[J].Type_ := ftFile;
             DraggingFiles[J].FilePathOrContent := TFS.FilePath;
             DraggingFiles[J].DeleteOnFinish := True;
           finally
@@ -698,7 +750,7 @@ begin
 end;
 
 function TryReadFromHDROP(const DataObject: IDataObject;
-  var DraggingFiles: TDraggingFiles): boolean;
+  var DraggingFiles: TFiles): boolean;
 var
   FileNames: TFileNames;
   I, J: integer;
@@ -714,26 +766,96 @@ begin
   begin
     J := Length(DraggingFiles);
     SetLength(DraggingFiles, J + 1);
-    DraggingFiles[J].Type_ := dftFile;
+    DraggingFiles[J].Type_ := ftFile;
     DraggingFiles[J].FilePathOrContent := FileNames[I];
   end;
 end;
 
+function TryReadFromCFDIB(const DataObject: IDataObject;
+  var DraggingFiles: TFiles): boolean;
+var
+  Stream: TStream;
+  I: integer;
+  TFS: TTempFileStream;
+  BFH: TBitmapFileHeader;
+  BIH: TBitmapInfoHeader;
+begin
+  Result := False;
+  Stream := ReadCustomFormat(DataObject, CF_DIB);
+  if not Assigned(Stream) then
+    Exit;
+  try
+    Stream.Position := 0;
+    Stream.ReadBuffer(BIH, SizeOf(TBitmapInfoHeader));
+
+    TFS := TTempFileStream.Create('clipboard.bmp');
+    try
+      BFH.bfType := $4d42;
+      BFH.bfSize := SizeOf(TBitmapFileHeader) + Stream.Size;
+      BFH.bfReserved1 := 0;
+      BFH.bfReserved2 := 0;
+      BFH.bfOffBits := SizeOf(TBitmapFileHeader) + BIH.biSize;
+      case BIH.biBitCount of
+        1, 4, 8:
+        begin
+          if BIH.biClrUsed = 0 then
+            I := 1 shl BIH.biBitCount
+          else
+            I := BIH.biClrUsed;
+          Inc(BFH.bfOffBits, I * SizeOf(TRGBQuad));
+        end;
+        16, 24, 32:
+        begin
+          Inc(BFH.bfOffBits, BIH.biClrUsed * SizeOf(TRGBQuad));
+          if BIH.biCompression = BI_BITFIELDS then
+            Inc(BFH.bfOffBits, SizeOf(DWORD) * 3);
+        end;
+      end;
+      TFS.WriteBuffer(BFH, SizeOf(TBitmapFileHeader));
+      TFS.CopyFrom(Stream, 0);
+      TFS.Position := 0;
+
+      I := Length(DraggingFiles);
+      SetLength(DraggingFiles, I + 1);
+      DraggingFiles[I].Type_ := ftFile;
+      DraggingFiles[I].FilePathOrContent := TFS.FilePath;
+      DraggingFiles[I].DeleteOnFinish := True;
+      DraggingFiles[I].MediaType := 'image/bmp';
+      Result := True;
+    finally
+      TFS.Free;
+    end;
+  finally
+    Stream.Free;
+  end;
+end;
+
 procedure ReadDataObject(const DataObject: IDataObject; const Sniffer: TSniffer;
-  const TextConverter: TTextConverter; var DraggingFiles: TDraggingFiles);
+  const TextConverter: TTextConverter; var DraggingFiles: TFiles);
 var
   I: integer;
   Text: UTF8String;
 begin
   Text := ReadTextUTF8(DataObject);
-  if not TryReadFromDataURIScheme(Text, Sniffer, DraggingFiles) then
-    if not TryReadFromFileContents(DataObject, DraggingFiles) then
-      if not TryReadFromHDROP(DataObject, DraggingFiles) then
-      begin
-        I := Length(DraggingFiles);
-        SetLength(DraggingFiles, I + 1);
-        TextConverter(Text, DraggingFiles[I]);
-      end;
+  if TryReadFromDataURIScheme(Text, Sniffer, DraggingFiles) then
+    Exit;
+  if TryReadFromCustomFormat(DataObject, RegisterClipboardFormat('PNG'),
+    'image/png', '.png', DraggingFiles) then
+    Exit;
+  if TryReadFromCustomFormat(DataObject, RegisterClipboardFormat('JPEG'),
+    'image/jpeg', '.jpg', DraggingFiles) then
+    Exit;
+  if TryReadFromFileContents(DataObject, DraggingFiles) then
+    Exit;
+  if TryReadFromHDROP(DataObject, DraggingFiles) then
+    Exit;
+  if TryReadFromCFDIB(DataObject, DraggingFiles) then
+    Exit;
+  if Text = '' then
+    Exit;
+  I := Length(DraggingFiles);
+  SetLength(DraggingFiles, I + 1);
+  TextConverter(Text, DraggingFiles[I]);
 end;
 
 function StandardSniffer(const Stream: TStream): TSniffResult;
@@ -799,15 +921,27 @@ begin
     Result := '';
 end;
 
-procedure StandardTextConverter(const Text: UTF8String; out DF: TDraggingFile);
+procedure StandardTextConverter(const Text: UTF8String; out DF: TFile);
 begin
-  DF.Type_ := dftText;
+  DF.Type_ := ftText;
   DF.FilePathOrContent := Text;
   DF.DeleteOnFinish := False;
   DF.MediaType := 'text/plain; charset=UTF-8';
 end;
 
-procedure TDropTarget.SetSniffer(AValue: TSniffer);
+{ TOleBase }
+
+function TOleBase.DefaultSniffer(const Stream: TStream): TSniffResult;
+begin
+  Result := StandardSniffer(Stream);
+end;
+
+procedure TOleBase.DefaultTextConverter(const Text: UTF8String; out DF: TFile);
+begin
+  StandardTextConverter(Text, DF);
+end;
+
+procedure TOleBase.SetSniffer(AValue: TSniffer);
 begin
   if FSniffer = AValue then
     Exit;
@@ -817,15 +951,21 @@ begin
     FSniffer := AValue;
 end;
 
-function TDropTarget.DefaultSniffer(const Stream: TStream): TSniffResult;
+procedure TOleBase.SetTextConverter(AValue: TTextConverter);
 begin
-  Result := StandardSniffer(Stream);
+  if FTextConverter = AValue then
+    Exit;
+  if AValue = nil then
+    FTextConverter := @DefaultTextConverter
+  else
+    FTextConverter := AValue;
 end;
 
-procedure TDropTarget.DefaultTextConverter(const Text: UTF8String;
-  out DF: TDraggingFile);
+constructor TOleBase.Create();
 begin
-  StandardTextConverter(Text, DF);
+  inherited Create();
+  FSniffer := @DefaultSniffer;
+  FTextConverter := @DefaultTextConverter;
 end;
 
 function TDropTarget.DragEnter(const DataObject: IDataObject;
@@ -848,7 +988,7 @@ begin
     begin
       DDI.Point := Point;
       DDI.KeyState := KeyState;
-      DDI.DraggingFiles := FDraggingFiles;
+      DDI.Files := FDraggingFiles;
       DDI.Effect := FEffect;
       FOnDragEnter(Self, @DDI);
       FEffect := DDI.Effect;
@@ -876,7 +1016,7 @@ begin
     begin
       DDI.Point := Point;
       DDI.KeyState := KeyState;
-      DDI.DraggingFiles := FDraggingFiles;
+      DDI.Files := FDraggingFiles;
       DDI.Effect := FEffect;
       FOnDragOver(Self, @DDI);
       FEffect := DDI.Effect;
@@ -917,7 +1057,7 @@ begin
     begin
       DDI.Point := Point;
       DDI.KeyState := KeyState;
-      DDI.DraggingFiles := FDraggingFiles;
+      DDI.Files := FDraggingFiles;
       DDI.Effect := FEffect;
       FOnDrop(Self, @DDI);
       FEffect := DDI.Effect;
@@ -931,7 +1071,7 @@ begin
   end;
 end;
 
-procedure TDropTarget.Cleanup;
+procedure TDropTarget.Cleanup();
 var
   I: integer;
 begin
@@ -942,27 +1082,45 @@ begin
   SetLength(FDraggingFiles, 0);
 end;
 
-procedure TDropTarget.SetTextConverter(AValue: TTextConverter);
-begin
-  if FTextConverter = AValue then
-    Exit;
-  if AValue = nil then
-    FTextConverter := @DefaultTextConverter
-  else
-    FTextConverter := AValue;
-end;
-
-constructor TDropTarget.Create;
+constructor TDropTarget.Create();
 begin
   inherited Create;
-  FSniffer := @DefaultSniffer;
-  FTextConverter := @DefaultTextConverter;
 end;
 
-destructor TDropTarget.Destroy;
+destructor TDropTarget.Destroy();
 begin
   Cleanup();
   inherited Destroy;
+end;
+
+{ TClipboard }
+
+procedure TClipboard.Cleanup();
+var
+  I: integer;
+begin
+  for I := Low(FDraggingFiles) to High(FDraggingFiles) do
+    if (FDraggingFiles[I].FilePathOrContent <> '') and
+      FDraggingFiles[I].DeleteOnFinish then
+      AddUsedFile(FDraggingFiles[I].FilePathOrContent, False);
+  SetLength(FDraggingFiles, 0);
+end;
+
+function TClipboard.Get(): TFiles;
+var
+  DataObject: IDataObject;
+begin
+  if OleGetClipboard(DataObject) <> S_OK then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+  try
+    ReadDataObject(DataObject, FSniffer, FTextConverter, FDraggingFiles);
+    Result := FDraggingFiles;
+  finally
+    Cleanup();
+  end;
 end;
 
 end.

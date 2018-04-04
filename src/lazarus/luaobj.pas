@@ -14,21 +14,22 @@ type
   TLua = class
   private
     FState: Plua_state;
-    procedure PushDraggingFiles(const DraggingFiles: TDraggingFiles);
     procedure PushState(const Pt: TPoint; const KeyState: DWORD);
   public
     constructor Create();
     destructor Destroy(); override;
     procedure InitDropper();
-    function CallDragEnter(const DraggingFiles: TDraggingFiles;
-      const Pt: TPoint; const KeyState: DWORD): boolean;
-    function CallDragOver(const DraggingFiles: TDraggingFiles;
-      const Pt: TPoint; const KeyState: DWORD): boolean;
+    function CallDragEnter(const Files: TFiles; const Pt: TPoint;
+      const KeyState: DWORD): boolean;
+    function CallDragOver(const Files: TFiles; const Pt: TPoint;
+      const KeyState: DWORD): boolean;
     procedure CallDragLeave();
-    function CallDrop(const DraggingFiles: TDraggingFiles; const Pt: TPoint;
+    function CallDrop(const Files: TFiles; const Pt: TPoint;
       const KeyState: DWORD): boolean;
     property State: Plua_state read FState write FState;
   end;
+
+  procedure LuaPushFiles(const L: Plua_state; const Files: TFiles);
 
 implementation
 
@@ -50,37 +51,36 @@ begin
     Result := GetMem(nsize);
 end;
 
-{ TLua }
 
-procedure TLua.PushDraggingFiles(const DraggingFiles: TDraggingFiles);
+procedure LuaPushFiles(const L: Plua_state; const Files: TFiles);
 var
-  L: Plua_state;
   I: integer;
   SJIS: ShiftJISString;
 begin
-  L := FState;
   lua_newtable(L);
-  for I := Low(DraggingFiles) to High(DraggingFiles) do
+  for I := Low(Files) to High(Files) do
   begin
     lua_newtable(L);
-    case DraggingFiles[I].Type_ of
-      dftFile:
+    case Files[I].Type_ of
+      ftFile:
       begin
-        SJIS := DraggingFiles[I].FilePathOrContent;
+        SJIS := Files[I].FilePathOrContent;
         lua_pushlstring(L, @SJIS[1], Length(SJIS));
         lua_setfield(L, -2, 'filepath');
-        if DraggingFiles[I].MediaType <> '' then
+        if Files[I].MediaType <> '' then
         begin
-          SJIS := DraggingFiles[I].MediaType;
+          SJIS := Files[I].MediaType;
           lua_pushlstring(L, @SJIS[1], Length(SJIS));
           lua_setfield(L, -2, 'mediatype');
         end;
       end;
-      dftText: raise Exception.Create('dftText cannot use in GCMZDrops');
+      ftText: raise Exception.Create('dftText cannot use in GCMZDrops');
     end;
     lua_rawseti(L, -2, I + 1);
   end;
 end;
+
+{ TLua }
 
 procedure TLua.PushState(const Pt: TPoint; const KeyState: DWORD);
 const
@@ -225,14 +225,14 @@ begin
       UTF8String(ShiftJISString(lua_tostring(L, -1))));
 end;
 
-function TLua.CallDragEnter(const DraggingFiles: TDraggingFiles;
-  const Pt: TPoint; const KeyState: DWORD): boolean;
+function TLua.CallDragEnter(const Files: TFiles; const Pt: TPoint;
+  const KeyState: DWORD): boolean;
 var
   L: Plua_state;
 begin
   L := FState;
   lua_getfield(L, 1, 'ondragenter');
-  PushDraggingFiles(DraggingFiles);
+  LuaPushFiles(L, Files);
   PushState(Pt, KeyState);
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondragenter:'#13#10 +
@@ -241,14 +241,14 @@ begin
   lua_pop(L, 1);
 end;
 
-function TLua.CallDragOver(const DraggingFiles: TDraggingFiles;
-  const Pt: TPoint; const KeyState: DWORD): boolean;
+function TLua.CallDragOver(const Files: TFiles; const Pt: TPoint;
+  const KeyState: DWORD): boolean;
 var
   L: Plua_state;
 begin
   L := FState;
   lua_getfield(L, 1, 'ondragover');
-  PushDraggingFiles(DraggingFiles);
+  LuaPushFiles(L, Files);
   PushState(Pt, KeyState);
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondragover:'#13#10 +
@@ -268,14 +268,14 @@ begin
       UTF8String(ShiftJISString(lua_tostring(L, -1))));
 end;
 
-function TLua.CallDrop(const DraggingFiles: TDraggingFiles; const Pt: TPoint;
+function TLua.CallDrop(const Files: TFiles; const Pt: TPoint;
   const KeyState: DWORD): boolean;
 var
   L: Plua_state;
 begin
   L := FState;
   lua_getfield(L, 1, 'ondrop');
-  PushDraggingFiles(DraggingFiles);
+  LuaPushFiles(L, Files);
   PushState(Pt, KeyState);
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondrop:'#13#10 +

@@ -8,7 +8,7 @@ interface
 uses
   Windows;
 
-procedure AddUsedFile(const FilePath: UTF8String);
+procedure AddUsedFile(const FilePath: UTF8String; const TryDelete: boolean = True);
 procedure CleanupUsedFile();
 
 implementation
@@ -42,9 +42,9 @@ begin
   Result := False;
 end;
 
-procedure AddUsedFile(const FilePath: UTF8String);
+procedure AddUsedFile(const FilePath: UTF8String; const TryDelete: boolean);
 begin
-  if not Delete(FilePath) then
+  if (not TryDelete) or (not Delete(FilePath)) then
     Files.Add(FilePath);
 end;
 
