@@ -30,6 +30,7 @@ sed 's/\r$//' 'src/lua/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/example.lua
 sed 's/\r$//' 'src/lua/generic.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/generic.lua'
 sed 's/\r$//' 'src/lua/textsjis.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/textsjis.lua'
 sed 's/\r$//' 'src/lua/avoiddup.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/avoiddup.lua'
+sed 's/\r$//' 'src/lua/wmvmask.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/wmvmask.lua'
 sed 's/\r$//' 'src/lua/dropper/example.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/dropper/example.lua'
 sed 's/\r$//' 'src/lua/dropper/clipboard.lua' | sed 's/$/\r/' > 'bin/GCMZDrops/dropper/clipboard.lua'
 
