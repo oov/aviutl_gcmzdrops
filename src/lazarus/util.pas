@@ -26,6 +26,7 @@ type
   end;
 
 procedure ODS(const Fmt: string; const Args: array of const);
+function Token(const Delimiter: WideString; var S: WideString): WideString;
 
 function DisableFamilyWindows(const Exclude: THandle): THandleDynArray;
 procedure EnableFamilyWindows(const Handles: THandleDynArray);
@@ -51,6 +52,23 @@ uses
 procedure ODS(const Fmt: string; const Args: array of const);
 begin
   OutputDebugStringW(PWideChar(WideString(Format('GCMZDrops: ' + Fmt, Args))));
+end;
+
+function Token(const Delimiter: WideString; var S: WideString): WideString;
+var
+  P: integer;
+begin
+  P := Pos(Delimiter, S);
+  if P = 0 then
+  begin
+    Result := S;
+    S := '';
+  end
+  else
+  begin
+    Result := Copy(S, 1, P - 1);
+    Delete(S, 1, P + Length(Delimiter) - 1);
+  end;
 end;
 
 type

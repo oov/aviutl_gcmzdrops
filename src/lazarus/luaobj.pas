@@ -26,6 +26,8 @@ type
     procedure CallDragLeave();
     function CallDrop(const Files: TFiles; const Pt: TPoint;
       const KeyState: DWORD): boolean;
+    function CallDropSimulated(const Files: TFiles; const Pt: TPoint;
+      const KeyState: DWORD): boolean;
     property State: Plua_state read FState write FState;
   end;
 
@@ -279,6 +281,22 @@ begin
   PushState(Pt, KeyState);
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondrop:'#13#10 +
+      UTF8String(ShiftJISString(lua_tostring(L, -1))));
+  Result := lua_toboolean(L, -1);
+  lua_pop(L, 1);
+end;
+
+function TLua.CallDropSimulated(const Files: TFiles; const Pt: TPoint;
+  const KeyState: DWORD): boolean;
+var
+  L: Plua_state;
+begin
+  L := FState;
+  lua_getfield(L, 1, 'ondropsimulated');
+  LuaPushFiles(L, Files);
+  PushState(Pt, KeyState);
+  if lua_pcall(L, 2, 1, 0) <> 0 then
+    raise Exception.Create('problem occurred executing ondropsimulated:'#13#10 +
       UTF8String(ShiftJISString(lua_tostring(L, -1))));
   Result := lua_toboolean(L, -1);
   lua_pop(L, 1);

@@ -20,8 +20,8 @@ type
     FCurrentEditP: Pointer;
     FDropTarget: TDropTarget;
     FDropTargetIntf: IDropTarget;
-    FLua, FSCDropperLua: TLua;
-    FWindow, FFont: THandle;
+    FLua, FAPILua, FSCDropperLua: TLua;
+    FWindow, FFont, FFMO: THandle;
     FFontHeight: integer;
     FSavePathEdit, FSaveMode, FFolderSelectButton, FRevertChangeButton: THandle;
     FKnownFolders: array of UTF8String;
@@ -51,6 +51,13 @@ type
     procedure OnDragLeave(Sender: TObject);
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
+
+    procedure GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const
+      LayerHeight: PInteger; const CursorPos: PPoint);
+    function GetZoomLevel: integer;
+    procedure SetZoomLevel(const Level: integer);
+    function GetCursorPos: TPoint;
+    function ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
   public
     constructor Create();
     destructor Destroy(); override;
@@ -59,6 +66,8 @@ type
     property Mode: integer read GetMode write SetMode;
     property ExEditWindow: THandle read GetExEditWindow;
     property ExEditLayerHeight: integer read GetExEditLayerHeight;
+    property ZoomLevel: integer read GetZoomLevel write SetZoomLevel;
+    property CursorPos: TPoint read GetCursorPos;
     function NeedCopy(FilePath: UTF8String): boolean;
     function ExistsInGCMZDir(FilePath: UTF8String): boolean;
     function GetSavePath(): UTF8String;
@@ -93,6 +102,18 @@ const
 
 const
   BoolConv: array[boolean] of AviUtlBool = (AVIUTL_FALSE, AVIUTL_TRUE);
+
+const
+  ZoomActiveRed = 96;
+  ZoomLeft = 5;
+  ZoomTop = 32;
+  ZoomMax = 26;
+  TimelineLeft = 64;
+  TimeLineHeaderTop = 13;
+  TimeLineTop = 48;
+  LayerLeft = 0;
+  LayerTop = 42;
+  LayerMax = 31;
 
 var
   FilterDLLList: array of PFilterDLL;
@@ -140,6 +161,7 @@ const
   // '字幕アシスト'
 var
   Label1, Label2: THandle;
+  P: PHandle;
   Y, Height: integer;
   NCM: TNonClientMetrics;
   DC: THandle;
@@ -153,6 +175,18 @@ begin
     WM_FILTER_INIT:
     begin
       FWindow := Window;
+
+      if FFMO <> 0 then begin
+        P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
+        if P = nil then
+          ODS('MapViewOfFile failed', [])
+        else begin
+          P^ := Window;
+          if not UnmapViewOfFile(P) then
+            ODS('UnmapViewOfFile failed', []);
+        end;
+      end;
+
       if Filter^.ExFunc^.GetSysInfo(Edit, @sinfo) <> AVIUTL_FALSE then
       begin
         for Y := 0 to sinfo.FilterN - 1 do
@@ -327,6 +361,7 @@ begin
       end;
       Result := 0;
     end;
+    WM_COPYDATA: Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
     WM_FILTER_EXIT:
     begin
       DeleteObject(FFont);
@@ -388,6 +423,13 @@ begin
                   FreeAndNil(FLua);
                 end;
                 ProcessDeleteFileQueue(False);
+              end;
+              10:
+              begin
+                FAPILua := TLua.Create();
+                if not FAPILua.CallDropSimulated(PDDI^.Files, PDDI^.Point, PDDI^.KeyState) then
+                  raise EAbort.Create('canceled ondropsimulated');
+                FreeAndNil(FAPILua);
               end;
               100:
               begin
@@ -621,6 +663,185 @@ begin
   SendMessage(FWindow, FGCMZDropsMessageId, 100, {%H-}LPARAM(@Pt));
 end;
 
+procedure TGCMZDrops.GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const LayerHeight: PInteger; const CursorPos: PPoint);
+var
+  LineBytes, I, J: integer;
+  hExEditDC, hDesktop, hDesktopDC, hDC, hBitmap, hOldBitmap: THandle;
+  Rect: TRect;
+  BI: TBitmapInfo;
+  P, PP: PByte;
+  TLR, TLG, TLB: Byte;
+begin
+  if not IsWindowVisible(FExEdit^.Hwnd) then
+    raise Exception.Create('ExEdit Window is currently invisible');
+  if not GetClientRect(FExEdit^.Hwnd, Rect) then
+    raise Exception.Create('GetWindowRect failed');
+
+  hExEditDC := GetDC(FExEdit^.Hwnd);
+  if hExEditDC = 0 then
+    raise Exception.Create('GetDC failed');
+  try
+    hDesktop := GetDesktopWindow();
+    hDesktopDC := GetDC(hDesktop);
+    if hDesktopDC = 0 then
+      raise Exception.Create('GetDC failed');
+    try
+      hDC := CreateCompatibleDC(hDesktopDC);
+      if hDC = 0 then
+        raise Exception.Create('CreateCompatibleDC failed');
+      try
+        FillChar(BI, SizeOf(TBitmapInfo), 0);
+        BI.bmiHeader.biSize := SizeOf(TBitmapInfoHeader);
+        BI.bmiHeader.biWidth := Rect.Width;
+        BI.bmiHeader.biHeight := -72;
+        BI.bmiHeader.biPlanes := 1;
+        BI.bmiHeader.biBitCount := 24;
+        BI.bmiHeader.biCompression := BI_RGB;
+        hBitmap := CreateDIBSection(hDC, BI, DIB_RGB_COLORS, P, 0, 0);
+        if hBitmap = 0 then
+          raise Exception.Create('CreateDIBSection failed');
+        try
+          hOldBitmap := SelectObject(hDC, hBitmap);
+          if hOldBitmap = 0 then
+            raise Exception.Create('SelectObject failed');
+          try
+            if not BitBlt(hDC, 0, 0, Rect.Width, 72, hExEditDC, 0, 0, SRCCOPY) then
+              raise Exception.Create('BitBlt failed');
+
+            LineBytes := (Rect.Width * 3 + 3) and (not 3);
+            if ZoomLevel <> nil then begin
+              J := 0;
+              PP := P + ZoomTop * LineBytes + ZoomLeft * 3;
+              for I := 0 to ZoomMax - 1 do begin
+                if (PP + 2)^ = ZoomActiveRed then
+                  Inc(J)
+                else
+                  break;
+                Inc(PP, 2 * 3);
+              end;
+              ZoomLevel^ := J;
+            end;
+
+            if LayerHeight <> nil then begin
+              J := 1;
+              PP := P + LayerTop * LineBytes + LayerLeft * 3;
+              TLR := (PP + 2)^;
+              TLG := (PP + 1)^;
+              TLB := (PP + 0)^;
+              for I := 0 to LayerMax - 1 do begin
+                if ((PP + 0)^ <> TLB)or((PP + 1)^ <> TLG)or((PP + 2)^ <> TLR) then
+                  break;
+                Inc(J);
+                Inc(PP, LineBytes);
+              end;
+              LayerHeight^ := J;
+            end;
+
+            if CursorPos <> nil then begin
+              CursorPos^ := Point(-1, -1);
+              PP := P + TimeLineHeaderTop * LineBytes + TimelineLeft * 3;
+              TLR := (PP - 1)^;
+              TLG := 255 - (PP - 2)^;
+              TLB := 255 - (PP - 3)^;
+              // If the background color is not same to the end line color(#a0a0a0)...
+              if (TLR <> 160)or(TLG <> 255 - 160)or(TLB <> 255 - 160) then
+                for I := 0 to Rect.Width - TimelineLeft - 1 do begin
+                  if (((PP + 0)^ = TLB)and((PP + 1)^ = TLG)and((PP + 2)^ = TLR))
+                    or(((PP + 0)^ = 255 - 160)and((PP + 1)^ = 255 - 160)and((PP + 2)^ = 160)) then begin
+                    CursorPos^ := Point(TimelineLeft + I, TimeLineTop);
+                    break;
+                  end;
+                  Inc(PP, 3);
+                end
+              else
+                for I := 0 to Rect.Width - TimelineLeft - 1 do begin
+                  if ((PP + 0)^ = TLB)and((PP + 1)^ = TLG)and((PP + 2)^ = TLR) then begin
+                    CursorPos^ := Point(TimelineLeft + I, TimeLineTop);
+                    break;
+                  end;
+                  Inc(PP, 3);
+                end;
+            end;
+          finally
+            SelectObject(hDC, hOldBitmap);
+          end;
+        finally
+          DeleteObject(hBitmap);
+        end;
+      finally
+        DeleteDC(hDC);
+      end;
+    finally
+      ReleaseDC(hDesktop, hDesktopDC);
+    end;
+  finally
+    ReleaseDC(FExEdit^.Hwnd, hExEditDC);
+  end;
+end;
+
+function TGCMZDrops.GetZoomLevel: integer;
+begin
+  GetZoomLevelAndCursorPos(@Result, nil, nil);
+end;
+
+procedure TGCMZDrops.SetZoomLevel(const Level: integer);
+var
+  lp: LPARAM;
+begin
+  lp := MAKELONG(ZoomLeft + Level * 2 - 2, ZoomTop);
+  SendMessage(FExEdit^.Hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lp);
+  SendMessage(FExEdit^.Hwnd, WM_LBUTTONUP, MK_LBUTTON, lp);
+end;
+
+function TGCMZDrops.GetCursorPos: TPoint;
+var
+  Z: integer;
+begin
+  GetZoomLevelAndCursorPos(@Z, nil, @Result);
+  if (Result.x = -1)or(Result.y = -1) then begin
+    SetZoomLevel(0);
+    SetZoomLevel(Z);
+    GetZoomLevelAndCursorPos(nil, nil, @Result);
+  end;
+  if (Result.x <> -1)or(Result.y <> -1) then begin
+    if not ClientToScreen(FExEdit^.Hwnd, Result) then
+      raise Exception.Create('ClientToScreen failed');
+  end;
+end;
+
+function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
+  ): LRESULT;
+var
+  WS, S: WideString;
+  I: integer;
+  DDI: TDragDropInfo;
+begin
+  case CDS^.dwData of
+    0:
+    begin
+      DDI.KeyState := 0;
+      DDI.Point := CursorPos;
+      SetLength(WS, CDS^.cbData div 2);
+      Move(CDS^.lpData^, WS[1], CDS^.cbData);
+      SetLength(DDI.Files, 0);
+      I := 0;
+      while WS <> '' do begin
+        S := Token(#0, WS);
+        if S = '' then
+          continue;
+        SetLength(DDI.Files, I + 1);
+        DDI.Files[I].DeleteOnFinish := False;
+        DDI.Files[I].Type_ := ftFile;
+        DDI.Files[I].MediaType := '';
+        DDI.Files[I].FilePathOrContent := UTF8String(S);
+        Inc(I);
+      end;
+      SendMessage(FWindow, FGCMZDropsMessageId, 10, {%H-}LPARAM(@DDI));
+    end;
+  end;
+  Result := 1;
+end;
+
 function TGCMZDrops.GetMode: integer;
 begin
   Result := SendMessageW(FSaveMode, CB_GETCURSEL, 0, 0);
@@ -633,6 +854,10 @@ end;
 
 function TGCMZDrops.GetExEditLayerHeight: integer;
 begin
+  GetZoomLevelAndCursorPos(nil, @Result, nil);
+  if (Result = 31)or(Result = 26)or(Result = 22) then
+    Exit;
+
   Result := 31;
   if not Assigned(FExEdit) then
     Exit;
@@ -683,10 +908,19 @@ begin
 
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
+
+  FFMO := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, SizeOf(THandle), 'GCMZDrops');
+  if (FFMO <> 0)and(GetLastError() = ERROR_ALREADY_EXISTS) then begin
+    ODS('FileMappingObject "GCMZDrops" already exists.', []);
+    CloseHandle(FFMO);
+    FFMO := 0;
+  end;
 end;
 
 destructor TGCMZDrops.Destroy();
 begin
+  if FFMO <> 0 then
+    CloseHandle(FFMO);
   ProcessDeleteFileQueue(False);
   FDeleteOnFinishFileQueue.Free;
   FDeleteOnAbortFileQueue.Free;
