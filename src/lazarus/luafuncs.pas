@@ -841,63 +841,6 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
-function LuaGetZoomLevel(L: Plua_State): integer; cdecl;
-
-  function Main(): integer;
-  begin
-    try
-      lua_pushinteger(L, GCMZDrops.ZoomLevel);
-      Result := 1;
-    except
-      on E: Exception do
-        Result := LuaPushError(L, E);
-    end;
-  end;
-
-begin
-  Result := LuaReturn(L, Main());
-end;
-
-function LuaSetZoomLevel(L: Plua_State): integer; cdecl;
-
-  function Main(): integer;
-  begin
-    try
-      GCMZDrops.ZoomLevel := Max(0, Min(26, lua_tointeger(L, -1)));
-      Result := 0;
-    except
-      on E: Exception do
-        Result := LuaPushError(L, E);
-    end;
-  end;
-
-begin
-  Result := LuaReturn(L, Main());
-end;
-
-function LuaGetCursorPos(L: Plua_State): integer; cdecl;
-
-  function Main(): integer;
-  var
-    Pt: TPoint;
-  begin
-    try
-      Pt := GCMZDrops.CursorPos;
-      if (Pt.x = -1)and(Pt.y = -1) then
-        raise Exception.Create('failed to get cursor position');
-      lua_pushinteger(L, Pt.x);
-      lua_pushinteger(L, Pt.y);
-      Result := 2;
-    except
-      on E: Exception do
-        Result := LuaPushError(L, E);
-    end;
-  end;
-
-begin
-  Result := LuaReturn(L, Main());
-end;
-
 function LuaDeleteOnFinish(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -1012,12 +955,6 @@ begin
   lua_setfield(L, -2, 'drop');
   lua_pushcfunction(L, @LuaGetClipboard);
   lua_setfield(L, -2, 'getclipboard');
-  lua_pushcfunction(L, @LuaGetZoomLevel);
-  lua_setfield(L, -2, 'getzoomlevel');
-  lua_pushcfunction(L, @LuaSetZoomLevel);
-  lua_setfield(L, -2, 'setzoomlevel');
-  lua_pushcfunction(L, @LuaGetCursorPos);
-  lua_setfield(L, -2, 'getcursorpos');
   lua_pushcfunction(L, @LuaDeleteOnFinish);
   lua_setfield(L, -2, 'deleteonfinish');
   lua_pushcfunction(L, @LuaDeleteOnAbort);
