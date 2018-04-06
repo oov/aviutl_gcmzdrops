@@ -30,9 +30,9 @@ type
     function GetEntry: PFilterDLL;
     function GetExEditLayerHeight: integer;
     function GetExEditWindow: THandle;
-    function GetMode(): integer;
+    function GetMode: integer;
     procedure SetMode(AValue: integer);
-    function GetSaveDir(): UTF8String;
+    function GetSaveDir: UTF8String;
     procedure SetSaveDir(AValue: UTF8String);
 
     procedure ProcessDeleteFileQueue(const Error: boolean);
@@ -621,7 +621,7 @@ begin
   SendMessage(FWindow, FGCMZDropsMessageId, 100, {%H-}LPARAM(@Pt));
 end;
 
-function TGCMZDrops.GetMode(): integer;
+function TGCMZDrops.GetMode: integer;
 begin
   Result := SendMessageW(FSaveMode, CB_GETCURSEL, 0, 0);
 end;
@@ -653,7 +653,7 @@ begin
   Result := FExEdit^.Hwnd;
 end;
 
-function TGCMZDrops.GetSaveDir(): UTF8String;
+function TGCMZDrops.GetSaveDir: UTF8String;
 var
   WS: WideString;
 begin
