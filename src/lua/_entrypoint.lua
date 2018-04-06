@@ -82,6 +82,19 @@ function P.ondrop(files, state)
   return false
 end
 
+function P.ondropsimulated(files, state)
+  if not P.ondragenter(files, state) then
+    return false
+  end
+  if not P.ondragover(files, state) then
+    return false
+  end
+  if not P.ondrop(files, state) then
+    return false
+  end
+  return true
+end
+
 P.droppers = {}
 
 function P.initdropper(droppers)
@@ -129,16 +142,7 @@ function P.selectdropper(dropperindex, menuindex, state)
   if (not rstate.lbutton)and(not rstate.mbutton)and(not rstate.rbutton) then
     rstate.lbutton = true
   end
-  if not P.ondragenter(files, rstate) then
-    return false
-  end
-  if not P.ondragover(files, rstate) then
-    return false
-  end
-  if not P.ondrop(files, rstate) then
-    return false
-  end
-  return true
+  return P.ondropsimulated(files, rstate)
 end
 
 return P
