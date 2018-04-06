@@ -56,7 +56,7 @@ type
       LayerHeight: PInteger; const CursorPos: PPoint);
     function GetZoomLevel: integer;
     procedure SetZoomLevel(const Level: integer);
-    function GetCursorPos: TPoint;
+    function GetCursorPos(const OldZoom: PInteger): TPoint;
     function ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
   public
     constructor Create();
@@ -67,7 +67,6 @@ type
     property ExEditWindow: THandle read GetExEditWindow;
     property ExEditLayerHeight: integer read GetExEditLayerHeight;
     property ZoomLevel: integer read GetZoomLevel write SetZoomLevel;
-    property CursorPos: TPoint read GetCursorPos;
     function NeedCopy(FilePath: UTF8String): boolean;
     function ExistsInGCMZDir(FilePath: UTF8String): boolean;
     function GetSavePath(): UTF8String;
@@ -793,34 +792,39 @@ begin
   SendMessage(FExEdit^.Hwnd, WM_LBUTTONUP, MK_LBUTTON, lp);
 end;
 
-function TGCMZDrops.GetCursorPos: TPoint;
+function TGCMZDrops.GetCursorPos(const OldZoom: PInteger): TPoint;
+const
+  MinZoomLevel = 19;
 var
   Z: integer;
 begin
   GetZoomLevelAndCursorPos(@Z, nil, @Result);
-  if (Result.x = -1)or(Result.y = -1) then begin
+  if (Result.x = -1)and(Result.y = -1) then
     SetZoomLevel(0);
-    SetZoomLevel(Z);
+  if ((Result.x = -1)and(Result.y = -1))or(Z < MinZoomLevel) then begin
+    SetZoomLevel(Max(MinZoomLevel, Z));
     GetZoomLevelAndCursorPos(nil, nil, @Result);
   end;
-  if (Result.x <> -1)or(Result.y <> -1) then begin
+  if (Result.x <> -1)and(Result.y <> -1) then begin
     if not ClientToScreen(FExEdit^.Hwnd, Result) then
       raise Exception.Create('ClientToScreen failed');
   end;
+  if OldZoom <> nil then
+    OldZoom^ := Z;
 end;
 
 function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
   ): LRESULT;
 var
   WS, S: WideString;
-  I: integer;
+  I, OldZoom: integer;
   DDI: TDragDropInfo;
 begin
   case CDS^.dwData of
     0:
     begin
       DDI.KeyState := 0;
-      DDI.Point := CursorPos;
+      DDI.Point := GetCursorPos(@OldZoom);
       SetLength(WS, CDS^.cbData div 2);
       Move(CDS^.lpData^, WS[1], CDS^.cbData);
       SetLength(DDI.Files, 0);
@@ -837,6 +841,7 @@ begin
         Inc(I);
       end;
       SendMessage(FWindow, FGCMZDropsMessageId, 10, {%H-}LPARAM(@DDI));
+      SetZoomLevel(OldZoom);
     end;
   end;
   Result := 1;
