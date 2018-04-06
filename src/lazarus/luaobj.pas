@@ -74,7 +74,7 @@ begin
           lua_setfield(L, -2, 'mediatype');
         end;
       end;
-      ftText: raise Exception.Create('dftText cannot use in GCMZDrops');
+      ftText: raise Exception.Create('ftText cannot use in GCMZDrops');
     end;
     lua_rawseti(L, -2, I + 1);
   end;
