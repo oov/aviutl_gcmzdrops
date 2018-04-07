@@ -70,9 +70,18 @@ const
   ADD_MENU_ITEM_FLAG_KEY_SHIFT = 1;
   ADD_MENU_ITEM_FLAG_KEY_CTRL = 2;
   ADD_MENU_ITEM_FLAG_KEY_ALT = 4;
+  EDIT_OUTPUT_FLAG_NO_DIALOG = 2;
+  EDIT_OUTPUT_FLAG_WAV = 4;
+
+
+  FOURCC_YC48 = $38344359;
 
 type
   AviUtlBool = integer;
+  TPixelYC = record
+    Y,Cb,Cr: SmallInt;
+  end;
+  PPixelYC = ^TPixelYC;
 
   PFilter = ^TFilter;
   PFilterProcInfo = ^TFilterProcInfo;
@@ -99,33 +108,44 @@ type
   TProjectSaveFunc = function(fp: PFilter; edit: Pointer; Data: Pointer;
     var size: integer): AviUtlBool; cdecl;
 
+  TIsEditingFunc = function(edit: Pointer): AviUtlBool; cdecl;
+  TIsSavingFunc = function(edit: Pointer): AviUtlBool; cdecl;
   TGetFrameFunc = function(edit: Pointer): integer; cdecl;
   TGetFrameNFunc = function(edit: Pointer): integer; cdecl;
+  TSetFrame = function(edit: Pointer; n: integer): integer; cdecl;
+  TSetFrameN = function(edit: Pointer; n: integer): integer; cdecl;
   TGetSysInfo = function(edit: Pointer; sip: PSysInfo): AviUtlBool; cdecl;
   TGetFileInfoFunc = function(edit: Pointer; fip: PFileInfo): AviUtlBool; cdecl;
   TAviFileOpenFunc = function(filename: PChar; fip: PFileInfo; Flag: integer): Pointer; cdecl;
   TAviFileCloseFunc = procedure(h: Pointer); cdecl;
   TAVIFileSetAudioSampleRateFunc = function(h: Pointer; rate: integer; ch: integer): integer; cdecl;
+  TGetSelectFrame = function(edit: Pointer; out s: integer; out e: integer): AviUtlBool; cdecl;
   TGetAudioFilteredFunc = function(edit: Pointer; N: integer;
     Buf: Pointer): integer; cdecl;
+  TGetAudioFilteringFunc = function(fp: PFilter; edit: Pointer; N: integer; Buf: Pointer): integer; cdecl;
+  TGetPixelFilteredExFunc = function(edit: Pointer; N: integer; pixel: Pointer; w: PInteger; h: PInteger; format: DWORD): AviUtlBool; cdecl;
+  TSetYCPFilteringCacheSizeFunc = function(fp: PFilter; W: integer; H: integer; D: integer; Flag: integer): AviUtlBool; cdecl;
+  TGetYCPFilteringCacheExFunc = function(fp: PFilter; edit: Pointer; N: integer; w: PInteger; h: PInteger): PPixelYC; cdecl;
   TGetFilterPFunc = function(filterId: integer): PFilter; cdecl;
   TIniLoadIntFunc = function(fp: PFilter; key: PChar; default: integer): integer; cdecl;
   TIniLoadStrFunc = function(fp: PFilter; key: PChar; str: PChar; default: PChar): AviUtlBool; cdecl;
   TAddMenuItemFunc = function(fp: PFilter; Name: PChar; h: THandle;
     id: integer; def_key: integer; flag: integer): integer; cdecl;
+  TEditOutputFunc = function(edit: Pointer; FileName: PChar; Flag: integer; Typ: PChar): AviUtlBool; cdecl;
+  TDrawTextFunc = procedure(ycp: Pointer; x: integer; y: integer; text: PChar; r: integer; g: integer; b: integer; tr: integer; font: THandle; w: PInteger; h: PInteger); cdecl;
 
   TExFunc = record
     GetYCPOfs: Pointer;
     GetYCP: Pointer;
     GetPixelP: Pointer;
     GetAudio: Pointer;
-    IsEditing: Pointer;
-    IsSaving: Pointer;
+    IsEditing: TIsEditingFunc;
+    IsSaving: TIsSavingFunc;
     GetFrame: TGetFrameFunc;
     GetFrameN: TGetFrameNFunc;
     GetFrameSize: Pointer;
-    SetFrame: Pointer;
-    SetFrameN: Pointer;
+    SetFrame: TSetFrame;
+    SetFrameN: TSetFrameN;
     CopyFrame: Pointer;
     CopyVideo: Pointer;
     CopyAudio: Pointer;
@@ -143,7 +163,7 @@ type
     IsFilterActive: Pointer;
     GetPixelFiltered: Pointer;
     GetAudioFiltered: TGetAudioFilteredFunc;
-    GetSelectFrame: Pointer;
+    GetSelectFrame: TGetSelectFrame;
     SetSelectFrame: Pointer;
     RGB2YC: Pointer;
     YC2RGB: Pointer;
@@ -158,21 +178,21 @@ type
     GetSysInfo: TGetSysInfo;
     GetFilterP: TGetFilterPFunc;
     GetYCPFiltering: Pointer;
-    GetAudioFiltering: Pointer;
-    SetYCPFilteringCacheSize: Pointer;
+    GetAudioFiltering: TGetAudioFilteringFunc;
+    SetYCPFilteringCacheSize: TSetYCPFilteringCacheSizeFunc;
     GetYCPFilteringCache: Pointer;
     GetYCPSourceCache: Pointer;
     GetDispPixelP: Pointer;
     GetPixelSource: Pointer;
-    GetPixelFilteredEx: Pointer;
-    GetYCPFilteringCacheEx: Pointer;
+    GetPixelFilteredEx: TGetPixelFilteredExFunc;
+    GetYCPFilteringCacheEx: TGetYCPFilteringCacheExFunc;
     ExecMultiThreadFunc: Pointer;
     CreateYC: Pointer;
     DeleteYC: Pointer;
     LoadImage: Pointer;
     ResizeYC: Pointer;
     CopyYC: Pointer;
-    DrawText: Pointer;
+    DrawText: TDrawTextFunc;
     AVIFileOpen: TAviFileOpenFunc;
     AVIFileClose: TAviFileCloseFunc;
     AVIFileReadVideo: Pointer;
@@ -186,7 +206,7 @@ type
     AddMenuItem: TAddMenuItemFunc;
     EditOpen: Pointer;
     EditClose: Pointer;
-    EditOutput: Pointer;
+    EditOutput: TEditOutputFunc;
     SetConfig: Pointer;
     Reserved: array[0..6] of integer;
   end;
@@ -360,6 +380,52 @@ type
   PFilterDLL = ^TFilterDLL;
   PPFilterDLL = ^PFilterDLL;
 
+  TGetVideoFunc = function(frame: integer): Pointer; cdecl;
+  TGetAudioFunc = function(start: integer; length: integer; readed: PInteger): Pointer; cdecl;
+  TIsAbortFunc = function(): AviUtlBool; cdecl;
+  TRestTimeDispFunc = function(now: integer; total: integer): AviUtlBool; cdecl;
+  TUpdatePreviewFunc = function(): AviUtlBool; cdecl;
+  TGetVideoExFunc = function(frame: integer; format: DWORD): Pointer; cdecl;
+  TOutputInfo = record
+    Flag: integer;
+    W, H: integer;
+    Rate, Scale: integer;
+    N: integer;
+    Size: integer;
+    AudioRate: integer;
+    AudioChannel: integer;
+    AudioN: integer;
+    AudioSize: integer;
+    SaveFile: PChar;
+    GetVideo: TGetVideoFunc;
+    GetAudio: TGetAudioFunc;
+    IsAbort: TIsAbortFunc;
+    RestTimeDisp: TRestTimeDispFunc;
+    GetFlag: Pointer;
+    UpdatePreview: TUpdatePreviewFunc;
+    GetVideoEx: TGetVideoExFunc;
+  end;
+  POutputInfo = ^TOutputInfo;
+
+  TOutputInitFunc = function(): AviUtlBool; cdecl;
+  TOutputExitFunc = function(): AviUtlBool; cdecl;
+  TOutputFunc = function(OI: POutputInfo): AviUtlBool; cdecl;
+  TOutputPluginTable = record
+    Flag: integer;
+    Name: PChar;
+    FileFilter: PChar;
+    Information: PChar;
+    FuncInit: TOutputInitFunc;
+    FuncExit: TOutputExitFunc;
+    FuncOutput: TOutputFunc;
+    FuncConfig: Pointer;
+    FuncConfigSet: Pointer;
+    FuncConfigGet: Pointer;
+    Reserved: array[0..15] of integer;
+  end;
+  POutputPluginTable = ^TOutputPluginTable;
+
 implementation
 
 end.
+
