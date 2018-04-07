@@ -51,6 +51,7 @@ type
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 
+    procedure UpdateMappedData();
     function CmdAdvanceFrame(const N: integer): integer;
 
     procedure GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const
@@ -123,6 +124,14 @@ const
 var
   FilterDLLList: array of PFilterDLL;
 
+type
+  TMappedData = record
+    Window: HWND;
+    Width, Height, VideoRate, VideoScale: integer;
+    AudioRate, AudioCh: integer;
+  end;
+  PMappedData = ^TMappedData;
+
 function GetFilterTableList(): PPFilterDLL; stdcall;
 begin
   Result := @FilterDLLList[0];
@@ -166,7 +175,6 @@ const
   // '字幕アシスト'
 var
   Label1, Label2: THandle;
-  P: PHandle;
   Y, Height: integer;
   NCM: TNonClientMetrics;
   DC: THandle;
@@ -180,17 +188,6 @@ begin
     WM_FILTER_INIT:
     begin
       FWindow := Window;
-
-      if FFMO <> 0 then begin
-        P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
-        if P = nil then
-          ODS('MapViewOfFile failed', [])
-        else begin
-          P^ := Window;
-          if not UnmapViewOfFile(P) then
-            ODS('UnmapViewOfFile failed', []);
-        end;
-      end;
 
       if Filter^.ExFunc^.GetSysInfo(Edit, @sinfo) <> AVIUTL_FALSE then
       begin
@@ -293,6 +290,7 @@ begin
         DragAcceptFiles(FExEdit^.Hwnd, False);
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTargetIntf));
         SCDropper.InstallHook(FExEdit^.Hwnd);
+        UpdateMappedData();
       except
         on E: Exception do
         begin
@@ -319,11 +317,13 @@ begin
     end;
     WM_FILTER_FILE_OPEN:
     begin
+      UpdateMappedData();
       Mode := 0;
       SaveDir := DefaultSaveDir;
     end;
     WM_FILTER_FILE_CLOSE:
     begin
+      UpdateMappedData();
       Mode := 0;
       SaveDir := DefaultSaveDir;
     end;
@@ -678,6 +678,43 @@ begin
   SendMessage(FWindow, WM_GCMZDROP, 100, {%H-}LPARAM(@Pt));
 end;
 
+procedure TGCMZDrops.UpdateMappedData();
+var
+  P: PMappedData;
+  FI: TFileInfo;
+begin
+  if FFMO = 0 then
+    Exit;
+  P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
+  if P = nil then
+    ODS('MapViewOfFile failed', []);
+  try
+    P^.Window := FWindow;
+    P^.Width := 0;
+    P^.Height := 0;
+    P^.VideoRate := 0;
+    P^.VideoScale := 0;
+    P^.AudioRate := 0;
+    P^.AudioCh := 0;
+
+    FillChar(FI, SizeOf(FI), 0);
+    if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
+      Exit;
+    if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
+      Exit;
+
+    P^.Width := FI.Width;
+    P^.Height := FI.Height;
+    P^.VideoRate := FI.VideoRate;
+    P^.VideoScale := FI.VideoScale;
+    P^.AudioRate := FI.AudioRate;
+    P^.AudioCh := FI.AudioCh;
+  finally
+    if not UnmapViewOfFile(P) then
+      ODS('UnmapViewOfFile failed', []);
+  end;
+end;
+
 function TGCMZDrops.CmdAdvanceFrame(const N: integer): integer;
 var
   F, Len, S, E: integer;
@@ -1028,7 +1065,7 @@ begin
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
 
-  FFMO := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, SizeOf(THandle), 'GCMZDrops');
+  FFMO := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, SizeOf(TMappedData), 'GCMZDrops');
   if (FFMO <> 0)and(GetLastError() = ERROR_ALREADY_EXISTS) then begin
     ODS('FileMappingObject "GCMZDrops" already exists.', []);
     CloseHandle(FFMO);
