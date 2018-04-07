@@ -51,6 +51,8 @@ type
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 
+    function CmdAdvanceFrame(const N: integer): integer;
+
     procedure GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const
       LayerHeight: PInteger; const CursorPos: PPoint);
     function GetZoomLevel: integer;
@@ -80,6 +82,7 @@ type
     function Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
     function Confirm(const Caption: UTF8String): boolean;
     function GetClipboard(): TFiles;
+    procedure AdvanceFrame(const N: integer);
   end;
 
 function GetFilterTableList(): PPFilterDLL; stdcall;
@@ -104,6 +107,7 @@ const
 
 const
   WM_GCMZDROP = WM_APP + 1;
+  WM_GCMZCOMMAND = WM_APP + 2;
 
   ZoomActiveRed = 96;
   ZoomLeft = 5;
@@ -473,6 +477,13 @@ begin
       end;
       Result := 0;
     end;
+    WM_GCMZCOMMAND: begin
+      FCurrentFilterP := Filter;
+      FCurrentEditP := Edit;
+      case WP of
+        0: Result := CmdAdvanceFrame(integer(LP));
+      end;
+    end;
     else
       Result := 0;
   end;
@@ -661,6 +672,24 @@ end;
 procedure TGCMZDrops.OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 begin
   SendMessage(FWindow, WM_GCMZDROP, 100, {%H-}LPARAM(@Pt));
+end;
+
+function TGCMZDrops.CmdAdvanceFrame(const N: integer): integer;
+var
+  F, Len, S, E: integer;
+begin
+  F := FCurrentFilterP^.ExFunc^.GetFrame(FCurrentEditP);
+  Len := FCurrentFilterP^.ExFunc^.GetFrameN(FCurrentEditP);
+  Inc(F, N);
+  if F + N >= Len then begin
+    FCurrentFilterP^.ExFunc^.SetFrameN(FCurrentEditP, F + N + 1);
+    if FCurrentFilterP^.ExFunc^.GetSelectFrame(FCurrentEditP, S, E) = AVIUTL_TRUE then begin
+      if E = Len - 1 then
+        FCurrentFilterP^.ExFunc^.SetSelectFrame(FCurrentEditP, S, F + N);
+    end;
+  end;
+  FCurrentFilterP^.ExFunc^.SetFrame(FCurrentEditP, F + N);
+  Result := 1;
 end;
 
 procedure TGCMZDrops.GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const LayerHeight: PInteger; const CursorPos: PPoint);
@@ -1147,6 +1176,11 @@ begin
   finally
     CB.Free;
   end;
+end;
+
+procedure TGCMZDrops.AdvanceFrame(const N: integer);
+begin
+  SendMessage(FWindow, WM_GCMZCOMMAND, 0, LPARAM(N));
 end;
 
 initialization

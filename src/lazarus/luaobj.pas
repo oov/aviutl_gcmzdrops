@@ -108,6 +108,8 @@ begin
   lua_setfield(L, -2, 'mbutton');
   lua_pushboolean(L, (KeyState and MK_RBUTTON) = MK_RBUTTON);
   lua_setfield(L, -2, 'rbutton');
+  lua_pushinteger(L, 0);
+  lua_setfield(L, -2, 'frameadvance');
 end;
 
 constructor TLua.Create;

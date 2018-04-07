@@ -120,6 +120,7 @@ type
   TAviFileCloseFunc = procedure(h: Pointer); cdecl;
   TAVIFileSetAudioSampleRateFunc = function(h: Pointer; rate: integer; ch: integer): integer; cdecl;
   TGetSelectFrame = function(edit: Pointer; out s: integer; out e: integer): AviUtlBool; cdecl;
+  TSetSelectFrame = function(edit: Pointer; s: integer; e: integer): AviUtlBool; cdecl;
   TGetAudioFilteredFunc = function(edit: Pointer; N: integer;
     Buf: Pointer): integer; cdecl;
   TGetAudioFilteringFunc = function(fp: PFilter; edit: Pointer; N: integer; Buf: Pointer): integer; cdecl;
@@ -164,7 +165,7 @@ type
     GetPixelFiltered: Pointer;
     GetAudioFiltered: TGetAudioFilteredFunc;
     GetSelectFrame: TGetSelectFrame;
-    SetSelectFrame: Pointer;
+    SetSelectFrame: TSetSelectFrame;
     RGB2YC: Pointer;
     YC2RGB: Pointer;
     DlgGetLoadName: Pointer;

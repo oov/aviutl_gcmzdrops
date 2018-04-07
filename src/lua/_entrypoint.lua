@@ -139,6 +139,7 @@ function P.selectdropper(dropperindex, menuindex, state)
   rstate.lbutton = rstate.lbutton or false
   rstate.mbutton = rstate.mbutton or false
   rstate.rbutton = rstate.rbutton or false
+  rstate.frameadvance = rstate.frameadvance or 0
   if (not rstate.lbutton)and(not rstate.mbutton)and(not rstate.rbutton) then
     rstate.lbutton = true
   end

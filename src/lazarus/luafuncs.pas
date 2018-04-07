@@ -804,6 +804,14 @@ function LuaDrop(L: Plua_State): integer; cdecl;
         lua_pop(L, 1);
         Inc(pt.y, LayerHeight);
       end;
+
+      // increment current frame
+      lua_getfield(L, -1, 'frameadvance');
+      I := lua_tointeger(L, -1);
+      lua_pop(L, 1);
+      if I <> 0 then
+        GCMZDrops.AdvanceFrame(I);
+
       Result := 1;
       lua_pushboolean(L, True);
     except
