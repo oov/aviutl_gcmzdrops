@@ -51,7 +51,7 @@ type
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 
-    procedure UpdateMappedData();
+    procedure UpdateMappedData(const ReadFileInfo: boolean);
     function CmdAdvanceFrame(const N: integer): integer;
 
     procedure GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const
@@ -292,7 +292,7 @@ begin
         DragAcceptFiles(FExEdit^.Hwnd, False);
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTargetIntf));
         SCDropper.InstallHook(FExEdit^.Hwnd);
-        UpdateMappedData();
+        UpdateMappedData(False);
       except
         on E: Exception do
         begin
@@ -319,13 +319,13 @@ begin
     end;
     WM_FILTER_FILE_OPEN:
     begin
-      UpdateMappedData();
+      UpdateMappedData(True);
       Mode := 0;
       SaveDir := DefaultSaveDir;
     end;
     WM_FILTER_FILE_CLOSE:
     begin
-      UpdateMappedData();
+      UpdateMappedData(False);
       Mode := 0;
       SaveDir := DefaultSaveDir;
     end;
@@ -672,7 +672,7 @@ begin
   SendMessage(FWindow, WM_GCMZDROP, 100, {%H-}LPARAM(@Pt));
 end;
 
-procedure TGCMZDrops.UpdateMappedData();
+procedure TGCMZDrops.UpdateMappedData(const ReadFileInfo: boolean);
 var
   P: PMappedData;
   FI: TFileInfo;
@@ -691,18 +691,20 @@ begin
     P^.AudioRate := 0;
     P^.AudioCh := 0;
 
-    FillChar(FI, SizeOf(FI), 0);
-    if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
-      Exit;
-    if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
-      Exit;
+    if ReadFileInfo then begin
+      FillChar(FI, SizeOf(FI), 0);
+      if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
+        Exit;
+      if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
+        Exit;
 
-    P^.Width := FI.Width;
-    P^.Height := FI.Height;
-    P^.VideoRate := FI.VideoRate;
-    P^.VideoScale := FI.VideoScale;
-    P^.AudioRate := FI.AudioRate;
-    P^.AudioCh := FI.AudioCh;
+      P^.Width := FI.Width;
+      P^.Height := FI.Height;
+      P^.VideoRate := FI.VideoRate;
+      P^.VideoScale := FI.VideoScale;
+      P^.AudioRate := FI.AudioRate;
+      P^.AudioCh := FI.AudioCh;
+    end;
   finally
     if not UnmapViewOfFile(P) then
       ODS('UnmapViewOfFile failed', []);
