@@ -56,7 +56,8 @@ type
       LayerHeight: PInteger; const CursorPos: PPoint);
     function GetZoomLevel: integer;
     procedure SetZoomLevel(const Level: integer);
-    function GetCursorPos(const OldZoom: PInteger): TPoint;
+    function GetCursorPos(const OldZoom, LayerHeight: PInteger): TPoint;
+    procedure GetScrollBars(const HScroll, VScroll: PHandle);
     function ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
   public
     constructor Create();
@@ -792,13 +793,13 @@ begin
   SendMessage(FExEdit^.Hwnd, WM_LBUTTONUP, MK_LBUTTON, lp);
 end;
 
-function TGCMZDrops.GetCursorPos(const OldZoom: PInteger): TPoint;
+function TGCMZDrops.GetCursorPos(const OldZoom, LayerHeight: PInteger): TPoint;
 const
   MinZoomLevel = 19;
 var
   Z: integer;
 begin
-  GetZoomLevelAndCursorPos(@Z, nil, @Result);
+  GetZoomLevelAndCursorPos(@Z, LayerHeight, @Result);
   if (Result.x = -1)and(Result.y = -1) then
     SetZoomLevel(0);
   if ((Result.x = -1)and(Result.y = -1))or(Z < MinZoomLevel) then begin
@@ -813,21 +814,75 @@ begin
     OldZoom^ := Z;
 end;
 
+procedure TGCMZDrops.GetScrollBars(const HScroll, VScroll: PHandle);
+const
+  ID_SCROLLBAR = 1004;
+var
+  h, hV, hH: THandle;
+begin
+  hV := 0;
+  hH := 0;
+  h := 0;
+  while (hV = 0)or(hH = 0) do
+  begin
+    h := FindWindowExW(FExEdit^.Hwnd, h, 'ScrollBar', nil);
+    if h = 0 then
+      Exit;
+    if GetWindowLong(h, GWL_ID) <> ID_SCROLLBAR then
+      continue;
+    if GetWindowLong(h, GWL_STYLE) and SBS_VERT <> SBS_VERT then
+      hH := h
+    else
+      hV := h;
+  end;
+  if HScroll <> nil then
+    HScroll^ := hH;
+  if VScroll <> nil then
+    VScroll^ := hV;
+end;
+
 function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
   ): LRESULT;
 var
+  VScrollBar: THandle;
   WS, S: WideString;
-  I, OldZoom: integer;
+  I, LayerPos, LayerHeight, OldZoom: integer;
+  SI: TScrollInfo;
   DDI: TDragDropInfo;
 begin
   case CDS^.dwData of
     0:
     begin
+      GetScrollBars(nil, @VScrollBar);
+      SI.cbSize := SizeOf(TScrollInfo);
+      SI.fMask := SIF_POS;
+      if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
+        raise Exception.Create('GetScrollInfo failed');
+
       DDI.KeyState := 0;
-      DDI.Point := GetCursorPos(@OldZoom);
+      DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
+      SetLength(DDI.Files, 0);
+
       SetLength(WS, CDS^.cbData div 2);
       Move(CDS^.lpData^, WS[1], CDS^.cbData);
-      SetLength(DDI.Files, 0);
+      LayerPos := StrToIntDef(string(Token(#0, WS)), 0);
+      case LayerPos of
+        -100..-1: begin // relative
+          LayerPos := LayerPos * - 1 - 1;
+          Inc(DDI.Point.y, LayerPos*LayerHeight);
+        end;
+        1..100: begin // absolute
+          Dec(LayerPos);
+          if SI.nPos > LayerPos then begin
+            SI.nPos := LayerPos;
+            SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
+            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
+            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
+          end;
+          Inc(DDI.Point.y, (LayerPos - SI.nPos)*LayerHeight);
+        end;
+      end;
+
       I := 0;
       while WS <> '' do begin
         S := Token(#0, WS);
@@ -842,9 +897,10 @@ begin
       end;
       SendMessage(FWindow, FGCMZDropsMessageId, 10, {%H-}LPARAM(@DDI));
       SetZoomLevel(OldZoom);
+      Result := 1;
     end;
+    else Result := 0;
   end;
-  Result := 1;
 end;
 
 function TGCMZDrops.GetMode: integer;
