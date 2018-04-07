@@ -14,7 +14,6 @@ type
 
   TGCMZDrops = class
   private
-    FGCMZDropsMessageId: UINT;
     FEntry: TFilterDLL;
     FExEdit, FCurrentFilterP: PFilter;
     FCurrentEditP: Pointer;
@@ -104,6 +103,8 @@ const
   BoolConv: array[boolean] of AviUtlBool = (AVIUTL_FALSE, AVIUTL_TRUE);
 
 const
+  WM_GCMZDROP = WM_APP + 1;
+
   ZoomActiveRed = 96;
   ZoomLeft = 5;
   ZoomTop = 32;
@@ -372,109 +373,106 @@ begin
         DragAcceptFiles(FExEdit^.Hwnd, True);
         SCDropper.UninstallHook();
       end;
-    end
-    else
+    end;
+    WM_GCMZDROP:
     begin
-      if Message = FGCMZDropsMessageId then
-      begin
-        PDDI := {%H-}PDragDropInfo(LP);
-        FCurrentFilterP := Filter;
-        FCurrentEditP := Edit;
-        hs := DisableFamilyWindows(0);
+      PDDI := {%H-}PDragDropInfo(LP);
+      FCurrentFilterP := Filter;
+      FCurrentEditP := Edit;
+      hs := DisableFamilyWindows(0);
+      try
         try
-          try
-            case WP of
-              0:
+          case WP of
+            0:
+            begin
+              FreeAndNil(FLua);
+              FLua := TLua.Create();
+              if not FLua.CallDragEnter(PDDI^.Files, PDDI^.Point,
+                PDDI^.KeyState) then
+                raise EAbort.Create('canceled ondragenter');
+              PDDI^.Effect := DROPEFFECT_COPY;
+            end;
+            1:
+            begin
+              if Assigned(FLua) then
               begin
-                FreeAndNil(FLua);
-                FLua := TLua.Create();
-                if not FLua.CallDragEnter(PDDI^.Files, PDDI^.Point,
-                  PDDI^.KeyState) then
-                  raise EAbort.Create('canceled ondragenter');
+                if not FLua.CallDragOver(PDDI^.Files,
+                  PDDI^.Point, PDDI^.KeyState) then
+                  raise EAbort.Create('canceled ondragover');
                 PDDI^.Effect := DROPEFFECT_COPY;
               end;
-              1:
+            end;
+            2:
+            begin
+              if Assigned(FLua) then
               begin
-                if Assigned(FLua) then
-                begin
-                  if not FLua.CallDragOver(PDDI^.Files,
-                    PDDI^.Point, PDDI^.KeyState) then
-                    raise EAbort.Create('canceled ondragover');
-                  PDDI^.Effect := DROPEFFECT_COPY;
-                end;
+                FLua.CallDragLeave();
+                FreeAndNil(FLua);
               end;
-              2:
+              ProcessDeleteFileQueue(True);
+            end;
+            3:
+            begin
+              if Assigned(FLua) then
               begin
-                if Assigned(FLua) then
-                begin
-                  FLua.CallDragLeave();
-                  FreeAndNil(FLua);
-                end;
-                ProcessDeleteFileQueue(True);
+                if not FLua.CallDrop(PDDI^.Files, PDDI^.Point,
+                  PDDI^.KeyState) then
+                  raise EAbort.Create('canceled ondrop');
+                PDDI^.Effect := DROPEFFECT_COPY;
+                FreeAndNil(FLua);
               end;
-              3:
+              ProcessDeleteFileQueue(False);
+            end;
+            10:
+            begin
+              FAPILua := TLua.Create();
+              if not FAPILua.CallDropSimulated(PDDI^.Files, PDDI^.Point, PDDI^.KeyState) then
+                raise EAbort.Create('canceled ondropsimulated');
+              FreeAndNil(FAPILua);
+            end;
+            100:
+            begin
+              if IsEditing() then
               begin
-                if Assigned(FLua) then
-                begin
-                  if not FLua.CallDrop(PDDI^.Files, PDDI^.Point,
-                    PDDI^.KeyState) then
-                    raise EAbort.Create('canceled ondrop');
-                  PDDI^.Effect := DROPEFFECT_COPY;
-                  FreeAndNil(FLua);
-                end;
+                FSCDropperLua := TLua.Create();
+                FSCDropperLua.InitDropper();
+                SCDropper.RecreateMenu(FSCDropperLua.State);
+                SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
+                FreeAndNil(FSCDropperLua);
                 ProcessDeleteFileQueue(False);
               end;
-              10:
-              begin
-                FAPILua := TLua.Create();
-                if not FAPILua.CallDropSimulated(PDDI^.Files, PDDI^.Point, PDDI^.KeyState) then
-                  raise EAbort.Create('canceled ondropsimulated');
-                FreeAndNil(FAPILua);
-              end;
-              100:
-              begin
-                if IsEditing() then
-                begin
-                  FSCDropperLua := TLua.Create();
-                  FSCDropperLua.InitDropper();
-                  SCDropper.RecreateMenu(FSCDropperLua.State);
-                  SCDropper.Popup(FSCDropperLua.State, FExEdit^.Hwnd, {%H-}PPoint(LP)^);
-                  FreeAndNil(FSCDropperLua);
-                  ProcessDeleteFileQueue(False);
-                end;
-              end;
-            end;
-          except
-            on E: EAbort do
-            begin
-              ODS('処理が中断されました: %s', [WideString(E.Message)]);
-              FreeAndNil(FLua);
-              FreeAndNil(FSCDropperLua);
-              if Assigned(PDDI) then
-                PDDI^.Effect := DROPEFFECT_NONE;
-              ProcessDeleteFileQueue(True);
-            end;
-            on E: Exception do
-            begin
-              ODS('error: %s', [WideString(E.Message)]);
-              MessageBoxW(FExEdit^.Hwnd,
-                PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
-                PluginName, MB_ICONERROR);
-              FreeAndNil(FLua);
-              FreeAndNil(FSCDropperLua);
-              if Assigned(PDDI) then
-                PDDI^.Effect := DROPEFFECT_NONE;
-              ProcessDeleteFileQueue(True);
             end;
           end;
-        finally
-          EnableFamilyWindows(hs);
+        except
+          on E: EAbort do
+          begin
+            ODS('処理が中断されました: %s', [WideString(E.Message)]);
+            FreeAndNil(FLua);
+            FreeAndNil(FSCDropperLua);
+            if Assigned(PDDI) then
+              PDDI^.Effect := DROPEFFECT_NONE;
+            ProcessDeleteFileQueue(True);
+          end;
+          on E: Exception do
+          begin
+            ODS('error: %s', [WideString(E.Message)]);
+            MessageBoxW(FExEdit^.Hwnd,
+              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+              PluginName, MB_ICONERROR);
+            FreeAndNil(FLua);
+            FreeAndNil(FSCDropperLua);
+            if Assigned(PDDI) then
+              PDDI^.Effect := DROPEFFECT_NONE;
+            ProcessDeleteFileQueue(True);
+          end;
         end;
-        Result := 0;
-      end
-      else
-        Result := 0;
+      finally
+        EnableFamilyWindows(hs);
+      end;
+      Result := 0;
     end;
+    else
+      Result := 0;
   end;
 end;
 
@@ -640,27 +638,27 @@ end;
 
 procedure TGCMZDrops.OnDragEnter(Sender: TObject; const PDDI: PDragDropInfo);
 begin
-  SendMessage(FWindow, FGCMZDropsMessageId, 0, {%H-}LPARAM(PDDI));
+  SendMessage(FWindow, WM_GCMZDROP, 0, {%H-}LPARAM(PDDI));
 end;
 
 procedure TGCMZDrops.OnDragOver(Sender: TObject; const PDDI: PDragDropInfo);
 begin
-  SendMessage(FWindow, FGCMZDropsMessageId, 1, {%H-}LPARAM(PDDI));
+  SendMessage(FWindow, WM_GCMZDROP, 1, {%H-}LPARAM(PDDI));
 end;
 
 procedure TGCMZDrops.OnDragLeave(Sender: TObject);
 begin
-  SendMessage(FWindow, FGCMZDropsMessageId, 2, 0);
+  SendMessage(FWindow, WM_GCMZDROP, 2, 0);
 end;
 
 procedure TGCMZDrops.OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
 begin
-  SendMessage(FWindow, FGCMZDropsMessageId, 3, {%H-}LPARAM(PDDI));
+  SendMessage(FWindow, WM_GCMZDROP, 3, {%H-}LPARAM(PDDI));
 end;
 
 procedure TGCMZDrops.OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 begin
-  SendMessage(FWindow, FGCMZDropsMessageId, 100, {%H-}LPARAM(@Pt));
+  SendMessage(FWindow, WM_GCMZDROP, 100, {%H-}LPARAM(@Pt));
 end;
 
 procedure TGCMZDrops.GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const LayerHeight: PInteger; const CursorPos: PPoint);
@@ -895,7 +893,7 @@ begin
         DDI.Files[I].FilePathOrContent := UTF8String(S);
         Inc(I);
       end;
-      SendMessage(FWindow, FGCMZDropsMessageId, 10, {%H-}LPARAM(@DDI));
+      SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@DDI));
       SetZoomLevel(OldZoom);
       Result := 1;
     end;
@@ -951,7 +949,6 @@ end;
 constructor TGCMZDrops.Create();
 begin
   inherited Create;
-  FGCMZDropsMessageId := RegisterWindowMessage('GCMZDrops');
   FDropTarget := TDropTarget.Create();
   FDropTarget.OnDragEnter := @OnDragEnter;
   FDropTarget.OnDragOver := @OnDragOver;
