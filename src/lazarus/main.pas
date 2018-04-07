@@ -685,14 +685,14 @@ begin
   F := FCurrentFilterP^.ExFunc^.GetFrame(FCurrentEditP);
   Len := FCurrentFilterP^.ExFunc^.GetFrameN(FCurrentEditP);
   Inc(F, N);
-  if F + N >= Len then begin
-    FCurrentFilterP^.ExFunc^.SetFrameN(FCurrentEditP, F + N + 1);
+  if F >= Len then begin
+    FCurrentFilterP^.ExFunc^.SetFrameN(FCurrentEditP, F + 1);
     if FCurrentFilterP^.ExFunc^.GetSelectFrame(FCurrentEditP, S, E) = AVIUTL_TRUE then begin
       if E = Len - 1 then
-        FCurrentFilterP^.ExFunc^.SetSelectFrame(FCurrentEditP, S, F + N);
+        FCurrentFilterP^.ExFunc^.SetSelectFrame(FCurrentEditP, S, F);
     end;
   end;
-  FCurrentFilterP^.ExFunc^.SetFrame(FCurrentEditP, F + N);
+  FCurrentFilterP^.ExFunc^.SetFrame(FCurrentEditP, F);
   Result := 1;
 end;
 
