@@ -448,6 +448,7 @@ begin
           begin
             ODS('処理が中断されました: %s', [WideString(E.Message)]);
             FreeAndNil(FLua);
+            FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
               PDDI^.Effect := DROPEFFECT_NONE;
@@ -460,6 +461,7 @@ begin
               PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
               PluginName, MB_ICONERROR);
             FreeAndNil(FLua);
+            FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
               PDDI^.Effect := DROPEFFECT_NONE;
