@@ -366,7 +366,11 @@ begin
       end;
       Result := 0;
     end;
-    WM_COPYDATA: Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
+    WM_COPYDATA: begin
+      FCurrentFilterP := Filter;
+      FCurrentEditP := Edit;
+      Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
+    end;
     WM_FILTER_EXIT:
     begin
       DeleteObject(FFont);
@@ -827,12 +831,26 @@ const
   MinZoomLevel = 19;
 var
   Z: integer;
+  HScrollBar: THandle;
+  SI: TScrollInfo;
 begin
   GetZoomLevelAndCursorPos(@Z, LayerHeight, @Result);
-  if (Result.x = -1)and(Result.y = -1) then
-    SetZoomLevel(0);
-  if ((Result.x = -1)and(Result.y = -1))or(Z < MinZoomLevel) then begin
-    SetZoomLevel(Max(MinZoomLevel, Z));
+  if Z < MinZoomLevel then begin
+    SetZoomLevel(MinZoomLevel);
+    GetZoomLevelAndCursorPos(nil, nil, @Result);
+  end;
+  if (Result.x = -1)and(Result.y = -1) then begin
+    GetScrollBars(@HScrollBar, nil);
+    SI.cbSize := SizeOf(TScrollInfo);
+    SI.fMask := SIF_PAGE;
+    if not GetScrollInfo(HScrollBar, SB_CTL, SI) then
+      raise Exception.Create('GetScrollInfo failed');
+
+    SI.fMask := SIF_POS;
+    SI.nPos := FCurrentFilterP^.ExFunc^.GetFrame(FCurrentEditP) - SI.nPage div 2;
+    SI.nPos := SetScrollInfo(HScrollBar, SB_CTL, SI, True);
+    SendMessage(FExEdit^.Hwnd, WM_HSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), HScrollBar);
+    SendMessage(FExEdit^.Hwnd, WM_HSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), HScrollBar);
     GetZoomLevelAndCursorPos(nil, nil, @Result);
   end;
   if (Result.x <> -1)and(Result.y <> -1) then begin
@@ -879,56 +897,68 @@ var
   SI: TScrollInfo;
   DDI: TDragDropInfo;
 begin
-  case CDS^.dwData of
-    0:
-    begin
-      GetScrollBars(nil, @VScrollBar);
-      SI.cbSize := SizeOf(TScrollInfo);
-      SI.fMask := SIF_POS;
-      if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
-        raise Exception.Create('GetScrollInfo failed');
+  try
+    case CDS^.dwData of
+      0:
+      begin
+        DDI.KeyState := 0;
+        DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
+        if (DDI.Point.x = -1)and(DDI.Point.y = -1) then
+          raise Exception.Create('現在のカーソル位置の検出に失敗しました。');
+        SetLength(DDI.Files, 0);
 
-      DDI.KeyState := 0;
-      DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
-      SetLength(DDI.Files, 0);
+        GetScrollBars(nil, @VScrollBar);
+        SI.cbSize := SizeOf(TScrollInfo);
+        SI.fMask := SIF_POS;
+        if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
+          raise Exception.Create('GetScrollInfo failed');
 
-      SetLength(WS, CDS^.cbData div 2);
-      Move(CDS^.lpData^, WS[1], CDS^.cbData);
-      LayerPos := StrToIntDef(string(Token(#0, WS)), 0);
-      case LayerPos of
-        -100..-1: begin // relative
-          LayerPos := LayerPos * - 1 - 1;
-          Inc(DDI.Point.y, LayerPos*LayerHeight);
-        end;
-        1..100: begin // absolute
-          Dec(LayerPos);
-          if SI.nPos > LayerPos then begin
-            SI.nPos := LayerPos;
-            SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
-            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
-            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
+        SetLength(WS, CDS^.cbData div 2);
+        Move(CDS^.lpData^, WS[1], CDS^.cbData);
+        LayerPos := StrToIntDef(string(Token(#0, WS)), 0);
+        case LayerPos of
+          -100..-1: begin // relative
+            LayerPos := LayerPos * - 1 - 1;
+            Inc(DDI.Point.y, LayerPos*LayerHeight);
           end;
-          Inc(DDI.Point.y, (LayerPos - SI.nPos)*LayerHeight);
+          1..100: begin // absolute
+            Dec(LayerPos);
+            if SI.nPos > LayerPos then begin
+              SI.nPos := LayerPos;
+              SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
+              SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
+              SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
+            end;
+            Inc(DDI.Point.y, (LayerPos - SI.nPos)*LayerHeight);
+          end;
         end;
-      end;
 
-      I := 0;
-      while WS <> '' do begin
-        S := Token(#0, WS);
-        if S = '' then
-          continue;
-        SetLength(DDI.Files, I + 1);
-        DDI.Files[I].DeleteOnFinish := False;
-        DDI.Files[I].Type_ := ftFile;
-        DDI.Files[I].MediaType := '';
-        DDI.Files[I].FilePathOrContent := UTF8String(S);
-        Inc(I);
+        I := 0;
+        while WS <> '' do begin
+          S := Token(#0, WS);
+          if S = '' then
+            continue;
+          SetLength(DDI.Files, I + 1);
+          DDI.Files[I].DeleteOnFinish := False;
+          DDI.Files[I].Type_ := ftFile;
+          DDI.Files[I].MediaType := '';
+          DDI.Files[I].FilePathOrContent := UTF8String(S);
+          Inc(I);
+        end;
+        SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@DDI));
+        SetZoomLevel(OldZoom);
+        Result := 1;
       end;
-      SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@DDI));
-      SetZoomLevel(OldZoom);
-      Result := 1;
+      else Result := 0;
     end;
-    else Result := 0;
+  except
+    on E: Exception do begin
+      ODS('error: %s', [WideString(E.Message)]);
+      MessageBoxW(FExEdit^.Hwnd,
+        PWideChar('外部 API 経由での処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+        PluginName, MB_ICONERROR);
+      ProcessDeleteFileQueue(True);
+    end;
   end;
 end;
 
