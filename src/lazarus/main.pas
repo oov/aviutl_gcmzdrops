@@ -184,6 +184,8 @@ var
   fp: PFilter;
   PDDI: PDragDropInfo;
 begin
+  FCurrentFilterP := Filter;
+  FCurrentEditP := Edit;
   case Message of
     WM_FILTER_INIT:
     begin
@@ -366,11 +368,7 @@ begin
       end;
       Result := 0;
     end;
-    WM_COPYDATA: begin
-      FCurrentFilterP := Filter;
-      FCurrentEditP := Edit;
-      Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
-    end;
+    WM_COPYDATA:  Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
     WM_FILTER_EXIT:
     begin
       DeleteObject(FFont);
@@ -385,8 +383,6 @@ begin
     WM_GCMZDROP:
     begin
       PDDI := {%H-}PDragDropInfo(LP);
-      FCurrentFilterP := Filter;
-      FCurrentEditP := Edit;
       hs := DisableFamilyWindows(0);
       try
         try
@@ -482,8 +478,6 @@ begin
       Result := 0;
     end;
     WM_GCMZCOMMAND: begin
-      FCurrentFilterP := Filter;
-      FCurrentEditP := Edit;
       case WP of
         0: Result := CmdAdvanceFrame(integer(LP));
       end;
