@@ -926,7 +926,7 @@ function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
 var
   VScrollBar: THandle;
   WS, S: WideString;
-  I, LayerPos, LayerHeight, OldZoom: integer;
+  I, LayerPos, LayerHeight, OldZoom, FrameAdv: integer;
   SI: TScrollInfo;
   DDI: TDragDropInfo;
 begin
@@ -966,6 +966,8 @@ begin
           end;
         end;
 
+        FrameAdv := StrToIntDef(string(Token(#0, WS)), 0);
+
         I := 0;
         while WS <> '' do begin
           S := Token(#0, WS);
@@ -978,8 +980,11 @@ begin
           DDI.Files[I].FilePathOrContent := UTF8String(S);
           Inc(I);
         end;
+
         SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@DDI));
         SetZoomLevel(OldZoom);
+        if FrameAdv <> 0 then
+          AdvanceFrame(FrameAdv);
         Result := 1;
       end;
       else Result := 0;
