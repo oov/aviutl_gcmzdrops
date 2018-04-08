@@ -95,6 +95,111 @@ Lua スクリプト内で使えるごちゃまぜドロップス専用の関数�
 ごちゃまぜドロップスの Lua スクリプトは通常の場合「別のウィンドウなどから拡張編集ウィンドウにファイルなどをドラッグで持ち込んだ時」というのが動作の起点になりますが、この仕組みを使うとファイルを持ち込まなくても動作の起点にすることができます。  
 ただしこの機能は実験的なもののため、予告なく仕様変更や廃止になる可能性があります。
 
+## 外部連携 API について
+
+外部のアプリケーションから拡張編集の現在のカーソル位置へのファイルドロップを実現するために、実験的な外部連携 API を提供しています。
+
+この API は試験運用中のため、予告なく変更または削除されることがあります。
+
+```c
+#include <stdint.h>
+#include <stdio.h>
+
+#define UNICODE
+#include <Windows.h>
+
+struct GCMZDropsData {
+  uint32_t Window;
+  int32_t Width;
+  int32_t Height;
+  int32_t VideoRate;
+  int32_t VideoScale;
+  int32_t AudioRate;
+  int32_t AudioCh;
+};
+
+int main(){
+  HANDLE hFMO = OpenFileMapping(FILE_MAP_READ, FALSE, TEXT("GCMZDrops"));
+  if (hFMO == NULL) {
+    printf("OpenFileMapping に失敗しました。\n");
+    return 0;
+  }
+
+  struct GCMZDropsData *p = MapViewOfFile(hFMO, FILE_MAP_READ, 0, 0, 0);
+  if (p == NULL) {
+    printf("MapViewOfFile に失敗しました。\n");
+    goto CloseFMO;
+  }
+
+  HWND targetWnd = (HWND)(ULONG_PTR)p->Window;
+  if (targetWnd == NULL) {
+    printf("対象ウィンドウの取得に失敗しました。\n");
+    goto Unmap;
+  }
+
+  if (p->Width == 0) {
+    printf("プロジェクトが開かれていません。\n");
+    goto Unmap;
+  }
+
+  printf("Window: %d\n", p->Window);
+  printf("Width: %d\n", p->Width);
+  printf("Height: %d\n", p->Height);
+  printf("VideoRate: %d\n", p->VideoRate);
+  printf("VideoScale: %d\n", p->VideoScale);
+  printf("AudioRate: %d\n", p->AudioRate);
+  printf("AudioCh: %d\n", p->AudioCh);
+
+  HWND myWnd = GetConsoleWindow();
+
+  COPYDATASTRUCT cds;
+
+  // 0 を指定してください。
+  cds.dwData = 0;
+
+  // 挿入先のレイヤー、進めるフレーム数、そして任意の個数のファイルへのパスを u'\0' で区切って指定します。
+  // u"Layer\0FrameAdv\0FilePath\0FilePath..."
+  // Layer:
+  //   -1 ～ -100
+  //       拡張編集上での現在の表示位置からの相対位置へ挿入
+  //       例: 縦スクロールによって一番上に見えるレイヤーが Layer 3 のとき、-2 を指定すると Layer 4 へ挿入
+  //    1 ～  100
+  //       指定したレイヤー番号へ挿入
+  // FrameAdv:
+  //   ファイルのドロップした後、指定されたフレーム数だけカーソルを先に進めます。
+  // FilePath:
+  //   投げ込むファイルへのパスをフルパスで記述します。
+  cds.lpData = u"-1\0""0\0""C:\\test.png";
+
+  // u'\0' を区切り文字にしているため文字数カウントに wcslen() などが使用できません。
+  cds.cbData = 17 * 2;
+
+  SendMessage(targetWnd, WM_COPYDATA, (WPARAM)myWnd, (LPARAM)&cds);
+
+Unmap:
+  if (UnmapViewOfFile(p) == 0) {
+    printf("UnmapViewOfVile に失敗しました。\n");
+    goto CloseFMO;
+  }
+
+CloseFMO:
+  CloseHandle(hFMO);
+  return 0;
+}
+```
+
+この API を使用する上での一般的な注意事項は以下の通りです。
+
+- **挿入位置について**  
+挿入先に既にオブジェクトがある場合など、十分なスペースがない場合は想定した場所に挿入されません。
+- **複数ファイルのドロップについて**  
+一応対応していますが、十分なスペースがない場合は一部のファイルだけがずれた位置に配置されます。  
+また、動画や `*.exo` ファイルのようにタイムラインに複数行挿入されるアイテムがある場合、それ以降は正しい位置に挿入されません。
+- **タイムラインの表示倍率について**  
+正しい位置にファイルをドロップするためには拡張編集のタイムラインを一定以上の拡大率にする必要があるため、条件を満たしていない場合は一時的にタイムラインが拡大されます。
+- **多重起動について**  
+外部連携 API が使えるのは最初に起動したインスタンスのみで、AviUtl を多重起動しても２つ目以降では外部連携 API は無効状態になります。
+
 ## FAQ
 
 - Q. テキストをドロップで投げ込めないソフトがある
