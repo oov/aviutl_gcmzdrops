@@ -475,6 +475,56 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaDecodeExoTextUTF8(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  const
+    Table: array[byte] of byte = (
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $0, $0, $0, $0, $0, $0,
+      $0, $a, $b, $c, $d, $e, $f, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $a, $b, $c, $d, $e, $f, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0,
+      $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0, $0);
+  var
+    U8: UTF8String;
+    WS: WideString;
+    S: PByte;
+    D: integer;
+  begin
+    try
+      S := PByte(lua_tostring(L, -1));
+      SetLength(WS, StrLen(PChar(S)) div 4);
+      for D := 1 to Length(WS) do
+      begin
+        WS[D] := WideChar((Table[(S+0)^] shl 4) or (Table[(S+1)^] shl 0) or (Table[(S+2)^] shl 12) or (Table[(S+3)^] shl 8));
+        Inc(S, 4);
+      end;
+      lua_pop(L, 1);
+      SetLength(WS, StrLen(@WS[1]));
+      U8 := UTF8String(WS);
+      lua_pushlstring(L, @U8[1], Length(U8));
+      Result := 1;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaEncodeLuaString(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -945,6 +995,8 @@ begin
   lua_setfield(L, -2, 'encodeexotext');
   lua_pushcfunction(L, @LuaEncodeExoTextUTF8);
   lua_setfield(L, -2, 'encodeexotextutf8');
+  lua_pushcfunction(L, @LuaDecodeExoTextUTF8);
+  lua_setfield(L, -2, 'decodeexotextutf8');
   lua_pushcfunction(L, @LuaEncodeLuaString);
   lua_setfield(L, -2, 'encodeluastring');
   lua_pushcfunction(L, @LuaDetectEncoding);
