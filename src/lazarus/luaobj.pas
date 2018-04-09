@@ -58,6 +58,7 @@ procedure LuaPushFiles(const L: Plua_state; const Files: TFiles);
 var
   I: integer;
   SJIS: ShiftJISString;
+  U8: UTF8String;
 begin
   lua_newtable(L);
   for I := Low(Files) to High(Files) do
@@ -67,6 +68,9 @@ begin
       ftFile:
       begin
         SJIS := Files[I].FilePathOrContent;
+        U8 := UTF8String(SJIS);
+        if Files[I].FilePathOrContent <> U8 then
+          raise Exception.Create('使用できない文字がファイル名に含まれています。'#13#10'AviUtl では絵文字など一部の文字をファイル名に使用することができません。'#13#10#13#10+SJIS);
         lua_pushlstring(L, @SJIS[1], Length(SJIS));
         lua_setfield(L, -2, 'filepath');
         if Files[I].MediaType <> '' then
