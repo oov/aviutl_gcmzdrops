@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 2018-04-11
+
+- 外部連携 API の FrameAdv をスクリプトからコントロール可能できるよう改善
+
 ## 0.3.2 2018-04-11
 
 - GCMZDrops.decodeexotextutf8 が上手く動かないことがあったのを修正
