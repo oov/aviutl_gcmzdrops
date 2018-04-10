@@ -25,9 +25,9 @@ type
       const KeyState: DWORD): boolean;
     procedure CallDragLeave();
     function CallDrop(const Files: TFiles; const Pt: TPoint;
-      const KeyState: DWORD): boolean;
+      const KeyState: DWORD; const FrameAdvance: integer): boolean;
     function CallDropSimulated(const Files: TFiles; const Pt: TPoint;
-      const KeyState: DWORD): boolean;
+      const KeyState: DWORD; const FrameAdvance: integer): boolean;
     property State: Plua_state read FState write FState;
   end;
 
@@ -275,7 +275,7 @@ begin
 end;
 
 function TLua.CallDrop(const Files: TFiles; const Pt: TPoint;
-  const KeyState: DWORD): boolean;
+  const KeyState: DWORD; const FrameAdvance: integer): boolean;
 var
   L: Plua_state;
 begin
@@ -283,6 +283,8 @@ begin
   lua_getfield(L, 1, 'ondrop');
   LuaPushFiles(L, Files);
   PushState(Pt, KeyState);
+  lua_pushinteger(L, FrameAdvance);
+  lua_setfield(L, -2, 'frameadvance');
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondrop:'#13#10 +
       UTF8String(ShiftJISString(lua_tostring(L, -1))));
@@ -291,7 +293,7 @@ begin
 end;
 
 function TLua.CallDropSimulated(const Files: TFiles; const Pt: TPoint;
-  const KeyState: DWORD): boolean;
+  const KeyState: DWORD; const FrameAdvance: integer): boolean;
 var
   L: Plua_state;
 begin
@@ -299,6 +301,8 @@ begin
   lua_getfield(L, 1, 'ondropsimulated');
   LuaPushFiles(L, Files);
   PushState(Pt, KeyState);
+  lua_pushinteger(L, FrameAdvance);
+  lua_setfield(L, -2, 'frameadvance');
   if lua_pcall(L, 2, 1, 0) <> 0 then
     raise Exception.Create('problem occurred executing ondropsimulated:'#13#10 +
       UTF8String(ShiftJISString(lua_tostring(L, -1))));

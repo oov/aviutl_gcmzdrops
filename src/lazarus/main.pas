@@ -132,6 +132,12 @@ type
   end;
   PMappedData = ^TMappedData;
 
+  TGCMZDragDropInfo = record
+    DDI: PDragDropInfo;
+    FrameAdvance: integer;
+  end;
+  PGCMZDragDropInfo = ^TGCMZDragDropInfo;
+
 function GetFilterTableList(): PPFilterDLL; stdcall;
 begin
   Result := @FilterDLLList[0];
@@ -182,7 +188,7 @@ var
   S: UTF8String;
   sinfo: TSysInfo;
   fp: PFilter;
-  PDDI: PDragDropInfo;
+  PDDI: PGCMZDragDropInfo;
 begin
   FCurrentFilterP := Filter;
   FCurrentEditP := Edit;
@@ -382,7 +388,7 @@ begin
     end;
     WM_GCMZDROP:
     begin
-      PDDI := {%H-}PDragDropInfo(LP);
+      PDDI := {%H-}PGCMZDragDropInfo(LP);
       hs := DisableFamilyWindows(0);
       try
         try
@@ -391,19 +397,19 @@ begin
             begin
               FreeAndNil(FLua);
               FLua := TLua.Create();
-              if not FLua.CallDragEnter(PDDI^.Files, PDDI^.Point,
-                PDDI^.KeyState) then
+              if not FLua.CallDragEnter(PDDI^.DDI^.Files, PDDI^.DDI^.Point,
+                PDDI^.DDI^.KeyState) then
                 raise EAbort.Create('canceled ondragenter');
-              PDDI^.Effect := DROPEFFECT_COPY;
+              PDDI^.DDI^.Effect := DROPEFFECT_COPY;
             end;
             1:
             begin
               if Assigned(FLua) then
               begin
-                if not FLua.CallDragOver(PDDI^.Files,
-                  PDDI^.Point, PDDI^.KeyState) then
+                if not FLua.CallDragOver(PDDI^.DDI^.Files,
+                  PDDI^.DDI^.Point, PDDI^.DDI^.KeyState) then
                   raise EAbort.Create('canceled ondragover');
-                PDDI^.Effect := DROPEFFECT_COPY;
+                PDDI^.DDI^.Effect := DROPEFFECT_COPY;
               end;
             end;
             2:
@@ -419,10 +425,10 @@ begin
             begin
               if Assigned(FLua) then
               begin
-                if not FLua.CallDrop(PDDI^.Files, PDDI^.Point,
-                  PDDI^.KeyState) then
+                if not FLua.CallDrop(PDDI^.DDI^.Files, PDDI^.DDI^.Point,
+                  PDDI^.DDI^.KeyState, PDDI^.FrameAdvance) then
                   raise EAbort.Create('canceled ondrop');
-                PDDI^.Effect := DROPEFFECT_COPY;
+                PDDI^.DDI^.Effect := DROPEFFECT_COPY;
                 FreeAndNil(FLua);
               end;
               ProcessDeleteFileQueue(False);
@@ -430,7 +436,7 @@ begin
             10:
             begin
               FAPILua := TLua.Create();
-              if not FAPILua.CallDropSimulated(PDDI^.Files, PDDI^.Point, PDDI^.KeyState) then
+              if not FAPILua.CallDropSimulated(PDDI^.DDI^.Files, PDDI^.DDI^.Point, PDDI^.DDI^.KeyState, PDDI^.FrameAdvance) then
                 raise EAbort.Create('canceled ondropsimulated');
               FreeAndNil(FAPILua);
             end;
@@ -455,7 +461,7 @@ begin
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
-              PDDI^.Effect := DROPEFFECT_NONE;
+              PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
           end;
           on E: Exception do
@@ -468,7 +474,7 @@ begin
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
             if Assigned(PDDI) then
-              PDDI^.Effect := DROPEFFECT_NONE;
+              PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
           end;
         end;
@@ -648,13 +654,21 @@ begin
 end;
 
 procedure TGCMZDrops.OnDragEnter(Sender: TObject; const PDDI: PDragDropInfo);
+var
+  GDDI: TGCMZDragDropInfo;
 begin
-  SendMessage(FWindow, WM_GCMZDROP, 0, {%H-}LPARAM(PDDI));
+  GDDI.DDI := PDDI;
+  GDDI.FrameAdvance := 0;
+  SendMessage(FWindow, WM_GCMZDROP, 0, {%H-}LPARAM(@GDDI));
 end;
 
 procedure TGCMZDrops.OnDragOver(Sender: TObject; const PDDI: PDragDropInfo);
+var
+  GDDI: TGCMZDragDropInfo;
 begin
-  SendMessage(FWindow, WM_GCMZDROP, 1, {%H-}LPARAM(PDDI));
+  GDDI.DDI := PDDI;
+  GDDI.FrameAdvance := 0;
+  SendMessage(FWindow, WM_GCMZDROP, 1, {%H-}LPARAM(@GDDI));
 end;
 
 procedure TGCMZDrops.OnDragLeave(Sender: TObject);
@@ -663,8 +677,12 @@ begin
 end;
 
 procedure TGCMZDrops.OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
+var
+  GDDI: TGCMZDragDropInfo;
 begin
-  SendMessage(FWindow, WM_GCMZDROP, 3, {%H-}LPARAM(PDDI));
+  GDDI.DDI := PDDI;
+  GDDI.FrameAdvance := 0;
+  SendMessage(FWindow, WM_GCMZDROP, 3, {%H-}LPARAM(@GDDI));
 end;
 
 procedure TGCMZDrops.OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
@@ -926,9 +944,10 @@ function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
 var
   VScrollBar: THandle;
   WS, S: WideString;
-  I, LayerPos, LayerHeight, OldZoom, FrameAdv: integer;
+  I, LayerPos, LayerHeight, OldZoom: integer;
   SI: TScrollInfo;
   DDI: TDragDropInfo;
+  GDDI: TGCMZDragDropInfo;
 begin
   try
     case CDS^.dwData of
@@ -966,7 +985,8 @@ begin
           end;
         end;
 
-        FrameAdv := StrToIntDef(string(Token(#0, WS)), 0);
+        GDDI.FrameAdvance := StrToIntDef(string(Token(#0, WS)), 0);
+        GDDI.DDI := @DDI;
 
         I := 0;
         while WS <> '' do begin
@@ -981,10 +1001,8 @@ begin
           Inc(I);
         end;
 
-        SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@DDI));
+        SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@GDDI));
         SetZoomLevel(OldZoom);
-        if FrameAdv <> 0 then
-          AdvanceFrame(FrameAdv);
         Result := 1;
       end;
       else Result := 0;
