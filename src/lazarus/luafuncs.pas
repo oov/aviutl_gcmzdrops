@@ -511,7 +511,7 @@ function LuaDecodeExoTextUTF8(L: Plua_State): integer; cdecl;
         Inc(S, 4);
       end;
       lua_pop(L, 1);
-      SetLength(WS, StrLen(@WS[1]));
+      SetLength(WS, StrLen(PWideChar(@WS[1])));
       U8 := UTF8String(WS);
       lua_pushlstring(L, @U8[1], Length(U8));
       Result := 1;
