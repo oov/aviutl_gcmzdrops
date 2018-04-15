@@ -179,6 +179,8 @@ const
   ExEditVersion = ' version 0.92 ';
   ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67;
   // '字幕アシスト'
+  AulsTransparenceNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57#$82#$f0#$94#$bc#$93#$a7#$96#$be#$89#$bb;
+  // '拡張編集を半透明化'
 var
   Label1, Label2: THandle;
   Y, Height: integer;
@@ -187,7 +189,7 @@ var
   hs: THandleDynArray;
   S: UTF8String;
   sinfo: TSysInfo;
-  fp: PFilter;
+  fp, AulsTransparence: PFilter;
   PDDI: PGCMZDragDropInfo;
 begin
   FCurrentFilterP := Filter;
@@ -277,6 +279,7 @@ begin
           raise Exception.Create(
             '拡張編集プラグインが見つかりません。');
 
+        AulsTransparence := nil;
         for Y := 0 to sinfo.FilterN - 1 do
         begin
           fp := Filter^.ExFunc^.GetFilterP(Y);
@@ -285,6 +288,8 @@ begin
           if StrPos(fp^.Name, ExTextNameANSI) <> nil then
             raise Exception.Create(PluginName +
               ' は「字幕テキスト」プラグインと同時に使用することはできません。');
+          if StrPos(fp^.Name, AulsTransparenceNameANSI) <> nil then
+            AulsTransparence := fp;
         end;
 
         if StrPos(FExEdit^.Information, ExEditVersion) = nil then
@@ -299,6 +304,13 @@ begin
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTargetIntf));
         SCDropper.InstallHook(FExEdit^.Hwnd);
         UpdateMappedData(False);
+
+        // Workaround for the window capture problem when disabled desktop composition on Vista/7.
+        if (not IsDesktopCompositionEnabled())and(AulsTransparence = nil) then
+        begin
+          SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_LAYERED);
+          SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, 255, LWA_ALPHA);
+        end;
       except
         on E: Exception do
         begin
