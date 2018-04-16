@@ -40,6 +40,10 @@ function P.ondrop(files, state)
       -- 文字エンコーディングが Shift_JIS 以外で変換可能なものなら差し替え
       local enc = GCMZDrops.detectencoding(text)
       if (enc == "utf8")or(enc == "eucjp")or(enc == "iso2022jp") then
+        -- BOM があるなら除去する
+        if enc == "utf8" and text:sub(1, 3) == "\239\187\191" then
+          text = text:sub(4)
+        end
         local filepath = GCMZDrops.createtempfile("gcmztmp", ".txt")
         f, err = io.open(filepath, "wb")
         if f == nil then
@@ -48,7 +52,7 @@ function P.ondrop(files, state)
         f:write(GCMZDrops.convertencoding(text, enc, "sjis"))
         f:close()
         debug_print("["..P.name.."] が " .. v.filepath .. " を Shift_JIS に変換して差し替えました。元のファイルは orgfilepath で取得できます。")
-        files[i] = {filepath=filepath, orgfilepath=v.filepath}
+        files[i] = {filepath=filepath, orgfilepath=v.filepath, mediatype="text/plain; charset=Shift_JIS"}
       end
     end
   end
