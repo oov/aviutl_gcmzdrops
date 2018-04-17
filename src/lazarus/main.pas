@@ -472,7 +472,7 @@ begin
             FreeAndNil(FLua);
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
-            if Assigned(PDDI) then
+            if (WP <> 100) and Assigned(PDDI) then
               PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
           end;
@@ -485,7 +485,7 @@ begin
             FreeAndNil(FLua);
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
-            if Assigned(PDDI) then
+            if (WP <> 100) and Assigned(PDDI) then
               PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
           end;
