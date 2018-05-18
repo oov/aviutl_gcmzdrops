@@ -43,6 +43,7 @@ function Contains(BasePath, Path: UTF8String): boolean;
 function GetKnownFolderPath(const CSIDL: longint): UTF8String;
 
 function GetDLLName(): WideString;
+function GetOtherDLLName(const H: THandle): WideString;
 function CalcFileHash(FilePath: WideString): QWORD;
 
 implementation
@@ -522,8 +523,13 @@ end;
 
 function GetDLLName(): WideString;
 begin
+  Result := GetOtherDLLName(hInstance);
+end;
+
+function GetOtherDLLName(const H: THandle): WideString;
+begin
   SetLength(Result, MAX_PATH);
-  GetModuleFileNameW(hInstance, @Result[1], MAX_PATH);
+  GetModuleFileNameW(H, @Result[1], MAX_PATH);
   Result := PWideChar(Result);
 end;
 

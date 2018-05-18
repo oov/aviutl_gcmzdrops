@@ -288,6 +288,8 @@ begin
           if StrPos(fp^.Name, ExTextNameANSI) <> nil then
             raise Exception.Create(PluginName +
               ' は「字幕テキスト」プラグインと同時に使用することはできません。');
+          if (StrPos(fp^.Name, PluginNameANSI) <> nil)and(ExtractFileName(GetOtherDLLName(fp^.DLLHInst)) = 'oledd.auf') then
+          raise Exception.Create('oledd.auf が存在するため初期化に失敗しました。'#13#10'これは' + PluginName + ' の古いバージョンであり、共存はできません。');
           if StrPos(fp^.Name, AulsTransparenceNameANSI) <> nil then
             AulsTransparence := fp;
         end;
