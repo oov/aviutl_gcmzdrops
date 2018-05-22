@@ -51,7 +51,7 @@ type
     procedure OnDrop(Sender: TObject; const PDDI: PDragDropInfo);
     procedure OnPopupSCDropperMenu(Sender: TObject; const Pt: TPoint);
 
-    procedure UpdateMappedData(const ReadFileInfo: boolean);
+    function CmdUpdateMappedData(const ReadFileInfo: boolean): integer;
     function CmdAdvanceFrame(const N: integer): integer;
 
     procedure GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const
@@ -61,6 +61,7 @@ type
     function GetCursorPos(const OldZoom, LayerHeight: PInteger): TPoint;
     procedure GetScrollBars(const HScroll, VScroll: PHandle);
     function ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
+    procedure UpdateMappedData(const ReadFileInfo: boolean);
   public
     constructor Create();
     destructor Destroy(); override;
@@ -500,6 +501,7 @@ begin
     WM_GCMZCOMMAND: begin
       case WP of
         0: Result := CmdAdvanceFrame(integer(LP));
+        1: Result := CmdUpdateMappedData(LP <> 0);
       end;
     end;
     else
@@ -704,11 +706,12 @@ begin
   SendMessage(FWindow, WM_GCMZDROP, 100, {%H-}LPARAM(@Pt));
 end;
 
-procedure TGCMZDrops.UpdateMappedData(const ReadFileInfo: boolean);
+function TGCMZDrops.CmdUpdateMappedData(const ReadFileInfo: boolean): integer;
 var
   P: PMappedData;
   FI: TFileInfo;
 begin
+  Result := 0;
   if FFMO = 0 then
     Exit;
   P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
@@ -1030,6 +1033,17 @@ begin
       ProcessDeleteFileQueue(True);
     end;
   end;
+end;
+
+procedure TGCMZDrops.UpdateMappedData(const ReadFileInfo: boolean);
+var
+  LP: LPARAM;
+begin
+  if ReadFileInfo then
+    LP := 1
+  else
+    LP := 0;
+  PostMessage(FWindow, WM_GCMZCOMMAND, 1, LP);
 end;
 
 function TGCMZDrops.GetMode: integer;
