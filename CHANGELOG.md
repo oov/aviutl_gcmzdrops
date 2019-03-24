@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.9 2019-03-26
+
+- GCMZDrops.detectencoding で BOM を元に UTF-16 が検出できるように
+- GCMZDrops.convertencoding で BOM を見つけた時は自動的に除去するように変更
+
 ## 0.3.8 2018-06-18
 
 - LuaJIT への lua51.dll の差し替えを現時点では非サポートとして説明書に記載を追記
