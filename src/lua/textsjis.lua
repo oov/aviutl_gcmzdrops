@@ -39,11 +39,7 @@ function P.ondrop(files, state)
       f:close()
       -- 文字エンコーディングが Shift_JIS 以外で変換可能なものなら差し替え
       local enc = GCMZDrops.detectencoding(text)
-      if (enc == "utf8")or(enc == "eucjp")or(enc == "iso2022jp") then
-        -- BOM があるなら除去する
-        if enc == "utf8" and text:sub(1, 3) == "\239\187\191" then
-          text = text:sub(4)
-        end
+      if (enc == "utf8")or(enc == "utf16le")or(enc == "utf16be")or(enc == "eucjp")or(enc == "iso2022jp") then
         local filepath = GCMZDrops.createtempfile("gcmztmp", ".txt")
         f, err = io.open(filepath, "wb")
         if f == nil then

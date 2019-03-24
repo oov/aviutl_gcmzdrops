@@ -239,6 +239,18 @@ var
 begin
   if Len = 0 then
     Exit;
+  // UTF-16 BOM
+  if (Len >= 2) and (S[0] = #$ff) and (S[1] = #$fe) then
+  begin
+    Result := CP_UTF16;
+    Exit;
+  end;
+  // UTF-16BE BOM
+  if (Len >= 2) and (S[0] = #$fe) and (S[1] = #$ff) then
+  begin
+    Result := CP_UTF16BE;
+    Exit;
+  end;
   // UTF-8 BOM
   if (Len >= 3) and (S[0] = #$ef) and (S[1] = #$bb) and (S[2] = #$bf) then
   begin

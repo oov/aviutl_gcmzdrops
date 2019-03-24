@@ -592,6 +592,8 @@ function LuaDetectEncoding(L: Plua_State): integer; cdecl;
         20932: lua_pushstring(L, 'eucjp');
         50222: lua_pushstring(L, 'iso2022jp');
         CP_UTF8: lua_pushstring(L, 'utf8');
+        CP_UTF16: lua_pushstring(L, 'utf16le');
+        CP_UTF16BE: lua_pushstring(L, 'utf16be');
         else
           lua_pushstring(L, '');
       end;
@@ -612,7 +614,8 @@ function LuaConvertEncoding(L: Plua_State): integer; cdecl;
   var
     SrcCP, DestCP: UINT;
     Src: PChar;
-    SrcLen, WideLen, DestLen: size_t;
+    PW: PWord;
+    SrcLen, WideLen, DestLen, I: size_t;
     WS: WideString;
     Dest: RawByteString;
   begin
@@ -633,6 +636,8 @@ function LuaConvertEncoding(L: Plua_State): integer; cdecl;
           'eucjp': SrcCP := 20932;
           'iso2022jp': SrcCP := 50222;
           'utf8': SrcCP := CP_UTF8;
+          'utf16le': SrcCP := CP_UTF16;
+          'utf16be': SrcCP := CP_UTF16BE;
           else
             raise Exception.Create('unexcepted encoding name: ' +
               UTF8String(ShiftJISString(lua_tostring(L, -2))));
@@ -648,6 +653,8 @@ function LuaConvertEncoding(L: Plua_State): integer; cdecl;
           'eucjp': DestCP := 20932;
           'iso2022jp': DestCP := 50222;
           'utf8': DestCP := CP_UTF8;
+          'utf16le': DestCP := CP_UTF16;
+          'utf16be': DestCP := CP_UTF16BE;
           else
             raise Exception.Create('unexcepted encoding name: ' +
               UTF8String(ShiftJISString(lua_tostring(L, -1))));
@@ -655,22 +662,76 @@ function LuaConvertEncoding(L: Plua_State): integer; cdecl;
       else
         raise Exception.Create('invalid parameter type: to');
 
-      WideLen := MultiByteToWideChar(SrcCP, 0, Src, SrcLen, nil, 0);
-      if WideLen = 0 then
-        RaiseLastOSError();
+      case SrcCP of
+        CP_UTF16: begin
+          if (SrcLen >= 2)and(Src[0] = #$ff)and(Src[1] = #$fe) then begin
+            Inc(Src, 2);
+            Dec(SrcLen, 2);
+          end;
+          WideLen := SrcLen div 2;
+          SetLength(WS, WideLen);
+          PW := PWord(Src);
+          for I := 1 to WideLen do begin
+            WS[I] := WideChar(PW^);
+            Inc(PW);
+          end;
+        end;
+        CP_UTF16BE: begin
+          if (SrcLen >= 2)and(Src[0] = #$fe)and(Src[1] = #$ff) then begin
+            Inc(Src, 2);
+            Dec(SrcLen, 2);
+          end;
+          WideLen := SrcLen div 2;
+          SetLength(WS, WideLen);
+          PW := PWord(Src);
+          for I := 1 to WideLen do begin
+            WS[I] := WideChar(Swap(PW^));
+            Inc(PW);
+          end;
+        end;
+        else begin
+          if (SrcCP = CP_UTF8)and(SrcLen >= 3)and(Src[0] = #$ef)and(Src[1] = #$bb)and(Src[2] = #$bf) then begin
+            Inc(Src, 3);
+            Dec(SrcLen, 3);
+          end;
+          WideLen := MultiByteToWideChar(SrcCP, 0, Src, SrcLen, nil, 0);
+          if WideLen = 0 then
+            RaiseLastOSError();
 
-      SetLength(WS, WideLen);
-      if MultiByteToWideChar(SrcCP, 0, Src, SrcLen, @WS[1], WideLen) = 0 then
-        RaiseLastOSError();
+          SetLength(WS, WideLen);
+          if MultiByteToWideChar(SrcCP, 0, Src, SrcLen, @WS[1], WideLen) = 0 then
+            RaiseLastOSError();
+        end;
+      end;
 
-      DestLen := WideCharToMultiByte(DestCP, 0, @WS[1], WideLen, nil, 0, nil, nil);
-      if DestLen = 0 then
-        RaiseLastOSError();
+      case DestCP of
+        CP_UTF16: begin
+          SetLength(Dest, WideLen*2);
+          PW := PWord(@Dest[1]);
+          for I := 1 to WideLen do begin
+            PW^ := Word(WS[I]);
+            Inc(PW);
+          end;
+        end;
+        CP_UTF16BE: begin
+          SetLength(Dest, WideLen*2);
+          PW := PWord(@Dest[1]);
+          for I := 1 to WideLen do begin
+            PW^ := Swap(Word(WS[I]));
+            Inc(PW);
+          end;
+        end;
+        else begin
+          DestLen := WideCharToMultiByte(DestCP, 0, @WS[1], WideLen, nil, 0, nil, nil);
+          if DestLen = 0 then
+            RaiseLastOSError();
 
-      SetLength(Dest, DestLen);
-      if WideCharToMultiByte(DestCP, 0, @WS[1], WideLen, @Dest[1],
-        DestLen, nil, nil) = 0 then
-        RaiseLastOSError();
+          SetLength(Dest, DestLen);
+          if WideCharToMultiByte(DestCP, 0, @WS[1], WideLen, @Dest[1],
+            DestLen, nil, nil) = 0 then
+            RaiseLastOSError();
+        end;
+      end;
 
       Result := 1;
       lua_pushlstring(L, @Dest[1], DestLen);

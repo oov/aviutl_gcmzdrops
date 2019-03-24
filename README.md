@@ -214,7 +214,7 @@ CloseFMO:
 
 ## バイナリのビルドについて
 
-ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 1.8.2 で開発しています。  
+ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 2.0.0 で開発しています。  
 外部のパッケージなどには依存していないため、インストール直後の状態で GCMZDrops.lpi を開けばコンパイルできると思います。
 
 ## Credits
