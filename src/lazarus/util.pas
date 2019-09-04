@@ -26,7 +26,6 @@ type
   end;
 
 procedure ODS(const Fmt: string; const Args: array of const);
-function IsDesktopCompositionEnabled(): boolean;
 function Token(const Delimiter: WideString; var S: WideString): WideString;
 
 function DisableFamilyWindows(const Exclude: THandle): THandleDynArray;
@@ -71,30 +70,6 @@ begin
     Result := Copy(S, 1, P - 1);
     Delete(S, 1, P + Length(Delimiter) - 1);
   end;
-end;
-
-function IsDesktopCompositionEnabled(): boolean;
-type
-  DwmIsCompositionEnabledFunc = function(out enabled: BOOL): HRESULT; stdcall;
-var
-  H: THandle;
-  F: DwmIsCompositionEnabledFunc;
-  B: BOOL;
-begin
-  Result := False;
-  H := LoadLibrary('Dwmapi.dll');
-  if H = 0 then
-    Exit;
-  try
-    Pointer(F) := GetProcAddress(H, 'DwmIsCompositionEnabled');
-    if F = nil then
-      Exit;
-    if F(B) <> S_OK then
-      Exit;
-  finally
-    FreeLibrary(H);
-  end;
-  Result := B;
 end;
 
 type

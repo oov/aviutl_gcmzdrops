@@ -112,13 +112,14 @@ const
   WM_GCMZCOMMAND = WM_APP + 2;
 
   ZoomActiveRed = 96;
+  ZoomDeactiveRed = 32;
   ZoomLeft = 5;
   ZoomTop = 32;
   ZoomMax = 26;
   TimelineLeft = 64;
   TimeLineHeaderTop = 13;
   TimeLineTop = 48;
-  LayerLeft = 0;
+  LayerLeft = 62;
   LayerTop = 42;
   LayerMax = 31;
 
@@ -309,11 +310,9 @@ begin
         UpdateMappedData(False);
 
         // Workaround for the window capture problem when disabled desktop composition on Vista/7.
-        if (not IsDesktopCompositionEnabled())and(AulsTransparence = nil) then
-        begin
-          SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_LAYERED);
+        SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_LAYERED);
+        if AulsTransparence = nil then
           SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, 255, LWA_ALPHA);
-        end;
       except
         on E: Exception do
         begin
@@ -764,6 +763,29 @@ begin
   Result := 1;
 end;
 
+procedure SaveDIB(const FileName: String; const BI: TBitmapInfo; const P: PByte);
+var
+  BFH: TBitmapFileHeader;
+  fs: TFileStream;
+begin
+  BFH.bfType := $4D42;
+  BFH.bfSize := 0;
+  BFH.bfReserved1 := 0;
+  BFH.bfReserved2 := 0;
+  BFH.bfOffBits := SizeOf(TBitmapFileHeader) + SizeOf(TBitmapInfoHeader);
+  fs := TFileStream.Create(FileName, fmCreate);
+  try
+    fs.Write(BFH, SizeOf(TBitmapFileHeader));
+    fs.Write(BI.bmiHeader, SizeOf(TBitmapInfoHeader));
+    fs.Write(P^, ((BI.bmiHeader.biWidth * 3 + 3) and (not 3)) * 72);
+  finally
+    fs.Free;
+  end;
+end;
+
+const PW_CLIENTONLY = 1;
+function PrintWindow(hwnd: HWND; hdcBlt: HDC; nFlags: UINT): BOOL; stdcall; external user32 name 'PrintWindow';
+
 procedure TGCMZDrops.GetZoomLevelAndCursorPos(const ZoomLevel: PInteger; const LayerHeight: PInteger; const CursorPos: PPoint);
 var
   LineBytes, I, J: integer;
@@ -777,7 +799,6 @@ begin
     raise Exception.Create('ExEdit Window is currently invisible');
   if not GetClientRect(FExEdit^.Hwnd, Rect) then
     raise Exception.Create('GetWindowRect failed');
-
   hExEditDC := GetDC(FExEdit^.Hwnd);
   if hExEditDC = 0 then
     raise Exception.Create('GetDC failed');
@@ -806,9 +827,9 @@ begin
           if hOldBitmap = 0 then
             raise Exception.Create('SelectObject failed');
           try
-            if not BitBlt(hDC, 0, 0, Rect.Width, 72, hExEditDC, 0, 0, SRCCOPY) then
-              raise Exception.Create('BitBlt failed');
-
+            if not PrintWindow(FExEdit^.Hwnd, hDC, PW_CLIENTONLY) then
+              raise Exception.Create('PrintWindow failed');
+            try
             LineBytes := (Rect.Width * 3 + 3) and (not 3);
             if ZoomLevel <> nil then begin
               J := 0;
@@ -816,8 +837,10 @@ begin
               for I := 0 to ZoomMax - 1 do begin
                 if (PP + 2)^ = ZoomActiveRed then
                   Inc(J)
+                else if (PP + 2)^ = ZoomDeactiveRed then
+                  break
                 else
-                  break;
+                  raise Exception.Create('failed to detect timeline zoom level');
                 Inc(PP, 2 * 3);
               end;
               ZoomLevel^ := J;
@@ -835,6 +858,8 @@ begin
                 Inc(J);
                 Inc(PP, LineBytes);
               end;
+              if (J <> 31)and(J <> 26)and(J <> 22) then
+                raise Exception.Create('failed to detect layer height');
               LayerHeight^ := J;
             end;
 
@@ -862,6 +887,10 @@ begin
                   end;
                   Inc(PP, 3);
                 end;
+            end;
+            except
+              SaveDIB(FormatDateTime('"gcmz-apierr-"yyyymmdd-hhnnss".bmp"', Now()), BI, P);
+              raise;
             end;
           finally
             SelectObject(hDC, hOldBitmap);
