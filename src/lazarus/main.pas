@@ -119,7 +119,7 @@ const
   TimelineLeft = 64;
   TimeLineHeaderTop = 13;
   TimeLineTop = 48;
-  LayerLeft = 62;
+  LayerLeft = 0;
   LayerTop = 42;
   LayerMax = 31;
 
