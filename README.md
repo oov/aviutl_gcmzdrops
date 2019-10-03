@@ -37,7 +37,6 @@ https://github.com/oov/aviutl_gcmzdrops/releases
 ## インストール／アンインストール
 
 GCMZDrops.auf と GCMZDrops フォルダーを exedit.auf と同じ場所に置いてください。  
-※LuaJIT への DLL 差し替えは行わないでください。一部の機能が正常に動作せずフリーズする症状が確認されています。
 
 削除時もそれらを削除するだけで OK です。
 
@@ -217,7 +216,7 @@ CloseFMO:
 
 ## バイナリのビルドについて
 
-ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 2.0.0 で開発しています。  
+ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 2.0.4 で開発しています。  
 外部のパッケージなどには依存していないため、インストール直後の状態で GCMZDrops.lpi を開けばコンパイルできると思います。
 
 ## Credits
