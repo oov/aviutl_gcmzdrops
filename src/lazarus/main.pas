@@ -173,12 +173,57 @@ begin
   Result := BoolConv[GCMZDrops.ProjectSaveProc(Filter, Edit, Data, Size)];
 end;
 
+function ParseExEditVersion(S: string): integer;
+  function NumDot(S: string): integer;
+  var
+    i: integer;
+  begin
+    for i := Low(S) to High(S) do
+      case S[i] of
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':;
+        else begin
+          Result := i - 1;
+          Exit;
+        end;
+      end;
+    Result := Length(S);
+  end;
+const
+  ExEditVersionString = ' version ';
+var
+  I: integer;
+  e: Extended;
+begin
+  Result := 0;
+  I := Pos(ExEditVersionString, S);
+  if I = 0 then
+     Exit;
+  Delete(S, 1, I + Length(ExEditVersionString) - 1);
+  I := NumDot(S);
+  if I = 0 then
+     Exit;
+  Delete(S, I + 1, Length(S));
+  E := StrToFloatDef(S, 0);
+  if E = 0 then
+     Exit;
+  Result := Trunc(E * 10000);
+end;
+
+function SetClientSize(Window: THandle; Width, Height: integer): BOOL;
+var
+  WR, CR: TRect;
+begin
+  Result := False;
+  if not GetWindowRect(Window, WR) then Exit;
+  if not GetClientRect(Window, CR) then Exit;
+  Result := SetWindowPos(Window, 0, 0, 0, WR.Width - CR.Width + Width, WR.Height - CR.Height + Height, SWP_NOMOVE or SWP_NOZORDER);
+end;
+
 { TGCMZDrops }
 
 function TGCMZDrops.MainProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
 const
-  ExEditVersion = ' version 0.92 ';
   ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67;
   // '字幕アシスト'
   AulsTransparenceNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57#$82#$f0#$94#$bc#$93#$a7#$96#$be#$89#$bb;
@@ -271,10 +316,7 @@ begin
         WS_VISIBLE, 8 + 400 - 128, Y, 128, Height, Window, 4, Filter^.DLLHInst, nil);
       SendMessageW(FFolderSelectButton, WM_SETFONT, WPARAM(FFont), 0);
       Inc(Y, Height);
-
-      Inc(Y, GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + 8);
-      SetWindowPos(Window, 0, 0, 0, 8 + 400 + 8 + GetSystemMetrics(SM_CXFIXEDFRAME) *
-        2, Y, SWP_NOMOVE or SWP_NOZORDER);
+      SetClientSize(Window, 8 + 400 + 8, Y + 8);
 
       try
         if not Assigned(FExEdit) then
@@ -296,9 +338,11 @@ begin
             AulsTransparence := fp;
         end;
 
-        if StrPos(FExEdit^.Information, ExEditVersion) = nil then
-          raise Exception.Create(PluginName + ' を使うには拡張編集' +
-            ExEditVersion + 'が必要です。');
+        Y := ParseExEditVersion(FExEdit^.Information);
+        if Y = 0 then
+           raise Exception.Create('拡張編集のバージョンナンバー解析に失敗しました。');
+        if Y < 9200 then
+           raise Exception.Create(PluginName + ' を使うには拡張編集 version 0.92 以降が必要です。');
         if sinfo.Build < 10000 then
           raise Exception.Create(PluginName +
             ' を使うには AviUtl version 1.00 以降が必要です。');
