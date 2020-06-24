@@ -116,9 +116,17 @@ struct GCMZDropsData {
   int32_t VideoScale;
   int32_t AudioRate;
   int32_t AudioCh;
+  int32_t GCMZAPIVer;
+  wchar_t ProjectPath[MAX_PATH];
 };
 
 int main(){
+  HANDLE hMutex = OpenMutex(MUTEX_ALL_ACCESS, FALSE, TEXT("GCMZDropsMutex"));
+  if (hMutex == NULL) {
+    printf("OpenMutex に失敗しました。\n");
+    return 0;
+  }
+
   HANDLE hFMO = OpenFileMapping(FILE_MAP_READ, FALSE, TEXT("GCMZDrops"));
   if (hFMO == NULL) {
     printf("OpenFileMapping に失敗しました。\n");
@@ -131,6 +139,8 @@ int main(){
     goto CloseFMO;
   }
 
+  WaitForSingleObject(hMutex, INFINITE);
+
   HWND targetWnd = (HWND)(ULONG_PTR)p->Window;
   if (targetWnd == NULL) {
     printf("対象ウィンドウの取得に失敗しました。\n");
@@ -142,6 +152,8 @@ int main(){
     goto Unmap;
   }
 
+  printf("GCMZAPIVer: %d\n", p->GCMZAPIVer); // 現在は 1 のみ
+  printf("ProjectPath(%d): %ls\n", wcslen(p->ProjectPath), p->ProjectPath);
   printf("Window: %d\n", p->Window);
   printf("Width: %d\n", p->Width);
   printf("Height: %d\n", p->Height);
@@ -154,29 +166,31 @@ int main(){
 
   COPYDATASTRUCT cds;
 
-  // 0 を指定してください。
-  cds.dwData = 0;
+  // 必ず 1 を指定してください。
+  cds.dwData = 1;
 
-  // 挿入先のレイヤー、進めるフレーム数、そして任意の個数のファイルへのパスを u'\0' で区切って指定します。
-  // u"Layer\0FrameAdv\0FilePath\0FilePath..."
-  // Layer:
+  // JSON を UTF-8 エンコーディングで渡します。
+  // layer:
+  //   ドロップするレイヤーを決めます。
+  //   指定を省略することはできません。
   //   -1 ～ -100
   //       拡張編集上での現在の表示位置からの相対位置へ挿入
-  //       例: 縦スクロールによって一番上に見えるレイヤーが Layer 3 のとき、-2 を指定すると Layer 4 へ挿入
+  //       例: 縦スクロールによって一番上に見えるレイヤーが Layer 3 のとき、-1 を指定すると Layer 3、-2 を指定すると Layer 4 へ挿入
   //    1 ～  100
-  //       指定したレイヤー番号へ挿入
-  // FrameAdv:
+  //       スクロール位置に関わらず指定したレイヤー番号へ挿入
+  // frameAdvance:
   //   ファイルのドロップした後、指定されたフレーム数だけカーソルを先に進めます。
-  // FilePath:
-  //   投げ込むファイルへのパスをフルパスで記述します。
-  cds.lpData = u"-1\0""0\0""C:\\test.png";
-
-  // u'\0' を区切り文字にしているため文字数カウントに wcslen() などが使用できません。
-  cds.cbData = 17 * 2;
-
+  //   進める必要がない場合は省略可能です。
+  // files:
+  //   投げ込むファイルへのフルパスを配列で渡します。
+  //   ファイル名は UTF-8 にする必要がありますが、拡張編集の仕様上 ShiftJIS の範囲内の文字しか扱えません。
+  cds.lpData = u8"{\"layer\":-1,\"frameAdvance\":12,\"files\":[\"C:\\\\test.bmp\"]}";
+  cds.cbData = strlen(cds.lpData);
   SendMessage(targetWnd, WM_COPYDATA, (WPARAM)myWnd, (LPARAM)&cds);
 
 Unmap:
+  ReleaseMutex(hMutex);
+
   if (UnmapViewOfFile(p) == 0) {
     printf("UnmapViewOfVile に失敗しました。\n");
     goto CloseFMO;
@@ -184,6 +198,7 @@ Unmap:
 
 CloseFMO:
   CloseHandle(hFMO);
+  CloseHandle(hMutex);
   return 0;
 }
 ```
@@ -216,7 +231,7 @@ CloseFMO:
 
 ## バイナリのビルドについて
 
-ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 2.0.4 で開発しています。  
+ごちゃまぜドロップスは [Lazarus](http://www.lazarus-ide.org/) 2.0.8 で開発しています。  
 外部のパッケージなどには依存していないため、インストール直後の状態で GCMZDrops.lpi を開けばコンパイルできると思います。
 
 ## Credits

@@ -20,7 +20,7 @@ type
     FDropTarget: TDropTarget;
     FDropTargetIntf: IDropTarget;
     FLua, FAPILua, FSCDropperLua: TLua;
-    FWindow, FFont, FFMO: THandle;
+    FWindow, FFont, FMutex, FFMO: THandle;
     FFontHeight: integer;
     FSavePathEdit, FSaveMode, FFolderSelectButton, FRevertChangeButton: THandle;
     FKnownFolders: array of UTF8String;
@@ -95,7 +95,7 @@ var
 implementation
 
 uses
-  InputDialog, ScriptableDropper, UsedFiles, Lua, Util, Ver;
+  fpjson, jsonparser, InputDialog, ScriptableDropper, UsedFiles, Lua, Util, Ver;
 
 const
   PluginName = 'ごちゃまぜドロップス';
@@ -131,6 +131,8 @@ type
     Window: HWND;
     Width, Height, VideoRate, VideoScale: integer;
     AudioRate, AudioCh: integer;
+    GCMZAPIVer: integer;
+    ProjectFilePath: array[0..MAX_PATH-1] of WideChar;
   end;
   PMappedData = ^TMappedData;
 
@@ -593,6 +595,7 @@ var
   MS: TMemoryStream;
   S: UTF8String;
 begin
+  UpdateMappedData(True);
   MS := TMemoryStream.Create();
   try
     SL := TStringList.Create();
@@ -751,37 +754,49 @@ end;
 
 function TGCMZDrops.CmdUpdateMappedData(const ReadFileInfo: boolean): integer;
 var
+  MD: TMappedData;
   P: PMappedData;
+  SI: TSysInfo;
   FI: TFileInfo;
+  WS: WideString;
 begin
   Result := 0;
+  if FMutex = 0 then
+    Exit;
   if FFMO = 0 then
     Exit;
+
+  FillChar(MD, SizeOf(TMappedData), 0);
+  MD.Window := FWindow;
+  MD.GCMZAPIVer := 1;
+  if ReadFileInfo then begin
+    FillChar(FI, SizeOf(FI), 0);
+    if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
+      Exit;
+    if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
+      Exit;
+    MD.Width := FI.Width;
+    MD.Height := FI.Height;
+    MD.VideoRate := FI.VideoRate;
+    MD.VideoScale := FI.VideoScale;
+    MD.AudioRate := FI.AudioRate;
+    MD.AudioCh := FI.AudioCh;
+    FillChar(SI, SizeOf(SI), 0);
+    GetAviUtlSysInfo(SI);
+    WS := WideString(ShiftJISString(SI.ProjectName));
+    if Length(WS) > 0 then
+      Move(WS[1], MD.ProjectFilePath[0], Min(Length(WS), MAX_PATH-1)*2);
+  end;
+
   P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
   if P = nil then
     ODS('MapViewOfFile failed', []);
   try
-    P^.Window := FWindow;
-    P^.Width := 0;
-    P^.Height := 0;
-    P^.VideoRate := 0;
-    P^.VideoScale := 0;
-    P^.AudioRate := 0;
-    P^.AudioCh := 0;
-
-    if ReadFileInfo then begin
-      FillChar(FI, SizeOf(FI), 0);
-      if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
-        Exit;
-      if (FI.AudioRate = 0) or (FI.AudioCh = 0) then
-        Exit;
-
-      P^.Width := FI.Width;
-      P^.Height := FI.Height;
-      P^.VideoRate := FI.VideoRate;
-      P^.VideoScale := FI.VideoScale;
-      P^.AudioRate := FI.AudioRate;
-      P^.AudioCh := FI.AudioCh;
+    WaitForSingleObject(FMutex, INFINITE);
+    try
+      Move(MD, P^, SizeOf(MD));
+    finally
+      ReleaseMutex(FMutex);
     end;
   finally
     if not UnmapViewOfFile(P) then
@@ -1031,71 +1046,119 @@ end;
 
 function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
   ): LRESULT;
-var
-  VScrollBar: THandle;
-  WS, S: WideString;
-  I, LayerPos, LayerHeight, OldZoom: integer;
-  SI: TScrollInfo;
-  DDI: TDragDropInfo;
-  GDDI: TGCMZDragDropInfo;
+  procedure Process(const Layer, FrameAdv: integer; const Files: array of UTF8String);
+  var
+    VScrollBar: THandle;
+    I, LayerHeight, OldZoom: integer;
+    SI: TScrollInfo;
+    DDI: TDragDropInfo;
+    GDDI: TGCMZDragDropInfo;
+  begin
+    DDI.KeyState := 0;
+    DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
+    if (DDI.Point.x = -1)and(DDI.Point.y = -1) then
+      raise Exception.Create('現在のカーソル位置の検出に失敗しました。');
+    SetLength(DDI.Files, 0);
+
+    GetScrollBars(nil, @VScrollBar);
+    SI.cbSize := SizeOf(TScrollInfo);
+    SI.fMask := SIF_POS;
+    if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
+      raise Exception.Create('GetScrollInfo failed');
+    case Layer of
+      -100..-1: begin // relative
+        I := Layer * - 1 - 1;
+        Inc(DDI.Point.y, I*LayerHeight);
+      end;
+      1..100: begin // absolute
+        I := Layer - 1;
+        if SI.nPos > I then begin
+          SI.nPos := I;
+          SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
+          SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
+          SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
+        end;
+        Inc(DDI.Point.y, (I - SI.nPos)*LayerHeight);
+      end;
+    end;
+
+    GDDI.FrameAdvance := FrameAdv;
+    GDDI.DDI := @DDI;
+    SetLength(DDI.Files, Length(Files));
+    for I := Low(Files) to High(Files) do begin
+      DDI.Files[I].DeleteOnFinish := False;
+      DDI.Files[I].Type_ := ftFile;
+      DDI.Files[I].MediaType := '';
+      DDI.Files[I].FilePathOrContent := Files[I];
+    end;
+    SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@GDDI));
+    SetZoomLevel(OldZoom);
+    Result := 1;
+  end;
+  function API0(): LRESULT;
+  var
+    Layer, FrameAdv: integer;
+    Files: array of UTF8String;
+    WS, S: WideString;
+    I: integer;
+  begin
+    SetLength(WS, CDS^.cbData div 2);
+    Move(CDS^.lpData^, WS[1], CDS^.cbData);
+    Layer := StrToIntDef(string(Token(#0, WS)), 0);
+    FrameAdv := StrToIntDef(string(Token(#0, WS)), 0);
+    I := 0;
+    SetLength(Files, 0);
+    while WS <> '' do begin
+      S := Token(#0, WS);
+      if S = '' then
+        continue;
+      SetLength(Files, I + 1);
+      Files[I] := UTF8String(S);
+      Inc(I);
+    end;
+    Process(Layer, FrameAdv, Files);
+    Result := 1;
+  end;
+  function API1(): LRESULT;
+  var
+    S: UTF8String;
+    JD, E: TJSONData;
+    Layer, FrameAdv, I: integer;
+    Files: array of UTF8String;
+  begin
+    Result := 0;
+    SetLength(S, CDS^.cbData);
+    Move(CDS^.lpData^, S[1], CDS^.cbData);
+    JD := GetJSON(S);
+    try
+      E := JD.FindPath('layer');
+      if not Assigned(E) then
+        raise Exception.Create('layer が指定されていません。');
+      Layer := E.AsInteger;
+
+      E := JD.FindPath('frameAdvance');
+      if Assigned(E) then
+        FrameAdv := E.AsInteger;
+
+      E := JD.FindPath('files');
+      if not Assigned(E) then
+        raise Exception.Create('files が指定されていません。');
+      SetLength(Files, E.Count);
+      for I := 0 to E.Count-1 do begin
+        Files[I] := E.Items[I].AsString;
+      end;
+      Process(Layer, FrameAdv, Files);
+      Result := 1;
+    finally
+      JD.Free;
+    end;
+  end;
 begin
   try
     case CDS^.dwData of
-      0:
-      begin
-        DDI.KeyState := 0;
-        DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
-        if (DDI.Point.x = -1)and(DDI.Point.y = -1) then
-          raise Exception.Create('現在のカーソル位置の検出に失敗しました。');
-        SetLength(DDI.Files, 0);
-
-        GetScrollBars(nil, @VScrollBar);
-        SI.cbSize := SizeOf(TScrollInfo);
-        SI.fMask := SIF_POS;
-        if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
-          raise Exception.Create('GetScrollInfo failed');
-
-        SetLength(WS, CDS^.cbData div 2);
-        Move(CDS^.lpData^, WS[1], CDS^.cbData);
-        LayerPos := StrToIntDef(string(Token(#0, WS)), 0);
-        case LayerPos of
-          -100..-1: begin // relative
-            LayerPos := LayerPos * - 1 - 1;
-            Inc(DDI.Point.y, LayerPos*LayerHeight);
-          end;
-          1..100: begin // absolute
-            Dec(LayerPos);
-            if SI.nPos > LayerPos then begin
-              SI.nPos := LayerPos;
-              SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
-              SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
-              SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
-            end;
-            Inc(DDI.Point.y, (LayerPos - SI.nPos)*LayerHeight);
-          end;
-        end;
-
-        GDDI.FrameAdvance := StrToIntDef(string(Token(#0, WS)), 0);
-        GDDI.DDI := @DDI;
-
-        I := 0;
-        while WS <> '' do begin
-          S := Token(#0, WS);
-          if S = '' then
-            continue;
-          SetLength(DDI.Files, I + 1);
-          DDI.Files[I].DeleteOnFinish := False;
-          DDI.Files[I].Type_ := ftFile;
-          DDI.Files[I].MediaType := '';
-          DDI.Files[I].FilePathOrContent := UTF8String(S);
-          Inc(I);
-        end;
-
-        SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@GDDI));
-        SetZoomLevel(OldZoom);
-        Result := 1;
-      end;
-      else Result := 0;
+      0: Result := API0();
+      1: Result := API1();
+      else raise Exception.Create('COPYDATASTRUCT 構造体の dwData に不正な値が渡されました。');
     end;
   except
     on E: Exception do begin
@@ -1185,6 +1248,10 @@ begin
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
 
+  FMutex := CreateMutex(nil, FALSE, 'GCMZDropsMutex');
+  if FMutex = 0 then begin
+    ODS('failed to create mutex "GCMZDropsMutex".', []);
+  end;
   FFMO := CreateFileMapping(INVALID_HANDLE_VALUE, nil, PAGE_READWRITE, 0, SizeOf(TMappedData), 'GCMZDrops');
   if (FFMO <> 0)and(GetLastError() = ERROR_ALREADY_EXISTS) then begin
     ODS('FileMappingObject "GCMZDrops" already exists.', []);
@@ -1195,6 +1262,8 @@ end;
 
 destructor TGCMZDrops.Destroy();
 begin
+  if FMutex <> 0 then
+    CloseHandle(FMutex);
   if FFMO <> 0 then
     CloseHandle(FFMO);
   ProcessDeleteFileQueue(False);
