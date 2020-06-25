@@ -1257,6 +1257,12 @@ begin
     ODS('FileMappingObject "GCMZDrops" already exists.', []);
     CloseHandle(FFMO);
     FFMO := 0;
+    // If the old version has been started, only Mutex creation will succeed.
+    // This situation causes the API version to be misidentified, so Mutex must be closed.
+    if FMutex <> 0 then begin
+      CloseHandle(FMutex);
+      FMutex := 0;
+    end;
   end;
 end;
 
