@@ -795,6 +795,7 @@ begin
     WaitForSingleObject(FMutex, INFINITE);
     try
       Move(MD, P^, SizeOf(MD));
+      FlushViewOfFile(P, 0);
     finally
       ReleaseMutex(FMutex);
     end;
