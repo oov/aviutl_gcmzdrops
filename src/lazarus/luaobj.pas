@@ -38,19 +38,22 @@ implementation
 uses
   Windows, LuaFuncs, Util;
 
+var
+  heap: THandle;
+
 function LuaAllocator({%H-}ud, ptr: Pointer; {%H-}osize, nsize: size_t): Pointer; cdecl;
 begin
   if nsize = 0 then
   begin
     if ptr <> nil then
-      FreeMem(ptr);
+      HeapFree(heap, 0, ptr);
     Result := nil;
     Exit;
   end;
   if ptr <> nil then
-    Result := ReallocMem({%H-}ptr, nsize)
+    Result := HeapRealloc(heap, 0, {%H-}ptr, nsize)
   else
-    Result := GetMem(nsize);
+    Result := HeapAlloc(heap, 0, nsize);
 end;
 
 
@@ -309,5 +312,8 @@ begin
   Result := lua_toboolean(L, -1);
   lua_pop(L, 1);
 end;
+
+initialization
+  heap := GetProcessHeap();
 
 end.
