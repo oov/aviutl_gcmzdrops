@@ -551,9 +551,7 @@ function LuaEncodeLuaString(L: Plua_State): integer; cdecl;
           #$0d: C := 'r';
           #$22: C := #$22;
           #$27: C := #$27;
-          #$5b: C := #$5b;
           #$5c: C := #$5c;
-          #$5d: C := #$5d;
           else
           begin
             Escaped[D] := SJIS[S];
