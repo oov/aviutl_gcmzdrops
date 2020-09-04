@@ -112,7 +112,9 @@ const
   WM_GCMZCOMMAND = WM_APP + 2;
 
   ZoomActiveRed = 96;
+  ZoomActiveRed16 = 99;
   ZoomDeactiveRed = 32;
+  ZoomDeactiveRed16 = 33;
   ZoomLeft = 5;
   ZoomTop = 32;
   ZoomMax = 26;
@@ -895,9 +897,9 @@ begin
               J := 0;
               PP := P + ZoomTop * LineBytes + ZoomLeft * 3;
               for I := 0 to ZoomMax - 1 do begin
-                if (PP + 2)^ = ZoomActiveRed then
+                if ((PP + 2)^ = ZoomActiveRed)or((PP + 2)^ = ZoomActiveRed16) then
                   Inc(J)
-                else if (PP + 2)^ = ZoomDeactiveRed then
+                else if ((PP + 2)^ = ZoomDeactiveRed)or((PP + 2)^ = ZoomDeactiveRed16) then
                   break
                 else
                   raise Exception.Create('failed to detect timeline zoom level');
