@@ -4,12 +4,8 @@ library GCMZDrops;
 {$CODEPAGE UTF-8}
 
 uses
-  SysUtils,
-  AviUtl,
-  Main,
-  DropTarget,
-  InputDialog,
-  Util, lua, LuaFuncs, LuaObj, ActiveX, UsedFiles, LuaIni, ScriptableDropper;
+  SysUtils, AviUtl, Main, DropTarget, InputDialog, Util, lua, LuaFuncs, LuaObj,
+  ActiveX, UsedFiles, LuaIni, ScriptableDropper, API;
 
 exports
   GetFilterTableList;

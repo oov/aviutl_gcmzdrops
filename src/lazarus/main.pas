@@ -7,7 +7,7 @@ interface
 
 uses
   Windows, ActiveX, SysUtils, Classes, ComObj, ShlObj,
-  AviUtl, DropTarget, LuaObj;
+  AviUtl, DropTarget, LuaObj, API;
 
 type
   { TGCMZDrops }
@@ -26,6 +26,8 @@ type
     FKnownFolders: array of UTF8String;
     FDeleteOnFinishFileQueue: TStringList;
     FDeleteOnAbortFileQueue: TStringList;
+    FAPIBusy: Integer;
+    FAPIThread: TGCMZAPIThread;
     function GetEntry: PFilterDLL;
     function GetExEditLayerHeight: integer;
     function GetExEditWindow: THandle;
@@ -110,6 +112,8 @@ const
 const
   WM_GCMZDROP = WM_APP + 1;
   WM_GCMZCOMMAND = WM_APP + 2;
+  WM_GCMZDROP_APIDEFER = WM_APP + 3;
+  WM_GCMZDROP_APIDEFER_COMPLETE = WM_APP + 4;
 
   ZoomActiveRed = 96;
   ZoomActiveRed16 = 99;
@@ -355,6 +359,10 @@ begin
         DragAcceptFiles(FExEdit^.Hwnd, False);
         OleCheck(RegisterDragDrop(FExEdit^.Hwnd, FDropTargetIntf));
         SCDropper.InstallHook(FExEdit^.Hwnd);
+
+        FAPIThread := TGCMZAPIThread.Create();
+        FAPIThread.OnCall := @ProcessCopyData;
+
         UpdateMappedData(False);
 
         // Workaround for the window capture problem when disabled desktop composition on Vista/7.
@@ -436,9 +444,11 @@ begin
       end;
       Result := 0;
     end;
-    WM_COPYDATA:  Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
+    WM_COPYDATA: Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
     WM_FILTER_EXIT:
     begin
+      if FAPIThread <> nil then
+         FreeAndNil(FAPIThread);
       DeleteObject(FFont);
       FFont := 0;
       if Assigned(FExEdit) then
@@ -452,6 +462,7 @@ begin
     begin
       PDDI := {%H-}PGCMZDragDropInfo(LP);
       hs := DisableFamilyWindows(0);
+      Inc(FAPIBusy);
       try
         try
           case WP of
@@ -542,6 +553,7 @@ begin
         end;
       finally
         EnableFamilyWindows(hs);
+        PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 0, 0);
       end;
       Result := 0;
     end;
@@ -551,6 +563,17 @@ begin
         1: Result := CmdUpdateMappedData(LP <> 0);
       end;
     end;
+    WM_GCMZDROP_APIDEFER: begin
+      if FAPIBusy > 0 then
+        PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WP, LP)
+      else
+        Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
+    end;
+    WM_GCMZDROP_APIDEFER_COMPLETE: begin
+      Dec(FAPIBusy);
+      if WP = 1 then
+         FAPIThread.Processed();
+    end
     else
       Result := 0;
   end;
@@ -769,7 +792,7 @@ begin
     Exit;
 
   FillChar(MD, SizeOf(TMappedData), 0);
-  MD.Window := FWindow;
+  MD.Window := FAPIThread.Window;
   MD.GCMZAPIVer := 1;
   if ReadFileInfo then begin
     FillChar(FI, SizeOf(FI), 0);
@@ -1157,12 +1180,19 @@ function TGCMZDrops.ProcessCopyData(const Window: THandle; CDS: PCopyDataStruct
     end;
   end;
 begin
+  if FAPIBusy > 0 then begin
+    PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
+    Exit;
+  end;
+
+  Inc(FAPIBusy);
   try
     case CDS^.dwData of
       0: Result := API0();
       1: Result := API1();
       else raise Exception.Create('COPYDATASTRUCT 構造体の dwData に不正な値が渡されました。');
     end;
+    PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 1, 0);
   except
     on E: Exception do begin
       ODS('error: %s', [WideString(E.Message)]);
@@ -1170,6 +1200,7 @@ begin
         PWideChar('外部 API 経由での処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
         PluginName, MB_ICONERROR);
       ProcessDeleteFileQueue(True);
+      PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 1, 1);
     end;
   end;
 end;
@@ -1250,6 +1281,8 @@ begin
 
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
+
+  FAPIBusy := 0;
 
   FMutex := CreateMutex(nil, FALSE, 'GCMZDropsMutex');
   if FMutex = 0 then begin
