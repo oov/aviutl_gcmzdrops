@@ -444,7 +444,6 @@ begin
       end;
       Result := 0;
     end;
-    WM_COPYDATA: Result := ProcessCopyData(THandle(WP), {%H-}PCopyDataStruct(LP));
     WM_FILTER_EXIT:
     begin
       if FAPIThread <> nil then
