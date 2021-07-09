@@ -135,6 +135,8 @@ destructor TGCMZAPIThread.Destroy();
 begin
   SendMessage(FWindow, WM_SYSCOMMAND, SC_CLOSE, 0);
   WaitForSingleObject(FEvent, INFINITE);
+  CloseHandle(FProcessed);
+  CloseHandle(FEvent);
   inherited Destroy();
 end;
 
