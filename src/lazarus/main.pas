@@ -1163,7 +1163,9 @@ function TGCMZDrops.ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct
 
       E := JD.FindPath('frameAdvance');
       if Assigned(E) then
-        FrameAdv := E.AsInteger;
+        FrameAdv := E.AsInteger
+      else
+        FrameAdv := 0;
 
       E := JD.FindPath('files');
       if not Assigned(E) then
