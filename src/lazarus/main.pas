@@ -265,6 +265,8 @@ begin
           fp := Filter^.ExFunc^.GetFilterP(Y);
           if (fp = nil) or ((fp^.Name <> ExEditNameANSI) and (fp^.Name <> ExEditENPatchedNameANSI)) then
             continue;
+          if (fp^.Flag and FILTER_FLAG_AUDIO_FILTER) = FILTER_FLAG_AUDIO_FILTER then
+            continue;
           FExEdit := fp;
           break;
         end;
