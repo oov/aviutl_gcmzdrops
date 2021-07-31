@@ -197,11 +197,10 @@ function ParseExEditVersion(S: WideString): integer;
     Result := Length(S2);
   end;
   function GetCurrentLocaleDot(): String;
-  var
-    Buf: array[0..3] of Char;
   begin
-    if GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SDECIMAL, Buf, sizeof(buf)) > 0 then
-      Result := String(@Buf[0])
+    SetLength(Result, 4);
+    if GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SDECIMAL, @Result[1], Length(Result)) > 0 then
+      Result := PChar(Result)
     else
       Result := '.';
   end;
@@ -219,7 +218,8 @@ begin
   if I = 0 then
     raise Exception.Create('拡張編集のバージョン情報 "'+S+'" の中からピリオドを見つけられませんでした');
   Delete(S, I + 1, Length(S));
-  E := StrToFloatDef(StringReplace(String(S), '.', GetCurrentLocaleDot(), [rfReplaceAll]), 0);
+  S := WideString(StringReplace(String(S), '.', GetCurrentLocaleDot(), [rfReplaceAll]));
+  E := StrToFloatDef(String(S), 0);
   if E = 0 then
     raise Exception.Create('拡張編集のバージョン情報 "'+S+'" の数字を正しく変換できませんでした');
   Result := Trunc(E * 10000);
