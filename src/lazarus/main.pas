@@ -181,39 +181,38 @@ begin
   Result := BoolConv[GCMZDrops.ProjectSaveProc(Filter, Edit, Data, Size)];
 end;
 
-function ParseExEditVersion(S: string): integer;
-  function NumDot(S: string): integer;
+function ParseExEditVersion(S: WideString): integer;
+  function NumDot(const S2: WideString): integer;
   var
     i: integer;
   begin
-    for i := Low(S) to High(S) do
-      case S[i] of
+    for i := Low(S2) to High(S2) do
+      case S2[i] of
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':;
         else begin
           Result := i - 1;
           Exit;
         end;
       end;
-    Result := Length(S);
+    Result := Length(S2);
   end;
 const
-  ExEditVersionString = ' version ';
+  ExEditVersionString: WideString = ' version ';
 var
   I: integer;
-  e: Extended;
+  E: Extended;
 begin
-  Result := 0;
   I := Pos(ExEditVersionString, S);
   if I = 0 then
-     Exit;
+    raise Exception.Create('拡張編集のバージョン情報 "'+S+'"  の中から " version " を見つけられませんでした');
   Delete(S, 1, I + Length(ExEditVersionString) - 1);
   I := NumDot(S);
   if I = 0 then
-     Exit;
+    raise Exception.Create('拡張編集のバージョン情報 "'+S+'" の中からピリオドを見つけられませんでした');
   Delete(S, I + 1, Length(S));
-  E := StrToFloatDef(S, 0);
+  E := StrToFloatDef(String(S), 0);
   if E = 0 then
-     Exit;
+    raise Exception.Create('拡張編集のバージョン情報 "'+S+'" の数字を正しく変換できませんでした');
   Result := Trunc(E * 10000);
 end;
 
@@ -353,8 +352,6 @@ begin
         end;
 
         Y := ParseExEditVersion(FExEdit^.Information);
-        if Y = 0 then
-           raise Exception.Create('拡張編集のバージョンナンバー解析に失敗しました。');
         if Y < 9200 then
            raise Exception.Create(PluginName + ' を使うには拡張編集 version 0.92 以降が必要です。');
         if sinfo.Build < 10000 then
