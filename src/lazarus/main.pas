@@ -14,6 +14,7 @@ type
 
   TGCMZDrops = class
   private
+    FErrorOnInitialize: WideString;
     FEntry: TFilterDLL;
     FExEdit, FCurrentFilterP: PFilter;
     FCurrentEditP: Pointer;
@@ -103,7 +104,6 @@ const
   PluginName = 'ごちゃまぜドロップス';
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
   PluginInfoANSI = PluginNameANSI + ' ' + Version;
-  ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57; // '拡張編集'
   DefaultSaveDir = '%PROJECTDIR%';
 
 const
@@ -232,6 +232,10 @@ end;
 function TGCMZDrops.MainProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
 const
+  ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57;
+  // '拡張編集'
+  ExEditENPatchedNameANSI = 'Advanced Editing';
+
   ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67;
   // '字幕アシスト'
   AulsTransparenceNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57#$82#$f0#$94#$bc#$93#$a7#$96#$be#$89#$bb;
@@ -259,7 +263,7 @@ begin
         for Y := 0 to sinfo.FilterN - 1 do
         begin
           fp := Filter^.ExFunc^.GetFilterP(Y);
-          if (fp = nil) or (fp^.Name <> ExEditNameANSI) then
+          if (fp = nil) or ((fp^.Name <> ExEditNameANSI) and (fp^.Name <> ExEditENPatchedNameANSI)) then
             continue;
           FExEdit := fp;
           break;
@@ -327,7 +331,7 @@ begin
       SetClientSize(Window, 8 + 400 + 8, Y + 8);
 
       try
-        if not Assigned(FExEdit) then
+        // if not Assigned(FExEdit) then
           raise Exception.Create(
             '拡張編集プラグインが見つかりません。');
 
@@ -381,11 +385,10 @@ begin
           SetWindowTextW(Window,
             PWideChar(WideString(PluginName +
             ' - 初期化に失敗したため使用できません')));
-          MessageBoxW(FExEdit^.Hwnd,
-            PWideChar(PluginName +
-            ' の初期化中にエラーが発生しました。'#13#10#13#10 +
-            WideString(E.Message)),
-            PWideChar('初期化エラー - ' + PluginName), MB_ICONERROR);
+
+          // It seems that an error occurs in some plugins when use MessageBox at this timing.
+          FErrorOnInitialize := WideString(E.Message);
+          PostMessage(FWindow, WM_GCMZCOMMAND, 2, 0);
         end;
       end;
 
@@ -560,6 +563,9 @@ begin
       case WP of
         0: Result := CmdAdvanceFrame(integer(LP));
         1: Result := CmdUpdateMappedData(LP <> 0);
+        2: MessageBoxW(Window,
+            PWideChar(PluginName + ' の初期化中にエラーが発生しました。'#13#10#13#10 + FErrorOnInitialize),
+            PWideChar('初期化エラー - ' + PluginName), MB_ICONERROR);
       end;
     end;
     WM_GCMZDROP_APIDEFER: begin
