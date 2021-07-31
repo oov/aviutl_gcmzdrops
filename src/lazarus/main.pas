@@ -331,7 +331,7 @@ begin
       SetClientSize(Window, 8 + 400 + 8, Y + 8);
 
       try
-        // if not Assigned(FExEdit) then
+        if not Assigned(FExEdit) then
           raise Exception.Create(
             '拡張編集プラグインが見つかりません。');
 
