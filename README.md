@@ -158,7 +158,7 @@ int main(){
   // v0.3.12 以降なら 1
   printf("GCMZAPIVer: %d\n", p->GCMZAPIVer);
 
-  printf("ProjectPath(%d): %ls\n", wcslen(p->ProjectPath), p->ProjectPath);
+  printf("ProjectPath(%d): %ls\n", (int)wcslen(p->ProjectPath), p->ProjectPath);
   printf("Window: %d\n", p->Window);
   printf("Width: %d\n", p->Width);
   printf("Height: %d\n", p->Height);
@@ -169,7 +169,7 @@ int main(){
 
   // GCMZAPIVer が 2 以上なら Flags が存在する
   if (p->GCMZAPIVer >= 2) {
-    printf("Flags: %d\n", p->Flags);
+    printf("Flags: %d\n", (int)p->Flags);
     if (p->Flags & 1) {
       // 英語化パッチが当たっている拡張編集だった
       printf("  English Patched\n");
