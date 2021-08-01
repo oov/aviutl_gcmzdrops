@@ -900,8 +900,6 @@ var
   P, PP: PByte;
   TLR, TLG, TLB: Byte;
 begin
-  if not IsWindowVisible(FExEdit^.Hwnd) then
-    raise Exception.Create('ExEdit Window is currently invisible');
   if not GetClientRect(FExEdit^.Hwnd, Rect) then
     raise Exception.Create('GetWindowRect failed');
   hExEditDC := GetDC(FExEdit^.Hwnd);
