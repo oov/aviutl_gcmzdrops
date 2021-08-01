@@ -196,6 +196,23 @@ begin
   Result := LuaReturn(L, Main());
 end;
 
+function LuaEnglishPatched(L: Plua_State): integer; cdecl;
+
+  function Main(): integer;
+  begin
+    try
+      lua_pushboolean(L, GCMZDrops.EnglishPatched());
+      Result := 1;
+    except
+      on E: Exception do
+        Result := LuaPushError(L, E);
+    end;
+  end;
+
+begin
+  Result := LuaReturn(L, Main());
+end;
+
 function LuaNeedCopy(L: Plua_State): integer; cdecl;
 
   function Main(): integer;
@@ -1040,6 +1057,8 @@ begin
   lua_setfield(L, -2, 'findallfile');
   lua_pushcfunction(L, @LuaNeedCopy);
   lua_setfield(L, -2, 'needcopy');
+  lua_pushcfunction(L, @LuaEnglishPatched);
+  lua_setfield(L, -2, 'englishpatched');
   lua_pushcfunction(L, @LuaCalcHash);
   lua_setfield(L, -2, 'calchash');
   lua_pushcfunction(L, @LuaCalcFileHash);

@@ -119,6 +119,7 @@ struct GCMZDropsData {
   int32_t AudioCh;
   int32_t GCMZAPIVer;
   wchar_t ProjectPath[MAX_PATH];
+  uint32_t Flags; // GCMZAPIVer が 2 以上なら存在する
 };
 
 int main(){
@@ -153,7 +154,10 @@ int main(){
     goto Unmap;
   }
 
-  printf("GCMZAPIVer: %d\n", p->GCMZAPIVer); // 現在は 1 のみ
+  // v0.3.23 以降なら 2
+  // v0.3.12 以降なら 1
+  printf("GCMZAPIVer: %d\n", p->GCMZAPIVer);
+
   printf("ProjectPath(%d): %ls\n", wcslen(p->ProjectPath), p->ProjectPath);
   printf("Window: %d\n", p->Window);
   printf("Width: %d\n", p->Width);
@@ -162,6 +166,21 @@ int main(){
   printf("VideoScale: %d\n", p->VideoScale);
   printf("AudioRate: %d\n", p->AudioRate);
   printf("AudioCh: %d\n", p->AudioCh);
+
+  // GCMZAPIVer が 2 以上なら Flags が存在する
+  if (p->GCMZAPIVer >= 2) {
+    printf("Flags: %d\n", p->Flags);
+    if (p->Flags & 1) {
+      // 英語化パッチが当たっている拡張編集だった
+      printf("  English Patched\n");
+    }
+  }
+
+  // GCMZAPIVer が 0 のときは対応しない　※API 仕様が異なります
+  if (p->GCMZAPIVer == 0) {
+    printf("GCMZDrops too old, please update to v0.3.12 or later.");
+    goto Unmap;
+  }
 
   HWND myWnd = GetConsoleWindow();
 

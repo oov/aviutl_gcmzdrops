@@ -82,6 +82,7 @@ type
     procedure GetAviUtlSysInfo(out SI: TSysInfo);
     procedure GetExEditFileInfo(out FI: TFileInfo);
     function IsEditing(): boolean;
+    function EnglishPatched(): boolean;
     procedure GetFileInfo(out FI: TFileInfo; out Samples: integer;
       const FileName: UTF8String);
     function Prompt(const Caption: UTF8String; var Value: UTF8String): boolean;
@@ -105,6 +106,10 @@ const
   PluginNameANSI = #$82#$b2#$82#$bf#$82#$e1#$82#$dc#$82#$ba#$83#$68#$83#$8d#$83#$62#$83#$76#$83#$58;
   PluginInfoANSI = PluginNameANSI + ' ' + Version;
   DefaultSaveDir = '%PROJECTDIR%';
+
+  ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57;
+  // '拡張編集'
+  ExEditENPatchedNameANSI = 'Advanced Editing';
 
 const
   BoolConv: array[boolean] of AviUtlBool = (AVIUTL_FALSE, AVIUTL_TRUE);
@@ -139,6 +144,7 @@ type
     AudioRate, AudioCh: integer;
     GCMZAPIVer: integer;
     ProjectFilePath: array[0..MAX_PATH-1] of WideChar;
+    Flags: Cardinal;
   end;
   PMappedData = ^TMappedData;
 
@@ -240,10 +246,6 @@ end;
 function TGCMZDrops.MainProc(Window: HWND; Message: UINT; WP: WPARAM;
   LP: LPARAM; Edit: Pointer; Filter: PFilter): integer;
 const
-  ExEditNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57;
-  // '拡張編集'
-  ExEditENPatchedNameANSI = 'Advanced Editing';
-
   ExTextNameANSI = #$8e#$9a#$96#$8b#$83#$41#$83#$56#$83#$58#$83#$67;
   // '字幕アシスト'
   AulsTransparenceNameANSI = #$8a#$67#$92#$a3#$95#$d2#$8f#$57#$82#$f0#$94#$bc#$93#$a7#$96#$be#$89#$bb;
@@ -797,6 +799,7 @@ var
   SI: TSysInfo;
   FI: TFileInfo;
   WS: WideString;
+  Flags: Cardinal;
 begin
   Result := 0;
   if FMutex = 0 then
@@ -806,7 +809,7 @@ begin
 
   FillChar(MD, SizeOf(TMappedData), 0);
   MD.Window := FAPIThread.Window;
-  MD.GCMZAPIVer := 1;
+  MD.GCMZAPIVer := 2;
   if ReadFileInfo then begin
     FillChar(FI, SizeOf(FI), 0);
     if FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) = AVIUTL_FALSE then
@@ -824,6 +827,10 @@ begin
     WS := WideString(ShiftJISString(SI.ProjectName));
     if Length(WS) > 0 then
       Move(WS[1], MD.ProjectFilePath[0], Min(Length(WS), MAX_PATH-1)*2);
+    Flags := 0;
+    if EnglishPatched() then
+      Flags := Flags or 1;
+    MD.Flags := Flags;
   end;
 
   P := MapViewOfFile(FFMO, FILE_MAP_WRITE, 0, 0, 0);
@@ -1441,6 +1448,11 @@ begin
   FillChar(FI, SizeOf(FI), 0);
   Result := (FCurrentFilterP^.ExFunc^.GetFileInfo(FCurrentEditP, @FI) <>
     AVIUTL_FALSE) and (FI.AudioRate <> 0) and (FI.AudioCh <> 0);
+end;
+
+function TGCMZDrops.EnglishPatched(): boolean;
+begin
+  Result := Assigned(FExEdit) and (FExEdit^.Name = ExEditENPatchedNameANSI);
 end;
 
 procedure TGCMZDrops.GetFileInfo(out FI: TFileInfo; out Samples: integer;
