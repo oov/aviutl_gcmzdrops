@@ -63,6 +63,7 @@ type
     procedure SetZoomLevel(const Level: integer);
     function GetCursorPos(const OldZoom, LayerHeight: PInteger): TPoint;
     procedure GetScrollBars(const HScroll, VScroll: PHandle);
+    function OnAPICall(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
     function ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
     procedure UpdateMappedData(const ReadFileInfo: boolean);
   public
@@ -375,7 +376,7 @@ begin
         SCDropper.InstallHook(FExEdit^.Hwnd);
 
         FAPIThread := TGCMZAPIThread.Create();
-        FAPIThread.OnCall := @ProcessAPICall;
+        FAPIThread.OnCall := @OnAPICall;
 
         UpdateMappedData(False);
 
@@ -1086,6 +1087,12 @@ begin
     HScroll^ := hH;
   if VScroll <> nil then
     VScroll^ := hV;
+end;
+
+function TGCMZDrops.OnAPICall(const Window: THandle; CDS: PCopyDataStruct
+  ): LRESULT;
+begin
+  PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
 end;
 
 function TGCMZDrops.ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct
