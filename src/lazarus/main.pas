@@ -1095,6 +1095,30 @@ begin
   PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
 end;
 
+function FindExtendedFilterClassWindow(): THandle;
+var
+  MyPID, PID: DWORD;
+  H: THandle;
+begin
+  MyPID := GetCurrentProcessId();
+  H := 0;
+  while H = 0 do
+  begin
+    H := FindWindowExA(0, H, 'ExtendedFilterClass', nil);
+    if h = 0 then begin
+      Result := INVALID_HANDLE_VALUE;
+      Exit;
+    end;
+    GetWindowThreadProcessId(h, @PID);
+    if PID = MyPID then begin
+      Result := H;
+      Exit;
+    end;
+  end;
+end;
+
+function GetLayeredWindowAttributes(HWND: hwnd; crKey: Pointer; bAlpha: PByte; dwFlags: PDWORD): WINBOOL; stdcall; external user32 name 'GetLayeredWindowAttributes';
+
 function TGCMZDrops.ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct
   ): LRESULT;
   procedure Process(const Layer, FrameAdv: integer; const Files: array of UTF8String);
@@ -1206,10 +1230,27 @@ function TGCMZDrops.ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct
       JD.Free;
     end;
   end;
+var
+  OldAlpha: Byte;
+  ExtendedFilterClassWindow: THandle;
+  Invisible: boolean;
 begin
   if FAPIBusy > 0 then begin
     PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
     Exit;
+  end;
+
+  // Processing fails if the window is not displayed.
+  // Since you are calling External API, so prioritize success over failure.
+  Invisible := not IsWindowVisible(FExEdit^.Hwnd);
+  if Invisible then begin
+    ExtendedFilterClassWindow := FindExtendedFilterClassWindow();
+    GetLayeredWindowAttributes(FExEdit^.Hwnd, nil, @OldAlpha, nil);
+    SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_TRANSPARENT);
+    SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_TRANSPARENT or WS_EX_LAYERED);
+    SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, 0, LWA_ALPHA);
+    SetLayeredWindowAttributes(ExtendedFilterClassWindow, 0, 0, LWA_ALPHA);
+    SetWindowPos(FExEdit^.Hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_NOZORDER or SWP_NOOWNERZORDER or SWP_NOACTIVATE or SWP_NOREDRAW or SWP_SHOWWINDOW);
   end;
 
   Inc(FAPIBusy);
@@ -1229,6 +1270,13 @@ begin
       ProcessDeleteFileQueue(True);
       PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 1, 1);
     end;
+  end;
+  if Invisible then begin
+    ShowWindow(FExEdit^.Hwnd, SW_HIDE);
+    ShowWindow(ExtendedFilterClassWindow, SW_HIDE);
+    SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, OldAlpha, LWA_ALPHA);
+    SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) and (not WS_EX_TRANSPARENT));
+    SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) and (not (WS_EX_TRANSPARENT or WS_EX_LAYERED)));
   end;
 end;
 
