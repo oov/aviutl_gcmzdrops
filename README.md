@@ -206,6 +206,11 @@ int main(){
   //   ファイル名は UTF-8 にする必要がありますが、拡張編集の仕様上 ShiftJIS の範囲内の文字しか扱えません。
   cds.lpData = u8"{\"layer\":-1,\"frameAdvance\":12,\"files\":[\"C:\\\\test.bmp\"]}";
   cds.cbData = strlen(cds.lpData);
+
+  // API を呼び出します
+  //   cds.dwData の値が間違っている場合や JSON がおかしい場合など、
+  //   API としての送信フォーマットに問題がある場合には OutputDebugString でエラーメッセージを出力します。
+  //   ドロップするファイルが見つからないなど、ファイルの内容に問題がある場合はメッセージボックスで表示します。
   SendMessage(targetWnd, WM_COPYDATA, (WPARAM)myWnd, (LPARAM)&cds);
 
 Unmap:
