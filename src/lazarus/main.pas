@@ -27,7 +27,6 @@ type
     FKnownFolders: array of UTF8String;
     FDeleteOnFinishFileQueue: TStringList;
     FDeleteOnAbortFileQueue: TStringList;
-    FAPIBusy: Integer;
     FAPIThread: TGCMZAPIThread;
     function GetEntry: PFilterDLL;
     function GetExEditLayerHeight: integer;
@@ -63,8 +62,8 @@ type
     procedure SetZoomLevel(const Level: integer);
     function GetCursorPos(const OldZoom, LayerHeight: PInteger): TPoint;
     procedure GetScrollBars(const HScroll, VScroll: PHandle);
-    function OnAPICall(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
-    function ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct): LRESULT;
+    procedure OnAPICall(const Data: PAPICallParams);
+    procedure ProcessAPICall(const Data: PAPICallParams);
     procedure UpdateMappedData(const ReadFileInfo: boolean);
   public
     constructor Create();
@@ -100,7 +99,7 @@ var
 implementation
 
 uses
-  fpjson, jsonparser, InputDialog, ScriptableDropper, UsedFiles, Lua, Util, Ver;
+  InputDialog, ScriptableDropper, UsedFiles, Lua, Util, Ver;
 
 const
   PluginName = 'ごちゃまぜドロップス';
@@ -118,8 +117,6 @@ const
 const
   WM_GCMZDROP = WM_APP + 1;
   WM_GCMZCOMMAND = WM_APP + 2;
-  WM_GCMZDROP_APIDEFER = WM_APP + 3;
-  WM_GCMZDROP_APIDEFER_COMPLETE = WM_APP + 4;
 
   ZoomActiveRed = 96;
   ZoomActiveRed16 = 99;
@@ -377,6 +374,7 @@ begin
 
         FAPIThread := TGCMZAPIThread.Create();
         FAPIThread.OnCall := @OnAPICall;
+        FAPIThread.Ready();
 
         UpdateMappedData(False);
 
@@ -475,7 +473,7 @@ begin
     begin
       PDDI := {%H-}PGCMZDragDropInfo(LP);
       hs := DisableFamilyWindows(0);
-      Inc(FAPIBusy);
+      FAPIThread.SetBusy();
       try
         try
           case WP of
@@ -521,10 +519,7 @@ begin
             end;
             10:
             begin
-              FAPILua := TLua.Create();
-              if not FAPILua.CallDropSimulated(PDDI^.DDI^.Files, PDDI^.DDI^.Point, PDDI^.DDI^.KeyState, PDDI^.FrameAdvance) then
-                raise EAbort.Create('canceled ondropsimulated');
-              FreeAndNil(FAPILua);
+              ProcessAPICall({%H-}PAPICallParams(LP));
             end;
             100:
             begin
@@ -546,27 +541,27 @@ begin
             FreeAndNil(FLua);
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
-            if (WP <> 100) and Assigned(PDDI) then
+            if (WP <> 100) and (WP <> 10) and Assigned(PDDI) then
               PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
           end;
           on E: Exception do
           begin
             ODS('error: %s', [WideString(E.Message)]);
-            MessageBoxW(FExEdit^.Hwnd,
-              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
-              PluginName, MB_ICONERROR);
             FreeAndNil(FLua);
             FreeAndNil(FAPILua);
             FreeAndNil(FSCDropperLua);
-            if (WP <> 100) and Assigned(PDDI) then
+            if (WP <> 100) and (WP <> 10) and Assigned(PDDI) then
               PDDI^.DDI^.Effect := DROPEFFECT_NONE;
             ProcessDeleteFileQueue(True);
+            MessageBoxW(FExEdit^.Hwnd,
+              PWideChar('ドラッグ＆ドロップの処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
+              PluginName, MB_ICONERROR);
           end;
         end;
       finally
         EnableFamilyWindows(hs);
-        PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 0, 0);
+        FAPIThread.Ready();
       end;
       Result := 0;
     end;
@@ -579,17 +574,6 @@ begin
             PWideChar('初期化エラー - ' + PluginName), MB_ICONERROR);
       end;
     end;
-    WM_GCMZDROP_APIDEFER: begin
-      if FAPIBusy > 0 then
-        PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WP, LP)
-      else
-        Result := ProcessAPICall(THandle(WP), {%H-}PCopyDataStruct(LP));
-    end;
-    WM_GCMZDROP_APIDEFER_COMPLETE: begin
-      Dec(FAPIBusy);
-      if WP = 1 then
-         FAPIThread.Processed();
-    end
     else
       Result := 0;
   end;
@@ -1089,14 +1073,14 @@ begin
     VScroll^ := hV;
 end;
 
-function TGCMZDrops.OnAPICall(const Window: THandle; CDS: PCopyDataStruct
-  ): LRESULT;
+procedure TGCMZDrops.OnAPICall(const Data: PAPICallParams);
 begin
-  PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
+  PostMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(Data));
 end;
 
 function FindExtendedFilterClassWindow(): THandle;
 var
+  S: WideString;
   MyPID, PID: DWORD;
   H: THandle;
 begin
@@ -1106,12 +1090,17 @@ begin
   begin
     H := FindWindowExA(0, H, 'ExtendedFilterClass', nil);
     if h = 0 then begin
-      Result := INVALID_HANDLE_VALUE;
+      Result := 0;
       Exit;
     end;
     GetWindowThreadProcessId(h, @PID);
     if PID = MyPID then begin
-      Result := H;
+      SetLength(S, GetWindowTextLengthW(H));
+      GetWindowTextW(H, @S[1], Length(S));
+      if S = 'ExtendedFilter' then
+        Result := 0 // Window is not initialized yet
+      else
+        Result := H;
       Exit;
     end;
   end;
@@ -1119,164 +1108,93 @@ end;
 
 function GetLayeredWindowAttributes(HWND: hwnd; crKey: Pointer; bAlpha: PByte; dwFlags: PDWORD): WINBOOL; stdcall; external user32 name 'GetLayeredWindowAttributes';
 
-function TGCMZDrops.ProcessAPICall(const Window: THandle; CDS: PCopyDataStruct
-  ): LRESULT;
-  procedure Process(const Layer, FrameAdv: integer; const Files: array of UTF8String);
-  var
-    VScrollBar: THandle;
-    I, LayerHeight, OldZoom: integer;
-    SI: TScrollInfo;
-    DDI: TDragDropInfo;
-    GDDI: TGCMZDragDropInfo;
-  begin
-    DDI.KeyState := 0;
-    DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
-    if (DDI.Point.x = -1)and(DDI.Point.y = -1) then
-      raise Exception.Create('現在のカーソル位置の検出に失敗しました。');
-    SetLength(DDI.Files, 0);
-
-    GetScrollBars(nil, @VScrollBar);
-    SI.cbSize := SizeOf(TScrollInfo);
-    SI.fMask := SIF_POS;
-    if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
-      raise Exception.Create('GetScrollInfo failed');
-    case Layer of
-      -100..-1: begin // relative
-        I := Layer * - 1 - 1;
-        Inc(DDI.Point.y, I*LayerHeight);
-      end;
-      1..100: begin // absolute
-        I := Layer - 1;
-        if SI.nPos > I then begin
-          SI.nPos := I;
-          SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
-          SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
-          SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
-        end;
-        Inc(DDI.Point.y, (I - SI.nPos)*LayerHeight);
-      end;
-    end;
-
-    GDDI.FrameAdvance := FrameAdv;
-    GDDI.DDI := @DDI;
-    SetLength(DDI.Files, Length(Files));
-    for I := Low(Files) to High(Files) do begin
-      DDI.Files[I].DeleteOnFinish := False;
-      DDI.Files[I].Type_ := ftFile;
-      DDI.Files[I].MediaType := '';
-      DDI.Files[I].FilePathOrContent := Files[I];
-    end;
-    SendMessage(FWindow, WM_GCMZDROP, 10, {%H-}LPARAM(@GDDI));
-    SetZoomLevel(OldZoom);
-    Result := 1;
-  end;
-  function API0(): LRESULT;
-  var
-    Layer, FrameAdv: integer;
-    Files: array of UTF8String;
-    WS, S: WideString;
-    I: integer;
-  begin
-    SetLength(WS, CDS^.cbData div 2);
-    Move(CDS^.lpData^, WS[1], CDS^.cbData);
-    Layer := StrToIntDef(string(Token(#0, WS)), 0);
-    FrameAdv := StrToIntDef(string(Token(#0, WS)), 0);
-    I := 0;
-    SetLength(Files, 0);
-    while WS <> '' do begin
-      S := Token(#0, WS);
-      if S = '' then
-        continue;
-      SetLength(Files, I + 1);
-      Files[I] := UTF8String(S);
-      Inc(I);
-    end;
-    Process(Layer, FrameAdv, Files);
-    Result := 1;
-  end;
-  function API1(): LRESULT;
-  var
-    S: UTF8String;
-    JD, E: TJSONData;
-    Layer, FrameAdv, I: integer;
-    Files: array of UTF8String;
-  begin
-    Result := 0;
-    SetLength(S, CDS^.cbData);
-    Move(CDS^.lpData^, S[1], CDS^.cbData);
-    JD := GetJSON(S);
-    try
-      E := JD.FindPath('layer');
-      if not Assigned(E) then
-        raise Exception.Create('layer が指定されていません。');
-      Layer := E.AsInteger;
-
-      E := JD.FindPath('frameAdvance');
-      if Assigned(E) then
-        FrameAdv := E.AsInteger
-      else
-        FrameAdv := 0;
-
-      E := JD.FindPath('files');
-      if not Assigned(E) then
-        raise Exception.Create('files が指定されていません。');
-      SetLength(Files, E.Count);
-      for I := 0 to E.Count-1 do begin
-        Files[I] := E.Items[I].AsString;
-      end;
-      Process(Layer, FrameAdv, Files);
-      Result := 1;
-    finally
-      JD.Free;
-    end;
-  end;
+procedure TGCMZDrops.ProcessAPICall(const Data: PAPICallParams);
 var
   OldAlpha: Byte;
   ExtendedFilterClassWindow: THandle;
   Invisible: boolean;
-begin
-  if FAPIBusy > 0 then begin
-    PostMessage(FWindow, WM_GCMZDROP_APIDEFER, WPARAM(Window), {%H-}LPARAM(CDS));
-    Exit;
-  end;
 
+  VScrollBar: THandle;
+  I, LayerHeight, OldZoom: integer;
+  SI: TScrollInfo;
+  DDI: TDragDropInfo;
+  GDDI: TGCMZDragDropInfo;
+begin
   // Processing fails if the window is not displayed.
   // Since you are calling External API, so prioritize success over failure.
   Invisible := not IsWindowVisible(FExEdit^.Hwnd);
   if Invisible then begin
-    ExtendedFilterClassWindow := FindExtendedFilterClassWindow();
     GetLayeredWindowAttributes(FExEdit^.Hwnd, nil, @OldAlpha, nil);
     SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_TRANSPARENT);
-    SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) or WS_EX_TRANSPARENT or WS_EX_LAYERED);
     SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, 0, LWA_ALPHA);
-    SetLayeredWindowAttributes(ExtendedFilterClassWindow, 0, 0, LWA_ALPHA);
+    ExtendedFilterClassWindow := FindExtendedFilterClassWindow();
+    if ExtendedFilterClassWindow <> 0 then begin
+      SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE) or WS_EX_TRANSPARENT or WS_EX_LAYERED);
+      SetLayeredWindowAttributes(ExtendedFilterClassWindow, 0, 0, LWA_ALPHA);
+    end;
     SetWindowPos(FExEdit^.Hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_NOZORDER or SWP_NOOWNERZORDER or SWP_NOACTIVATE or SWP_NOREDRAW or SWP_SHOWWINDOW);
   end;
-
-  Inc(FAPIBusy);
   try
-    case CDS^.dwData of
-      0: Result := API0();
-      1: Result := API1();
-      else raise Exception.Create('COPYDATASTRUCT 構造体の dwData に不正な値が渡されました。');
+    DDI.KeyState := 0;
+    DDI.Point := GetCursorPos(@OldZoom, @LayerHeight);
+    try
+      if (DDI.Point.x = -1)and(DDI.Point.y = -1) then
+        raise Exception.Create('現在のカーソル位置の検出に失敗しました。');
+      SetLength(DDI.Files, 0);
+
+      GetScrollBars(nil, @VScrollBar);
+      SI.cbSize := SizeOf(TScrollInfo);
+      SI.fMask := SIF_POS;
+      if not GetScrollInfo(VScrollBar, SB_CTL, SI) then
+        raise Exception.Create('GetScrollInfo failed');
+      case Data^.Layer of
+        -100..-1: begin // relative
+          I := Data^.Layer * - 1 - 1;
+          Inc(DDI.Point.y, I*LayerHeight);
+        end;
+        1..100: begin // absolute
+          I := Data^.Layer - 1;
+          if SI.nPos > I then begin
+            SI.nPos := I;
+            SI.nPos := SetScrollInfo(VScrollBar, SB_CTL, SI, True);
+            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, SI.nPos), VScrollBar);
+            SendMessage(FExEdit^.Hwnd, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, SI.nPos), VScrollBar);
+          end;
+          Inc(DDI.Point.y, (I - SI.nPos)*LayerHeight);
+        end;
+      end;
+
+      GDDI.FrameAdvance := Data^.FrameAdv;
+      GDDI.DDI := @DDI;
+      SetLength(DDI.Files, Length(Data^.Files));
+      for I := Low(Data^.Files) to High(Data^.Files) do begin
+        DDI.Files[I].DeleteOnFinish := False;
+        DDI.Files[I].Type_ := ftFile;
+        DDI.Files[I].MediaType := '';
+        DDI.Files[I].FilePathOrContent := Data^.Files[I];
+      end;
+
+      FAPILua := TLua.Create();
+      try
+        if not FAPILua.CallDropSimulated(GDDI.DDI^.Files, GDDI.DDI^.Point, GDDI.DDI^.KeyState, GDDI.FrameAdvance) then
+          raise EAbort.Create('canceled ondropsimulated');
+      finally
+        FreeAndNil(FAPILua);
+      end;
+    finally
+      SetZoomLevel(OldZoom);
     end;
-    PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 1, 0);
-  except
-    on E: Exception do begin
-      ODS('error: %s', [WideString(E.Message)]);
-      MessageBoxW(FExEdit^.Hwnd,
-        PWideChar('外部 API 経由での処理中にエラーが発生しました。'#13#10#13#10 + WideString(E.Message)),
-        PluginName, MB_ICONERROR);
-      ProcessDeleteFileQueue(True);
-      PostMessage(FWindow, WM_GCMZDROP_APIDEFER_COMPLETE, 1, 1);
+  finally
+    if Invisible then begin
+      ShowWindow(FExEdit^.Hwnd, SW_HIDE);
+      SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, OldAlpha, LWA_ALPHA);
+      SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) and (not WS_EX_TRANSPARENT));
+      if ExtendedFilterClassWindow <> 0 then begin
+        ShowWindow(ExtendedFilterClassWindow, SW_HIDE);
+        SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE) and (not (WS_EX_TRANSPARENT or WS_EX_LAYERED)));
+      end;
     end;
-  end;
-  if Invisible then begin
-    ShowWindow(FExEdit^.Hwnd, SW_HIDE);
-    ShowWindow(ExtendedFilterClassWindow, SW_HIDE);
-    SetLayeredWindowAttributes(FExEdit^.Hwnd, 0, OldAlpha, LWA_ALPHA);
-    SetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) and (not WS_EX_TRANSPARENT));
-    SetWindowLong(ExtendedFilterClassWindow, GWL_EXSTYLE, GetWindowLong(FExEdit^.Hwnd, GWL_EXSTYLE) and (not (WS_EX_TRANSPARENT or WS_EX_LAYERED)));
+    FAPIThread.Processed();
   end;
 end;
 
@@ -1356,8 +1274,6 @@ begin
 
   FDeleteOnFinishFileQueue := TStringList.Create;
   FDeleteOnAbortFileQueue := TStringList.Create;
-
-  FAPIBusy := 0;
 
   FMutex := CreateMutex(nil, FALSE, 'GCMZDropsMutex');
   if FMutex = 0 then begin
