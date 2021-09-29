@@ -1,5 +1,3 @@
-src/lazarus/ver.pas
-src/lazarus/lib
+.vscode/
 aviutl/
-bin/
-manualtest/
+build/

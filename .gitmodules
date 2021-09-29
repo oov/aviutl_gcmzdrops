@@ -1,0 +1,6 @@
+[submodule "src/c/3rd/jansson"]
+	path = src/c/3rd/jansson
+	url = https://github.com/akheron/jansson
+[submodule "src/c/3rd/hashmap"]
+	path = src/c/3rd/hashmap
+	url = https://github.com/oov/hashmap.c
