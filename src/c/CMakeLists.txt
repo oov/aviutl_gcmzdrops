@@ -1,5 +1,3 @@
-set(GCMZ_VERSION v0.4.0)
-
 option(JANSSON_WITHOUT_TESTS "" ON)
 option(JANSSON_BUILD_DOCS "" OFF)
 set(CMAKE_REQUIRED_LINK_OPTIONS -no-pthread)
@@ -7,7 +5,6 @@ add_subdirectory(3rd/jansson)
 
 add_custom_target(generate_version_h COMMAND
   ${CMAKE_COMMAND}
-  -Dversion="${GCMZ_VERSION}"
   -Dlocal_dir="${CMAKE_CURRENT_SOURCE_DIR}"
   -Dinput_file="${CMAKE_CURRENT_SOURCE_DIR}/version.h.in"
   -Doutput_file="${CMAKE_CURRENT_BINARY_DIR}/version.h"
