@@ -31,6 +31,7 @@ enum
 
 static void cv_init(struct cv *const cv)
 {
+  assert(cv != NULL);
   mtx_init(&cv->mtx, mtx_plain | mtx_recursive);
   cnd_init(&cv->cnd);
   cv->var = 0;
@@ -38,22 +39,26 @@ static void cv_init(struct cv *const cv)
 
 static void cv_exit(struct cv *const cv)
 {
+  assert(cv != NULL);
   cnd_destroy(&cv->cnd);
   mtx_destroy(&cv->mtx);
 }
 
 static void cv_lock(struct cv *const cv)
 {
+  assert(cv != NULL);
   mtx_lock(&cv->mtx);
 }
 
 static void cv_unlock(struct cv *const cv)
 {
+  assert(cv != NULL);
   mtx_unlock(&cv->mtx);
 }
 
 static void cv_signal(struct cv *const cv, int const var)
 {
+  assert(cv != NULL);
   cv->var = var;
   cnd_signal(&cv->cnd);
 }
@@ -279,6 +284,11 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
             .len = cds->cbData / 2,
         },
         &d.params);
+    if (efailed(err))
+    {
+      err = ethru(err);
+      goto cleanup;
+    }
     break;
   case 1:
     err = parse_api1(
@@ -287,14 +297,14 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
             .len = cds->cbData,
         },
         &d.params);
+    if (efailed(err))
+    {
+      err = ethru(err);
+      goto cleanup;
+    }
     break;
   default:
     err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("未知の API バージョンです。")));
-    break;
-  }
-  if (efailed(err))
-  {
-    err = ethru(err);
     goto cleanup;
   }
 
