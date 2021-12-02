@@ -53,4 +53,4 @@ struct api
 NODISCARD error api_init(struct api *const api);
 NODISCARD error api_update_mapped_data(struct api *const api);
 NODISCARD error api_exit(struct api *const api);
-NODISCARD bool api_initialized(struct api const*const api);
+NODISCARD bool api_initialized(struct api const *const api);

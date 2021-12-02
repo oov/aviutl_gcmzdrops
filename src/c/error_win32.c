@@ -35,10 +35,10 @@ NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR 
     goto cleanup;
   }
 
-  if (msg[msglen-1] == L'\r' || msg[msglen-1] == L'\n')
+  if (msg[msglen - 1] == L'\r' || msg[msglen - 1] == L'\n')
   {
     msg[--msglen] = L'\0';
-    if (msg[msglen-1] == L'\r' || msg[msglen-1] == L'\n')
+    if (msg[msglen - 1] == L'\r' || msg[msglen - 1] == L'\n')
     {
       msg[--msglen] = L'\0';
     }
