@@ -62,36 +62,36 @@ add_dependencies(aviutl_plugin generate_version_h generate_lua51dl)
 list(APPEND targets aviutl_plugin)
 
 foreach(target ${targets})
-  if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
-    target_compile_definitions(${target} PRIVATE
-      __STDC_NO_THREADS__
-      _WIN32_WINNT=0x0502
-      _WINDOWS
-      USE_STR
-      USE_WSTR
-      $<$<CONFIG:Release>:NDEBUG>
-      $<$<CONFIG:Debug>:LEAK_DETECTOR>
-      $<$<CONFIG:Debug>:ALLOCATE_LOGGER>
-      # for local testing
-      # $<$<CONFIG:Release>:LEAK_DETECTOR>
-      # $<$<CONFIG:Release>:ALLOCATE_LOGGER>
-    )
-    target_compile_options(${target} PRIVATE
-      -mstackrealign
-      -Wall
-      -Wextra
-      -Werror=return-type
-      -pedantic-errors
-      $<$<CONFIG:Debug>:-O0>
-      $<$<CONFIG:Release>:-O2>
-    )
-    target_link_options(${target} PRIVATE
-      $<$<CONFIG:Release>:-s>
-      -Wl,--kill-at
-      -static-libgcc
-      -no-pthread
-    )
-  endif()
+  target_compile_definitions(${target} PRIVATE
+    __STDC_NO_THREADS__
+    _WIN32_WINNT=0x0502
+    _WINDOWS
+    USE_STR
+    USE_WSTR
+    $<$<CONFIG:Release>:NDEBUG>
+    $<$<CONFIG:Debug>:LEAK_DETECTOR>
+    $<$<CONFIG:Debug>:ALLOCATE_LOGGER>
+    # for local testing
+    # $<$<CONFIG:Release>:LEAK_DETECTOR>
+    # $<$<CONFIG:Release>:ALLOCATE_LOGGER>
+  )
+  target_compile_options(${target} PRIVATE
+    --rtlib=compiler-rt
+    -mstackrealign
+    -Wall
+    -Wextra
+    -Werror=return-type
+    -pedantic-errors
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Release>:-O2>
+  )
+  target_link_options(${target} PRIVATE
+    --rtlib=compiler-rt
+    -Wl,--kill-at
+    -no-pthread
+    -static
+    $<$<CONFIG:Release>:-s>
+  )
 endforeach(target)
 
 add_executable(test_base error_win32.c error_gcmz.c base_test.c)
@@ -119,6 +119,7 @@ foreach(target ${tests})
       TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test
     )
     target_compile_options(${target} PRIVATE
+      --rtlib=compiler-rt
       -mstackrealign
       -Wall
       -Wextra
@@ -127,9 +128,10 @@ foreach(target ${tests})
       -O0
     )
     target_link_options(${target} PRIVATE
+      --rtlib=compiler-rt
       -Wl,--kill-at
-      -static-libgcc
       -no-pthread
+      -static
     )
     target_link_libraries(${target} PRIVATE
       shlwapi
