@@ -565,9 +565,17 @@ static int luafn_findallfile(lua_State *const L)
     err = ethru(err);
     goto cleanup;
   }
+
+  lua_newtable(L);
+
   err = gcmz_get_save_dir(&tmp);
   if (efailed(err))
   {
+    if (eis(err, err_type_gcmz, err_gcmz_project_is_not_open) || eis(err, err_type_gcmz, err_gcmz_project_has_not_yet_been_saved))
+    {
+      efree(&err);
+      goto cleanup;
+    }
     err = ethru(err);
     goto cleanup;
   }
@@ -585,7 +593,6 @@ static int luafn_findallfile(lua_State *const L)
     goto cleanup;
   }
 
-  lua_newtable(L);
   int idx = 0;
 
   WIN32_FIND_DATAW fd = {0};
@@ -593,7 +600,7 @@ static int luafn_findallfile(lua_State *const L)
   if (h == INVALID_HANDLE_VALUE)
   {
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-    if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+    if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) || hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
     {
       goto cleanup;
     }
