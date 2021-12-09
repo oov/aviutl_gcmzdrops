@@ -354,7 +354,7 @@ error gcmz_is_need_copy(struct wstr const *const path, bool *const need_copy)
   ereport(sfree(&ext));
 
   int mode = 0;
-  err = gui_get_mode(&mode);
+  err = gui_get_save_mode(&mode);
   if (efailed(err))
   {
     err = ethru(err);

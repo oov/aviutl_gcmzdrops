@@ -231,7 +231,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
 
   if (size == 0)
   {
-    ereport(gui_set_mode_to_default());
+    ereport(gui_set_save_mode_to_default());
     ereport(gui_set_save_dir_to_default());
     goto cleanup;
   }
@@ -256,11 +256,11 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
     if (efailed(err))
     {
       efree(&err);
-      ereport(gui_set_mode_to_default());
+      ereport(gui_set_save_mode_to_default());
     }
     else
     {
-      ereport(gui_set_mode(v));
+      ereport(gui_set_save_mode(v));
     }
   }
   err = find_token(&tmp, L"savepath=", &pos, &len);
@@ -309,7 +309,7 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
     goto cleanup;
   }
   int mode = 0;
-  err = gui_get_mode(&mode);
+  err = gui_get_save_mode(&mode);
   if (efailed(err))
   {
     err = ethru(err);
@@ -1075,7 +1075,7 @@ static BOOL wndproc_init(HWND const window)
     g_api.userdata = (void *)aviutl_get_my_window_must();
   }
 
-  ereport(gui_set_mode_to_default());
+  ereport(gui_set_save_mode_to_default());
   ereport(gui_set_save_dir_to_default());
   update_mapped_data();
   return FALSE;
@@ -1110,7 +1110,7 @@ static BOOL wndproc_exit(void)
 
 static BOOL wndproc_file_open(void)
 {
-  ereport(gui_set_mode_to_default());
+  ereport(gui_set_save_mode_to_default());
   ereport(gui_set_save_dir_to_default());
   update_mapped_data();
   return FALSE;
@@ -1118,7 +1118,7 @@ static BOOL wndproc_file_open(void)
 
 static BOOL wndproc_file_close(void)
 {
-  ereport(gui_set_mode_to_default());
+  ereport(gui_set_save_mode_to_default());
   ereport(gui_set_save_dir_to_default());
   update_mapped_data();
   return FALSE;

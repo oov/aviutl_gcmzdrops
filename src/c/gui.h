@@ -21,6 +21,6 @@ void gui_handle_wm_command(HWND const window, WPARAM const wparam, LPARAM const 
 NODISCARD error gui_set_save_dir(wchar_t const *const dir);
 NODISCARD error gui_set_save_dir_to_default(void);
 NODISCARD error gui_get_save_dir(struct wstr *const dest);
-NODISCARD error gui_set_mode(int const mode);
-NODISCARD error gui_set_mode_to_default(void);
-NODISCARD error gui_get_mode(int *const mode);
+NODISCARD error gui_set_save_mode(int const mode);
+NODISCARD error gui_set_save_mode_to_default(void);
+NODISCARD error gui_get_save_mode(int *const mode);

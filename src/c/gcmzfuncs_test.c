@@ -566,7 +566,7 @@ error gui_get_save_dir(struct wstr *dest)
   return scpy(dest, g_gui_save_dir);
 }
 
-error gui_get_mode(int *mode)
+error gui_get_save_mode(int *mode)
 {
   *mode = g_gui_mode;
   return eok();

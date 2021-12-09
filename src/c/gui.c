@@ -297,7 +297,7 @@ cleanup:
   return err;
 }
 
-error gui_set_mode(int const mode)
+error gui_set_save_mode(int const mode)
 {
   switch (mode)
   {
@@ -312,12 +312,12 @@ error gui_set_mode(int const mode)
   return eok();
 }
 
-error gui_set_mode_to_default(void)
+error gui_set_save_mode_to_default(void)
 {
   return gui_set_mode(0);
 }
 
-error gui_get_mode(int *const mode)
+error gui_get_save_mode(int *const mode)
 {
   if (!mode)
   {
