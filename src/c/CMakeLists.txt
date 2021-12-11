@@ -20,6 +20,8 @@ add_custom_target(generate_lua51dl COMMAND
 add_library(aviutl_plugin SHARED)
 set_target_properties(aviutl_plugin PROPERTIES OUTPUT_NAME "GCMZDrops.auf" PREFIX "" SUFFIX "" RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 target_sources(aviutl_plugin PRIVATE
+  3rd/base.c/base.c
+  3rd/base.c/error_win32.c
   3rd/crc64/crc64.c
   3rd/detect/detect.c
   api.c
@@ -27,7 +29,6 @@ target_sources(aviutl_plugin PRIVATE
   datauri.c
   droptarget.c
   error_gcmz.c
-  error_win32.c
   files.c
   gcmz.rc
   gcmzdrops.c
@@ -36,13 +37,13 @@ target_sources(aviutl_plugin PRIVATE
   lua.c
   luafuncs.c
   main.c
-  base.c
   scpopup.c
   sniffer.c
   task.c
   util.c
 )
 target_include_directories(aviutl_plugin BEFORE PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/3rd/base.c/"
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/include"
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
 )
@@ -94,48 +95,49 @@ foreach(target ${targets})
   )
 endforeach(target)
 
-add_executable(test_base error_win32.c error_gcmz.c base_test.c)
+add_executable(test_base 3rd/base.c/base_test.c)
 list(APPEND tests test_base)
-add_executable(test_util base.c error_win32.c error_gcmz.c util_test.c)
+add_executable(test_util 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util_test.c)
 list(APPEND tests test_util)
-add_executable(test_datauri base.c error_win32.c error_gcmz.c util.c sniffer.c datauri_test.c)
+add_executable(test_datauri 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util.c sniffer.c datauri_test.c)
 list(APPEND tests test_datauri)
-add_executable(test_gcmzfuncs base.c error_win32.c error_gcmz.c task.c util.c gcmzfuncs_test.c)
+add_executable(test_gcmzfuncs 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c task.c util.c gcmzfuncs_test.c)
 list(APPEND tests test_gcmzfuncs)
-add_executable(test_luafuncs base.c error_win32.c error_gcmz.c util.c files.c 3rd/crc64/crc64.c 3rd/detect/detect.c luafuncs_test.c)
+add_executable(test_luafuncs 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util.c files.c 3rd/crc64/crc64.c 3rd/detect/detect.c luafuncs_test.c)
 list(APPEND tests test_luafuncs)
 
 foreach(target ${tests})
   add_test(NAME ${target} COMMAND ${target})
-  if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
-    target_compile_definitions(${target} PRIVATE
-      __STDC_NO_THREADS__
-      _WIN32_WINNT=0x0502
-      _CONSOLE
-      USE_STR
-      USE_WSTR
-      LEAK_DETECTOR
-      ALLOCATE_LOGGER
-      TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test
-    )
-    target_compile_options(${target} PRIVATE
-      --rtlib=compiler-rt
-      -mstackrealign
-      -Wall
-      -Wextra
-      -Werror=return-type
-      -pedantic-errors
-      -O0
-    )
-    target_link_options(${target} PRIVATE
-      --rtlib=compiler-rt
-      -Wl,--kill-at
-      -no-pthread
-      -static
-    )
-    target_link_libraries(${target} PRIVATE
-      shlwapi
-      lua5.1
-    )
-  endif()
+  target_compile_definitions(${target} PRIVATE
+    __STDC_NO_THREADS__
+    _WIN32_WINNT=0x0502
+    _CONSOLE
+    USE_STR
+    USE_WSTR
+    LEAK_DETECTOR
+    ALLOCATE_LOGGER
+    TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test
+  )
+  target_include_directories(${target} BEFORE PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/base.c/"
+  )
+  target_compile_options(${target} PRIVATE
+    --rtlib=compiler-rt
+    -mstackrealign
+    -Wall
+    -Wextra
+    -Werror=return-type
+    -pedantic-errors
+    -O0
+  )
+  target_link_options(${target} PRIVATE
+    --rtlib=compiler-rt
+    -Wl,--kill-at
+    -no-pthread
+    -static
+  )
+  target_link_libraries(${target} PRIVATE
+    shlwapi
+    lua5.1
+  )
 endforeach(target)
