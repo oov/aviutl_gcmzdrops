@@ -11,10 +11,15 @@ add_custom_target(generate_version_h COMMAND
   -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/version.cmake"
 )
 
+find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
 add_custom_target(generate_lua51dl COMMAND
   ${CMAKE_COMMAND}
   -Dlocal_dir="${CMAKE_CURRENT_BINARY_DIR}"
-  -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/lua51dl.cmake"
+  -Ddll="${LUA51DLL}"
+  -Ddef="${CMAKE_CURRENT_BINARY_DIR}/lua51.def"
+  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51.a"
+  -Ddelayed_lib="${CMAKE_CURRENT_BINARY_DIR}/liblua51dl.a"
+  -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/makelib.cmake"
 )
 
 add_library(aviutl_plugin SHARED)
