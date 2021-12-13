@@ -240,7 +240,7 @@ NODISCARD static error load_lua51(HMODULE *const lua51)
   *lua51 = LoadLibraryW(path.ptr);
   if (!*lua51)
   {
-    err = err(err_type_gcmz, err_gcnz_lua51_cannot_load);
+    err = err(err_type_gcmz, err_gcmz_lua51_cannot_load);
     goto cleanup;
   }
 

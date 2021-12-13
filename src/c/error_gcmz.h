@@ -12,7 +12,7 @@ enum err_gcmz
   err_gcmz_unsupported_aviutl_version = 100,
   err_gcmz_exedit_not_found = 101,
   err_gcmz_exedit_not_found_in_same_dir = 102,
-  err_gcnz_lua51_cannot_load = 103,
+  err_gcmz_lua51_cannot_load = 103,
   err_gcmz_unsupported_exedit_version = 104,
   err_gcmz_project_is_not_open = 105,
   err_gcmz_project_has_not_yet_been_saved = 106,

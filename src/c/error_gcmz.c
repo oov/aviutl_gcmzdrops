@@ -12,7 +12,7 @@ NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR 
     return scpy(message, NSTR("拡張編集プラグインが見つかりません。"));
   case err_gcmz_exedit_not_found_in_same_dir:
     return scpy(message, NSTR("拡張編集プラグインが同じフォルダー内に見つかりません。"));
-  case err_gcnz_lua51_cannot_load:
+  case err_gcmz_lua51_cannot_load:
     return scpy(message, NSTR("lua51.dll の読み込みに失敗しました。"));
   case err_gcmz_unsupported_exedit_version:
     return scpy(message, NSTR("拡張編集プラグインのバージョンが動作対象外です。"));
