@@ -4,11 +4,11 @@
 #include <lua5.1/lauxlib.h>
 #include <combaseapi.h>
 
+#include "3rd/base.c/error_win32.h"
 #include "3rd/crc64/crc64.h"
 #include "3rd/detect/detect.h"
 #include "aviutl.h"
 #include "droptarget.h"
-#include "error_win32.h"
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
 #include "lua.h"

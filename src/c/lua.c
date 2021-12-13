@@ -4,7 +4,7 @@
 #include <lua5.1/lauxlib.h>
 #include <combaseapi.h>
 
-#include "error_win32.h"
+#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
 #include "luafuncs.h"

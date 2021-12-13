@@ -4,11 +4,11 @@
 #include <shellapi.h>
 #include <ole2.h>
 
+#include "3rd/base.c/base.h"
+#include "3rd/base.c/error_win32.h"
 #include "api.h"
-#include "base.h"
 #include "droptarget.h"
 #include "error_gcmz.h"
-#include "error_win32.h"
 #include "gcmzfuncs.h"
 #include "gui.h"
 #include "lua.h"

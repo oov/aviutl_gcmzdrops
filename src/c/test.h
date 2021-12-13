@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 
-#include "base.h"
-#include "error_win32.h"
+#include "3rd/base.c/base.h"
+#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 
 static inline void test_init_(void)

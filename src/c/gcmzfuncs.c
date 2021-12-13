@@ -3,8 +3,8 @@
 #include <shlobj.h>
 #include <shellapi.h>
 
+#include "3rd/base.c/error_win32.h"
 #include "aviutl.h"
-#include "error_win32.h"
 #include "error_gcmz.h"
 #include "gcmzdrops.h"
 #include "gui.h"

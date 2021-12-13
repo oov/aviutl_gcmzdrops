@@ -4,11 +4,11 @@
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
 #include <threads.h>
 #else
-#include "3rd/threads/threads.h"
+#include "3rd/base.c/3rd/threads/threads.h"
 #endif
 
-#include "base.h"
-#include "error_win32.h"
+#include "3rd/base.c/base.h"
+#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 #include "files.h"
 #include "util.h"

@@ -5,7 +5,7 @@
 
 #include <oleidl.h>
 
-#include "base.h"
+#include "3rd/base.c/base.h"
 #include "files.h"
 
 struct drag_drop_info

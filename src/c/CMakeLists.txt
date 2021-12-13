@@ -48,7 +48,6 @@ target_sources(aviutl_plugin PRIVATE
   util.c
 )
 target_include_directories(aviutl_plugin BEFORE PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/3rd/base.c/"
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/include"
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
 )

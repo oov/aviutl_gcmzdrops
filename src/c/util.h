@@ -5,7 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "base.h"
+#include "3rd/base.c/base.h"
 
 void set_hinstance(HINSTANCE const h);
 HINSTANCE get_hinstance(void);
