@@ -1,14 +1,13 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "3rd/base.c/base.h"
 
-enum gui_mode
-{
+enum gui_mode {
   gui_mode_auto = 0,
   gui_mode_copy = 1,
   gui_mode_direct = 2,

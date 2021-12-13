@@ -1,8 +1,8 @@
 #include "luafuncs.h"
 
-#include <lua5.1/lualib.h>
-#include <lua5.1/lauxlib.h>
 #include <combaseapi.h>
+#include <lua5.1/lauxlib.h>
+#include <lua5.1/lualib.h>
 
 #include "3rd/crc64/crc64.h"
 #include "3rd/detect/detect.h"
@@ -13,19 +13,16 @@
 #include "lua.h"
 #include "util.h"
 
-error luafn_push_wstr(lua_State *const L, struct wstr const *const ws)
-{
+error luafn_push_wstr(lua_State *const L, struct wstr const *const ws) {
   struct str s = {0};
   error err = to_mbcs(ws, &s);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     return err;
   }
   lua_pushstring(L, s.ptr);
   err = sfree(&s);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     lua_pop(L, 1);
     err = ethru(err);
     return err;
@@ -33,24 +30,20 @@ error luafn_push_wstr(lua_State *const L, struct wstr const *const ws)
   return eok();
 }
 
-static error build_invalid_char_error(struct NATIVE_STR const *const filename ERR_FILEPOS_PARAMS)
-{
+static error build_invalid_char_error(struct NATIVE_STR const *const filename ERR_FILEPOS_PARAMS) {
   struct NATIVE_STR s = {0};
   error err = scpy(&s, NSTR("ファイル名 \""));
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto failed;
   }
   err = scat(&s, filename->ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto failed;
   }
   err = scat(&s, NSTR("\" には AviUtl 上で使用できない文字が含まれています。"));
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto failed;
   }
@@ -59,27 +52,25 @@ static error build_invalid_char_error(struct NATIVE_STR const *const filename ER
 failed:
   ereport(sfree(&s));
   ereport(err);
-  return emsg(err_type_gcmz, err_gcmz_invalid_char, &native_unmanaged(NSTR("ファイル名に AviUtl 上で使用できない文字が含まれています。")));
+  return emsg(err_type_gcmz,
+              err_gcmz_invalid_char,
+              &native_unmanaged(NSTR("ファイル名に AviUtl 上で使用できない文字が含まれています。")));
 }
 
-NODISCARD static error verify_filename(struct wstr const *const ws)
-{
+NODISCARD static error verify_filename(struct wstr const *const ws) {
   struct str s = {0};
   struct wstr v = {0};
   error err = to_mbcs(ws, &s);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = from_mbcs(&s, &v);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  if (wcscmp(ws->ptr, v.ptr) != 0)
-  {
+  if (wcscmp(ws->ptr, v.ptr) != 0) {
     err = build_invalid_char_error(ws ERR_FILEPOS_VALUES);
   }
 
@@ -89,63 +80,51 @@ cleanup:
   return err;
 }
 
-error luafn_towstr(lua_State *const L, int const idx, struct wstr *const dest)
-{
-  if (!L)
-  {
+error luafn_towstr(lua_State *const L, int const idx, struct wstr *const dest) {
+  if (!L) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
   char const *const s = lua_tostring(L, idx);
-  if (!s)
-  {
+  if (!s) {
     return errg(err_invalid_arugment);
   }
   error err = from_mbcs(&str_unmanaged(s), dest);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     return err;
   }
   return eok();
 }
 
-error luafn_push_files(lua_State *const L, struct files const *const f)
-{
-  if (!L || !f)
-  {
+error luafn_push_files(lua_State *const L, struct files const *const f) {
+  if (!L || !f) {
     return errg(err_invalid_arugment);
   }
 
   lua_newtable(L);
-  for (size_t i = 0; i < f->len; ++i)
-  {
+  for (size_t i = 0; i < f->len; ++i) {
     struct file const *const file = f->ptr + i;
     lua_newtable(L);
     error err = verify_filename(&file->path);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       lua_pop(L, 2);
       err = ethru(err);
       return err;
     }
     err = luafn_push_wstr(L, &file->path);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       lua_pop(L, 2);
       err = ethru(err);
       return err;
     }
     lua_setfield(L, -2, "filepath");
 
-    if (file->mime.len)
-    {
+    if (file->mime.len) {
       err = luafn_push_wstr(L, &file->mime);
-      if (efailed(err))
-      {
+      if (efailed(err)) {
         lua_pop(L, 2);
         err = ethru(err);
         return err;
@@ -157,8 +136,7 @@ error luafn_push_files(lua_State *const L, struct files const *const f)
   return eok();
 }
 
-error luafn_push_state(lua_State *const L, POINTL const point, DWORD const key_state)
-{
+error luafn_push_state(lua_State *const L, POINTL const point, DWORD const key_state) {
   lua_newtable(L);
   lua_pushinteger(L, point.x);
   lua_setfield(L, -2, "x");
@@ -179,39 +157,32 @@ error luafn_push_state(lua_State *const L, POINTL const point, DWORD const key_s
   return eok();
 }
 
-static int luafn_err_(lua_State *const L, error e, char const *const funcname)
-{
+static int luafn_err_(lua_State *const L, error e, char const *const funcname) {
   struct wstr msg = {0};
   struct wstr errmsg = {0};
   struct str s = {0};
 
   luaL_where(L, 1);
-  if (strncmp(__func__, "luafn_", 6) == 0)
-  {
+  if (strncmp(__func__, "luafn_", 6) == 0) {
     lua_pushstring(L, "error on GCMZDrops.");
     lua_pushstring(L, funcname + 6);
-  }
-  else
-  {
+  } else {
     lua_pushstring(L, "error on ");
     lua_pushstring(L, funcname);
   }
   lua_pushstring(L, "():\r\n");
   error err = error_to_string(e, &errmsg);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scat(&msg, errmsg.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = to_mbcs(&errmsg, &s);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -219,8 +190,7 @@ static int luafn_err_(lua_State *const L, error e, char const *const funcname)
   lua_concat(L, 5);
 
 cleanup:
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     efree(&err);
     lua_pushstring(L, "failed to build error message");
     lua_concat(L, 5);
@@ -233,25 +203,21 @@ cleanup:
 }
 #define luafn_err(L, err) luafn_err_((L), (err), (__func__))
 
-static int luafn_debug_print(lua_State *const L)
-{
+static int luafn_debug_print(lua_State *const L) {
   struct wstr tmp = {0};
   struct wstr msg = {0};
   error err = luafn_towstr(L, 1, &msg);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scpy(&tmp, L"GCMZDrops: ");
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scat(&tmp, msg.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -263,25 +229,21 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 0;
 }
 
-static int luafn_scriptdir(lua_State *const L)
-{
+static int luafn_scriptdir(lua_State *const L) {
   struct wstr path = {0};
   error err = gcmz_get_script_dir(&path);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = include_trailing_path_delimiter(&path);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = luafn_push_wstr(L, &path);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -291,14 +253,12 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error luafn_createfile_core(struct wstr const *const name_, struct wstr const *const ext_, struct wstr *const dest)
-{
-  if (!name_ || !ext_)
-  {
+NODISCARD static error
+luafn_createfile_core(struct wstr const *const name_, struct wstr const *const ext_, struct wstr *const dest) {
+  if (!name_ || !ext_) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
@@ -308,23 +268,20 @@ NODISCARD static error luafn_createfile_core(struct wstr const *const name_, str
   struct wstr tmp = {0};
 
   error err = scpy(&name, name_->ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = scpy(&ext, ext_->ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   int pos = 0;
   err = extract_file_name(&name, &pos);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -332,58 +289,49 @@ NODISCARD static error luafn_createfile_core(struct wstr const *const name_, str
       .ptr = name.ptr + pos,
       .len = name.len - pos,
   });
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = sanitize(&ext);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = sreplace_all(&ext, L"\\", L"-");
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = gcmz_get_save_dir(&tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = include_trailing_path_delimiter(&tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scat(&tmp, name.ptr + pos);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = create_unique_file(tmp.ptr, ext.ptr, NULL, 0, &fullpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = files_add_delete_on_failure(&fullpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scpy(dest, fullpath.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -396,32 +344,27 @@ cleanup:
   return err;
 }
 
-static int luafn_createfile(lua_State *const L)
-{
+static int luafn_createfile(lua_State *const L) {
   struct wstr tmp = {0};
   struct wstr name = {0};
   struct wstr ext = {0};
   error err = luafn_towstr(L, 1, &name);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_towstr(L, 2, &ext);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_createfile_core(&name, &ext, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_push_wstr(L, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -433,14 +376,12 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error luafn_createtempfile_core(struct wstr const *const name_, struct wstr const *const ext_, struct wstr *const dest)
-{
-  if (!name_ || !ext_)
-  {
+NODISCARD static error
+luafn_createtempfile_core(struct wstr const *const name_, struct wstr const *const ext_, struct wstr *const dest) {
+  if (!name_ || !ext_) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
@@ -448,22 +389,19 @@ NODISCARD static error luafn_createtempfile_core(struct wstr const *const name_,
   struct wstr name = {0};
   struct wstr ext = {0};
   error err = scpy(&name, name_->ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scpy(&ext, ext_->ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   int pos = 0;
   err = extract_file_name(&name, &pos);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -471,40 +409,34 @@ NODISCARD static error luafn_createtempfile_core(struct wstr const *const name_,
       .ptr = name.ptr + pos,
       .len = name.len - pos,
   });
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = sanitize(&ext);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = sreplace_all(&ext, L"\\", L"-");
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
 
   err = create_unique_temp_file(name.ptr + pos, ext.ptr, NULL, 0, &fullpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = files_add_delete_on_cleanup(&fullpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scpy(dest, fullpath.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -516,32 +448,27 @@ cleanup:
   return err;
 }
 
-static int luafn_createtempfile(lua_State *const L)
-{
+static int luafn_createtempfile(lua_State *const L) {
   struct wstr tmp = {0};
   struct wstr name = {0};
   struct wstr ext = {0};
   error err = luafn_towstr(L, 1, &name);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_towstr(L, 2, &ext);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_createtempfile_core(&name, &ext, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_push_wstr(L, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -553,14 +480,12 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_findallfile(lua_State *const L)
-{
+static int luafn_findallfile(lua_State *const L) {
   struct wstr tmp = {0};
   struct wstr wildcard = {0};
   HANDLE h = INVALID_HANDLE_VALUE;
   error err = luafn_towstr(L, 1, &wildcard);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -568,10 +493,9 @@ static int luafn_findallfile(lua_State *const L)
   lua_newtable(L);
 
   err = gcmz_get_save_dir(&tmp);
-  if (efailed(err))
-  {
-    if (eis(err, err_type_gcmz, err_gcmz_project_is_not_open) || eis(err, err_type_gcmz, err_gcmz_project_has_not_yet_been_saved))
-    {
+  if (efailed(err)) {
+    if (eis(err, err_type_gcmz, err_gcmz_project_is_not_open) ||
+        eis(err, err_type_gcmz, err_gcmz_project_has_not_yet_been_saved)) {
       efree(&err);
       goto cleanup;
     }
@@ -579,15 +503,13 @@ static int luafn_findallfile(lua_State *const L)
     goto cleanup;
   }
   err = include_trailing_path_delimiter(&tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   size_t const base_len = tmp.len;
   err = scat(&tmp, wildcard.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -596,37 +518,29 @@ static int luafn_findallfile(lua_State *const L)
 
   WIN32_FIND_DATAW fd = {0};
   h = FindFirstFileW(tmp.ptr, &fd);
-  if (h == INVALID_HANDLE_VALUE)
-  {
+  if (h == INVALID_HANDLE_VALUE) {
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-    if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) || hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
-    {
+    if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) || hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)) {
       goto cleanup;
     }
     err = errhr(hr);
     goto cleanup;
   }
-  do
-  {
-    if (
-        wcscmp(fd.cFileName, L".") == 0 ||
-        wcscmp(fd.cFileName, L"..") == 0 ||
-        (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
-    {
+  do {
+    if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0 ||
+        (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
       continue;
     }
     tmp.len = base_len;
     tmp.ptr[base_len] = L'\0';
     err = scat(&tmp, fd.cFileName);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
 
     err = luafn_push_wstr(L, &tmp);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
@@ -635,8 +549,7 @@ static int luafn_findallfile(lua_State *const L)
   } while (FindNextFileW(h, &fd));
 
 cleanup:
-  if (h != INVALID_HANDLE_VALUE)
-  {
+  if (h != INVALID_HANDLE_VALUE) {
     FindClose(h);
     h = INVALID_HANDLE_VALUE;
   }
@@ -645,12 +558,10 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_englishpatched(lua_State *const L)
-{
+static int luafn_englishpatched(lua_State *const L) {
   bool enpatched = false;
   error err = aviutl_exedit_is_enpatched(&enpatched);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -660,19 +571,16 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_needcopy(lua_State *const L)
-{
+static int luafn_needcopy(lua_State *const L) {
   struct wstr tmp = {0};
   error err = luafn_towstr(L, 1, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   bool need_copy = false;
   err = gcmz_is_need_copy(&tmp, &need_copy);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -683,17 +591,14 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_calchash(lua_State *const L)
-{
+static int luafn_calchash(lua_State *const L) {
   error err = eok();
 
   uint64_t hash = ULLONG_MAX;
-  if (lua_isstring(L, 1))
-  {
+  if (lua_isstring(L, 1)) {
     size_t len = 0;
     void const *const p = lua_tolstring(L, 1, &len);
-    if (len != 8)
-    {
+    if (len != 8) {
       err = errg(err_invalid_arugment);
       goto cleanup;
     }
@@ -708,39 +613,31 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error luafn_calcfilehash_core(struct wstr const *const path, uint64_t *const dest)
-{
-  if (!path)
-  {
+NODISCARD static error luafn_calcfilehash_core(struct wstr const *const path, uint64_t *const dest) {
+  if (!path) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
   HANDLE h = CreateFileW(path->ptr, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (h == INVALID_HANDLE_VALUE)
-  {
+  if (h == INVALID_HANDLE_VALUE) {
     return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
-  enum
-  {
+  enum {
     buf_size = 4096,
   };
   uint8_t buf[buf_size] = {0};
   uint64_t hash = ULLONG_MAX;
-  for (;;)
-  {
+  for (;;) {
     DWORD read = 0;
-    if (!ReadFile(h, buf, buf_size, &read, NULL))
-    {
+    if (!ReadFile(h, buf, buf_size, &read, NULL)) {
       error err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       CloseHandle(h);
       return err;
     }
-    if (read == 0)
-    {
+    if (read == 0) {
       break;
     }
     hash = crc64(hash, buf, read);
@@ -751,19 +648,16 @@ NODISCARD static error luafn_calcfilehash_core(struct wstr const *const path, ui
   return eok();
 }
 
-static int luafn_calcfilehash(lua_State *const L)
-{
+static int luafn_calcfilehash(lua_State *const L) {
   struct wstr path = {0};
   error err = luafn_towstr(L, 1, &path);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   uint64_t hash = 0;
   err = luafn_calcfilehash_core(&path, &hash);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -774,10 +668,8 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error base32_encode(struct str const *const src, struct wstr *const dest)
-{
-  if (!dest)
-  {
+NODISCARD static error base32_encode(struct str const *const src, struct wstr *const dest) {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
@@ -789,14 +681,9 @@ NODISCARD static error base32_encode(struct str const *const src, struct wstr *c
   uint8_t const *const sp = (void *)src->ptr;
   size_t const slen = src->len;
   size_t i = 0;
-  while (i + 4 < slen)
-  {
-    uint64_t const v =
-        ((uint64_t)sp[i + 0] << 32) |
-        ((uint64_t)sp[i + 1] << 24) |
-        ((uint64_t)sp[i + 2] << 16) |
-        ((uint64_t)sp[i + 3] << 8) |
-        ((uint64_t)sp[i + 4] << 0);
+  while (i + 4 < slen) {
+    uint64_t const v = ((uint64_t)sp[i + 0] << 32) | ((uint64_t)sp[i + 1] << 24) | ((uint64_t)sp[i + 2] << 16) |
+                       ((uint64_t)sp[i + 3] << 8) | ((uint64_t)sp[i + 4] << 0);
     buf[0] = table[(v >> 0) & 0x1f];
     buf[1] = table[(v >> 5) & 0x1f];
     buf[2] = table[(v >> 10) & 0x1f];
@@ -806,36 +693,30 @@ NODISCARD static error base32_encode(struct str const *const src, struct wstr *c
     buf[6] = table[(v >> 30) & 0x1f];
     buf[7] = table[(v >> 35) & 0x1f];
     err = sncat(&tmp, buf, 8);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
     i += 5;
   }
 
-  if (i < slen)
-  {
+  if (i < slen) {
     uint64_t v = 0;
     size_t const remain = slen - i;
     size_t pad = 0;
-    if (remain >= 1)
-    {
+    if (remain >= 1) {
       v = (v << 8) | sp[i + 0];
       pad = 6;
     }
-    if (remain >= 2)
-    {
+    if (remain >= 2) {
       v = (v << 8) | sp[i + 1];
       pad = 4;
     }
-    if (remain >= 3)
-    {
+    if (remain >= 3) {
       v = (v << 8) | sp[i + 2];
       pad = 3;
     }
-    if (remain >= 4)
-    {
+    if (remain >= 4) {
       v = (v << 8) | sp[i + 3];
       pad = 1;
     }
@@ -846,21 +727,18 @@ NODISCARD static error base32_encode(struct str const *const src, struct wstr *c
     buf[4] = table[(v >> 20) & 0x1f];
     buf[5] = table[(v >> 25) & 0x1f];
     buf[6] = table[(v >> 30) & 0x1f];
-    for (i = 0; i < pad; ++i)
-    {
+    for (i = 0; i < pad; ++i) {
       buf[8 - i - 1] = L'=';
     }
     err = sncat(&tmp, buf, 8);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
   }
 
   err = scpy(dest, tmp.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -870,10 +748,8 @@ cleanup:
   return err;
 }
 
-NODISCARD static error luafn_hashtostring_core(uint64_t const hash, struct wstr *const dest)
-{
-  if (!dest)
-  {
+NODISCARD static error luafn_hashtostring_core(uint64_t const hash, struct wstr *const dest) {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
@@ -890,20 +766,17 @@ NODISCARD static error luafn_hashtostring_core(uint64_t const hash, struct wstr 
       0,
   };
   error err = base32_encode(&str_unmanaged(buf), &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = sreplace_all(&tmp, L"=", L"");
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scpy(dest, tmp.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -913,27 +786,23 @@ cleanup:
   return err;
 }
 
-static int luafn_hashtostring(lua_State *const L)
-{
+static int luafn_hashtostring(lua_State *const L) {
   struct wstr tmp = {0};
   error err = eok();
 
   size_t len = 0;
   void const *const p = lua_tolstring(L, 1, &len);
-  if (len != 8)
-  {
+  if (len != 8) {
     err = errg(err_invalid_arugment);
     goto cleanup;
   }
   err = luafn_hashtostring_core(*(uint64_t *)p, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_push_wstr(L, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -943,12 +812,10 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_getexeditfileinfo(lua_State *const L)
-{
+static int luafn_getexeditfileinfo(lua_State *const L) {
   FILE_INFO fi = {0};
   error err = aviutl_get_editing_file_info(&fi);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -973,20 +840,17 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_getfileinfo(lua_State *const L)
-{
+static int luafn_getfileinfo(lua_State *const L) {
   struct wstr path = {0};
   error err = luafn_towstr(L, 1, &path);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   FILE_INFO fi = {0};
   int samples = 0;
   err = aviutl_get_file_info(&path, &fi, &samples);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1014,26 +878,21 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error encode_exo_text(struct wstr const *const src, struct str *const dest)
-{
-  if (!src)
-  {
+NODISCARD static error encode_exo_text(struct wstr const *const src, struct str *const dest) {
+  if (!src) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
   static char const *const hex = "0123456789abcdef";
-  enum
-  {
+  enum {
     textlen = 1024,
   };
   struct str tmp = {0};
   error err = sgrow(&tmp, textlen * 4 + 1);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1041,8 +900,7 @@ NODISCARD static error encode_exo_text(struct wstr const *const src, struct str 
   wchar_t const *sp = src->ptr;
   char *dp = tmp.ptr;
   size_t si = 0;
-  for (size_t const len = src->len; si < len; ++si)
-  {
+  for (size_t const len = src->len; si < len; ++si) {
     wchar_t wc = sp[si];
     size_t const di = si * 4;
     dp[di + 0] = hex[(wc >> 4) & 0x0f];
@@ -1055,8 +913,7 @@ NODISCARD static error encode_exo_text(struct wstr const *const src, struct str 
   tmp.ptr[tmp.len] = '\0';
 
   err = scpy(dest, tmp.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1066,34 +923,27 @@ cleanup:
   return err;
 }
 
-static inline int hex2int(int const c)
-{
-  if (L'0' <= c && c <= L'9')
-  {
+static inline int hex2int(int const c) {
+  if (L'0' <= c && c <= L'9') {
     return c - L'0';
   }
-  if ((L'A' <= c && c <= L'F') || (L'a' <= c && c <= L'f'))
-  {
+  if ((L'A' <= c && c <= L'F') || (L'a' <= c && c <= L'f')) {
     return (c & 0x5f) - L'A' + 10;
   }
   return 0x10000;
 }
 
-NODISCARD static error decode_exo_text(struct str const *const src, struct wstr *const dest)
-{
-  if (!src)
-  {
+NODISCARD static error decode_exo_text(struct str const *const src, struct wstr *const dest) {
+  if (!src) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
   struct wstr tmp = {0};
   error err = sgrow(&tmp, src->len / 4 + 1);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1101,11 +951,10 @@ NODISCARD static error decode_exo_text(struct str const *const src, struct wstr 
   char const *sp = src->ptr;
   wchar_t *dp = tmp.ptr;
   size_t di = 0;
-  for (size_t si = 0, len = src->len; si + 3 < len; si += 4)
-  {
-    uint_least32_t c = (hex2int(sp[si + 2]) << 12) | (hex2int(sp[si + 3]) << 8) | (hex2int(sp[si + 0]) << 4) | (hex2int(sp[si + 1]) << 0);
-    if (c >= 0x10000)
-    {
+  for (size_t si = 0, len = src->len; si + 3 < len; si += 4) {
+    uint_least32_t c = (hex2int(sp[si + 2]) << 12) | (hex2int(sp[si + 3]) << 8) | (hex2int(sp[si + 0]) << 4) |
+                       (hex2int(sp[si + 1]) << 0);
+    if (c >= 0x10000) {
       err = errg(err_fail);
       goto cleanup;
     }
@@ -1115,8 +964,7 @@ NODISCARD static error decode_exo_text(struct str const *const src, struct wstr 
   tmp.len = di;
 
   err = scpy(dest, tmp.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1126,19 +974,16 @@ cleanup:
   return err;
 }
 
-static int luafn_encodeexotext(lua_State *const L)
-{
+static int luafn_encodeexotext(lua_State *const L) {
   struct wstr tmp = {0};
   struct str text = {0};
   error err = luafn_towstr(L, 1, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = encode_exo_text(&tmp, &text);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1150,20 +995,17 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_encodeexotextutf8(lua_State *const L)
-{
+static int luafn_encodeexotextutf8(lua_State *const L) {
   struct wstr tmp = {0};
   struct str text = {0};
 
   error err = from_utf8(&str_unmanaged(lua_tostring(L, 1)), &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = encode_exo_text(&tmp, &text);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1175,27 +1017,23 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_decodeexotextutf8(lua_State *const L)
-{
+static int luafn_decodeexotextutf8(lua_State *const L) {
   struct str tmp = {0};
   struct wstr text = {0};
   error err = eok();
 
   void const *const p = lua_tostring(L, 1);
-  if (p == NULL)
-  {
+  if (p == NULL) {
     err = errg(err_invalid_arugment);
     goto cleanup;
   }
   err = decode_exo_text(&str_unmanaged(p), &text);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = to_utf8(&text, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1207,13 +1045,11 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error encode_lua_string(struct str const *const src, struct str *const dest)
-{
+NODISCARD static error encode_lua_string(struct str const *const src, struct str *const dest) {
   struct str tmp = {0};
   size_t dlen = src->len + 3; // + 3 is ""\0
   error err = sgrow(&tmp, dlen);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1222,11 +1058,9 @@ NODISCARD static error encode_lua_string(struct str const *const src, struct str
   char *dp = tmp.ptr;
   size_t di = 0;
   dp[0] = '"';
-  for (size_t si = 0, slen = src->len; si < slen; ++si)
-  {
+  for (size_t si = 0, slen = src->len; si < slen; ++si) {
     char c = sp[si];
-    switch (c)
-    {
+    switch (c) {
     case 0x00:
       c = '0';
       break;
@@ -1260,8 +1094,7 @@ NODISCARD static error encode_lua_string(struct str const *const src, struct str
       continue;
     }
     err = sgrow(&tmp, ++dlen);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
@@ -1274,8 +1107,7 @@ NODISCARD static error encode_lua_string(struct str const *const src, struct str
   tmp.len = di;
 
   err = scpy(dest, tmp.ptr);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1285,15 +1117,13 @@ cleanup:
   return err;
 }
 
-static int luafn_encodeluastring(lua_State *const L)
-{
+static int luafn_encodeluastring(lua_State *const L) {
   struct str tmp = {0};
   error err = eok();
 
   size_t slen = 0;
   char const *const s = lua_tolstring(L, 1, &slen);
-  if (!s)
-  {
+  if (!s) {
     err = errg(err_invalid_arugment);
     goto cleanup;
   }
@@ -1304,8 +1134,7 @@ static int luafn_encodeluastring(lua_State *const L)
           .len = slen,
       },
       &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1317,21 +1146,18 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_detectencoding(lua_State *const L)
-{
+static int luafn_detectencoding(lua_State *const L) {
   error err = eok();
   size_t slen = 0;
   char const *const s = lua_tolstring(L, 1, &slen);
-  if (!s)
-  {
+  if (!s) {
     err = errg(err_invalid_arugment);
     goto cleanup;
   }
 
   struct detector_state ds = {0};
   char const *enc = NULL;
-  switch (detect_japanese_encoding(&ds, (uint8_t *)s, slen))
-  {
+  switch (detect_japanese_encoding(&ds, (uint8_t *)s, slen)) {
   case ENCODING_UNKNOWN:
     enc = "";
     break;
@@ -1363,51 +1189,35 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error to_codepage(lua_State *const L, int const idx, UINT *const cp)
-{
-  if (!L)
-  {
+NODISCARD static error to_codepage(lua_State *const L, int const idx, UINT *const cp) {
+  if (!L) {
     return errg(err_invalid_arugment);
   }
-  if (!cp)
-  {
+  if (!cp) {
     return errg(err_null_pointer);
   }
-  if (lua_isnumber(L, idx))
-  {
+  if (lua_isnumber(L, idx)) {
     *cp = lua_tointeger(L, idx);
     return eok();
   }
-  if (lua_isstring(L, idx))
-  {
+  if (lua_isstring(L, idx)) {
     char const *const s = lua_tostring(L, idx);
-    if (strcmp(s, "sjis") == 0)
-    {
+    if (strcmp(s, "sjis") == 0) {
       *cp = 932;
       return eok();
-    }
-    else if (strcmp(s, "eucjp") == 0)
-    {
+    } else if (strcmp(s, "eucjp") == 0) {
       *cp = 20932;
       return eok();
-    }
-    else if (strcmp(s, "iso2022jp") == 0)
-    {
+    } else if (strcmp(s, "iso2022jp") == 0) {
       *cp = 50222;
       return eok();
-    }
-    else if (strcmp(s, "utf8") == 0)
-    {
+    } else if (strcmp(s, "utf8") == 0) {
       *cp = 65001;
       return eok();
-    }
-    else if (strcmp(s, "utf16le") == 0)
-    {
+    } else if (strcmp(s, "utf16le") == 0) {
       *cp = 1200;
       return eok();
-    }
-    else if (strcmp(s, "utf16be") == 0)
-    {
+    } else if (strcmp(s, "utf16be") == 0) {
       *cp = 1201;
       return eok();
     }
@@ -1415,41 +1225,30 @@ NODISCARD static error to_codepage(lua_State *const L, int const idx, UINT *cons
   return errg(err_fail);
 }
 
-NODISCARD static inline uint16_t swap16(uint16_t const x)
-{
-  return ((x >> 8) & 0x00ff) | ((x << 8) & 0xff00);
-}
+NODISCARD static inline uint16_t swap16(uint16_t const x) { return ((x >> 8) & 0x00ff) | ((x << 8) & 0xff00); }
 
-NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t srclen, UINT const src_cp, UINT const dest_cp, struct str *const dest)
-{
-  if (!src)
-  {
+NODISCARD static error luafn_convertencoding_core(
+    uint8_t const *src, size_t srclen, UINT const src_cp, UINT const dest_cp, struct str *const dest) {
+  if (!src) {
     return errg(err_invalid_arugment);
   }
-  if (!dest)
-  {
+  if (!dest) {
     return errg(err_null_pointer);
   }
 
   error err = eok();
   if (srclen >= 2 &&
-      ((src_cp == 1200 && src[0] == 0xff && src[1] == 0xfe) ||
-       (src_cp == 1201 && src[0] == 0xfe && src[1] == 0xfe)))
-  {
+      ((src_cp == 1200 && src[0] == 0xff && src[1] == 0xfe) || (src_cp == 1201 && src[0] == 0xfe && src[1] == 0xfe))) {
     src += 2;
     srclen -= 2;
-  }
-  else if (srclen >= 3 && src_cp == 65001 && src[0] == 0xef && src[1] == 0xbb && src[2] == 0xbf)
-  {
+  } else if (srclen >= 3 && src_cp == 65001 && src[0] == 0xef && src[1] == 0xbb && src[2] == 0xbf) {
     src += 3;
     srclen -= 3;
   }
 
-  if (src_cp == dest_cp)
-  {
+  if (src_cp == dest_cp) {
     err = scpy(dest, (LPCSTR)src);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       return err;
     }
@@ -1457,22 +1256,18 @@ NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t src
   }
 
   // utf16le -> utf16be or utf16be -> utf16le
-  if ((src_cp == 1200 || src_cp == 1201) && (dest_cp == 1200 || dest_cp == 1201))
-  {
+  if ((src_cp == 1200 || src_cp == 1201) && (dest_cp == 1200 || dest_cp == 1201)) {
     struct wstr tmp = {0};
     err = sncpy(&tmp, (void *)src, srclen / 2);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       return err;
     }
-    for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s)
-    {
+    for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s) {
       *s = swap16(*s);
     }
     err = sfree(dest);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       ereport(sfree(&tmp));
       err = ethru(err);
       return err;
@@ -1486,18 +1281,15 @@ NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t src
   }
 
   // mbcs to mbcs
-  if (src_cp != 1200 && src_cp != 1201 && dest_cp != 1200 && dest_cp != 1201)
-  {
+  if (src_cp != 1200 && src_cp != 1201 && dest_cp != 1200 && dest_cp != 1201) {
     struct wstr tmp = {0};
     err = from_cp(src_cp, &(struct str){.ptr = (void *)src, .len = srclen}, &tmp);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       return err;
     }
     err = to_cp(dest_cp, &tmp, dest);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       ereport(sfree(&tmp));
       err = ethru(err);
       return err;
@@ -1507,33 +1299,26 @@ NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t src
   }
 
   // utf-16 to mbcs
-  if (src_cp == 1200 || src_cp == 1201)
-  {
+  if (src_cp == 1200 || src_cp == 1201) {
     struct wstr tmp = {0};
-    if (src_cp == 1200)
-    {
+    if (src_cp == 1200) {
       tmp = (struct wstr){
           .ptr = (void *)src,
           .len = srclen / 2,
           .cap = 0,
       };
-    }
-    else
-    {
+    } else {
       err = sncpy(&tmp, (void *)src, srclen / 2);
-      if (efailed(err))
-      {
+      if (efailed(err)) {
         err = ethru(err);
         return err;
       }
-      for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s)
-      {
+      for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s) {
         *s = swap16(*s);
       }
     }
     err = to_cp(dest_cp, &tmp, dest);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       ereport(sfree(&tmp));
       err = ethru(err);
       return err;
@@ -1545,21 +1330,17 @@ NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t src
   // mbcs to utf-16
   struct wstr tmp = {0};
   err = from_cp(src_cp, &(struct str){.ptr = (void *)src, .len = srclen}, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     return err;
   }
-  if (dest_cp == 1201)
-  {
-    for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s)
-    {
+  if (dest_cp == 1201) {
+    for (uint16_t *s = (void *)tmp.ptr, *end = (void *)(tmp.ptr + tmp.len); s < end; ++s) {
       *s = swap16(*s);
     }
   }
   err = sfree(dest);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     ereport(sfree(&tmp));
     err = ethru(err);
     return err;
@@ -1572,33 +1353,28 @@ NODISCARD static error luafn_convertencoding_core(uint8_t const *src, size_t src
   return eok();
 }
 
-static int luafn_convertencoding(lua_State *const L)
-{
+static int luafn_convertencoding(lua_State *const L) {
   struct str tmp = {0};
   size_t srclen = 0;
   uint8_t const *const src = (void *)lua_tolstring(L, 1, &srclen);
 
   UINT src_cp = 0, dest_cp = 0;
   error err = to_codepage(L, 2, &src_cp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = to_codepage(L, 3, &dest_cp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  if (src_cp == dest_cp)
-  {
+  if (src_cp == dest_cp) {
     lua_pop(L, 2); // re-use
     goto cleanup;
   }
   err = luafn_convertencoding_core(src, srclen, src_cp, dest_cp, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1609,33 +1385,28 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_prompt(lua_State *const L)
-{
+static int luafn_prompt(lua_State *const L) {
   struct wstr caption = {0};
   struct wstr value = {0};
   error err = luafn_towstr(L, 1, &caption);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_towstr(L, 2, &value);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   bool r = false;
   err = gcmz_prompt(&caption, &value, &r);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   lua_pushboolean(L, r);
   err = luafn_push_wstr(L, &value);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1646,19 +1417,16 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 2;
 }
 
-static int luafn_confirm(lua_State *const L)
-{
+static int luafn_confirm(lua_State *const L) {
   struct wstr caption = {0};
   error err = luafn_towstr(L, 1, &caption);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   bool r = false;
   err = gcmz_confirm(&caption, &r);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1669,84 +1437,70 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-NODISCARD static error copy_and_drop(HWND const window, POINT const pt, struct wstr const *const filepath)
-{
+NODISCARD static error copy_and_drop(HWND const window, POINT const pt, struct wstr const *const filepath) {
   struct wstr newpath = {0};
   struct wstr const *const files[] = {&newpath, NULL};
   error err = gcmz_get_save_dir(&newpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = include_trailing_path_delimiter(&newpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   int fnpos = 0;
   err = extract_file_name(filepath, &fnpos);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = scat(&newpath, filepath->ptr + fnpos);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   bool found = false;
   err = file_exists(&newpath, &found);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  if (found)
-  {
+  if (found) {
     uint64_t a = 0, b = 0;
     err = luafn_calcfilehash_core(filepath, &a);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
     err = luafn_calcfilehash_core(&newpath, &b);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
-    if (a != b)
-    {
+    if (a != b) {
       err = err(err_type_gcmz, err_gcmz_exists_different_hash_value_file);
       goto cleanup;
     }
     err = gcmz_drop(window, pt, files);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
     goto cleanup;
   }
-  if (!CopyFileW(filepath->ptr, newpath.ptr, TRUE))
-  {
+  if (!CopyFileW(filepath->ptr, newpath.ptr, TRUE)) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   err = files_add_delete_on_failure(&newpath);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = gcmz_drop(window, pt, files);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1756,21 +1510,18 @@ cleanup:
   return err;
 }
 
-static int luafn_drop(lua_State *const L)
-{
+static int luafn_drop(lua_State *const L) {
   struct wstr filepath = {0};
   struct wstr const *const files[] = {&filepath, NULL};
   HWND exedit_window = NULL;
   error err = aviutl_get_exedit_window(&exedit_window);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   struct gcmz_analysed_info ai = {0};
   err = gcmz_analyse_exedit_window(&ai);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1783,14 +1534,12 @@ static int luafn_drop(lua_State *const L)
   lua_pop(L, 2);
 
   int N = lua_objlen(L, 1);
-  for (int i = 1; i <= N; ++i)
-  {
+  for (int i = 1; i <= N; ++i) {
     lua_rawgeti(L, 1, i);
 
     lua_getfield(L, -1, "filepath");
     err = luafn_towstr(L, -1, &filepath);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
@@ -1798,30 +1547,23 @@ static int luafn_drop(lua_State *const L)
 
     bool need_copy = false, exists_in_save_dir = false;
     err = gcmz_is_need_copy(&filepath, &need_copy);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
-    if (need_copy)
-    {
+    if (need_copy) {
       err = gcmz_exists_in_save_dir(&filepath, &exists_in_save_dir);
-      if (efailed(err))
-      {
+      if (efailed(err)) {
         err = ethru(err);
         goto cleanup;
       }
     }
-    if (!need_copy || exists_in_save_dir)
-    {
+    if (!need_copy || exists_in_save_dir) {
       err = gcmz_drop(exedit_window, pt, files);
-    }
-    else
-    {
+    } else {
       err = copy_and_drop(exedit_window, pt, &filepath);
     }
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
@@ -1833,11 +1575,9 @@ static int luafn_drop(lua_State *const L)
   lua_getfield(L, 2, "frameadvance");
   int af = lua_tointeger(L, -1);
   lua_pop(L, 1);
-  if (af != 0)
-  {
+  if (af != 0) {
     err = gcmz_advance_frame(af);
-    if (efailed(err))
-    {
+    if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
@@ -1849,18 +1589,15 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_getclipboard(lua_State *const L)
-{
+static int luafn_getclipboard(lua_State *const L) {
   struct clipboard c = {0};
   error err = clipboard_get(&c);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = luafn_push_files(L, &c.files);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1870,18 +1607,15 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
 }
 
-static int luafn_deleteonfinish(lua_State *const L)
-{
+static int luafn_deleteonfinish(lua_State *const L) {
   struct wstr tmp = {0};
   error err = luafn_towstr(L, 1, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = files_add_delete_on_cleanup(&tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1891,18 +1625,15 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 0;
 }
 
-static int luafn_deleteonabort(lua_State *const L)
-{
+static int luafn_deleteonabort(lua_State *const L) {
   struct wstr tmp = {0};
   error err = luafn_towstr(L, 1, &tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   err = files_add_delete_on_failure(&tmp);
-  if (efailed(err))
-  {
+  if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
@@ -1912,21 +1643,18 @@ cleanup:
   return efailed(err) ? luafn_err(L, err) : 0;
 }
 
-static int luafn_doevents(lua_State *const L)
-{
+static int luafn_doevents(lua_State *const L) {
   UINT const msg_min = lua_tointeger(L, 1);
   UINT const msg_max = lua_tointeger(L, 2);
   MSG m = {0};
-  while (PeekMessageW(&m, 0, msg_min, msg_max, PM_REMOVE))
-  {
+  while (PeekMessageW(&m, 0, msg_min, msg_max, PM_REMOVE)) {
     TranslateMessage(&m);
     DispatchMessageW(&m);
   }
   return 0;
 }
 
-void luafn_register_funcs(lua_State *const L)
-{
+void luafn_register_funcs(lua_State *const L) {
   lua_pushcfunction(L, luafn_debug_print);
   lua_setglobal(L, "debug_print");
 

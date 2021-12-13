@@ -2,13 +2,11 @@
 
 #include "3rd/base.c/base.h"
 
-enum
-{
+enum {
   err_type_gcmz = 2,
 };
 
-enum err_gcmz
-{
+enum err_gcmz {
   err_gcmz_unsupported_aviutl_version = 100,
   err_gcmz_exedit_not_found = 101,
   err_gcmz_exedit_not_found_in_same_dir = 102,

@@ -1,19 +1,17 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "3rd/base.c/base.h"
 
-struct file
-{
+struct file {
   struct wstr path;
   struct wstr mime;
   bool temporary;
 };
 
-struct files
-{
+struct files {
   struct file *ptr;
   size_t len;
   size_t cap;

@@ -22,6 +22,12 @@ add_custom_target(generate_lua51dl COMMAND
   -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/makelib.cmake"
 )
 
+find_program(CLANG_FORMAT_EXE clang-format)
+file(GLOB sources "*.c" "*.h")
+add_custom_target(${PROJECT_NAME}-format ALL
+  COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${sources}
+)
+
 add_library(aviutl_plugin SHARED)
 set_target_properties(aviutl_plugin PROPERTIES OUTPUT_NAME "GCMZDrops.auf" PREFIX "" SUFFIX "" RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 target_sources(aviutl_plugin PRIVATE

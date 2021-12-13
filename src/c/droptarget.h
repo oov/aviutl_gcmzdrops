@@ -1,22 +1,20 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <oleidl.h>
 
 #include "3rd/base.c/base.h"
 #include "files.h"
 
-struct drag_drop_info
-{
+struct drag_drop_info {
   POINTL point;
   DWORD key_state;
   DWORD effect;
 };
 
-struct drop_target
-{
+struct drop_target {
   IDropTarget super;
   LONG refcount;
   struct files dragging_files;
@@ -30,8 +28,7 @@ struct drop_target
 
 NODISCARD error drop_target_new(struct drop_target **const r);
 
-struct clipboard
-{
+struct clipboard {
   struct files files;
   IDataObject *dataobj;
 };

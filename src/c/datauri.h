@@ -1,18 +1,16 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "3rd/base.c/base.h"
 
-enum data_uri_encoding
-{
+enum data_uri_encoding {
   data_uri_encoding_percent = 0,
   data_uri_encoding_base64 = 1,
 };
 
-struct data_uri
-{
+struct data_uri {
   wchar_t mime[256];
   wchar_t charset[128];
   wchar_t ext_filename[128]; // Non-standard extension

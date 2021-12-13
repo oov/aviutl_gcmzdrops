@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -37,8 +37,16 @@ NODISCARD error file_contains(struct wstr const *const dir, struct wstr const *c
 NODISCARD error is_same_file(struct wstr const *const file1, struct wstr const *const file2, bool *const is_same);
 NODISCARD error is_same_dir(struct wstr const *const dir1, struct wstr const *const dir2, bool *const is_same);
 
-NODISCARD error create_unique_temp_file(wchar_t const *const base_filename, wchar_t const *const ext, void *const data, size_t const datalen, struct wstr *const dest);
-NODISCARD error create_unique_file(wchar_t const *const base_fullpath, wchar_t const *const ext, void *const data, size_t const datalen, struct wstr *const dest);
+NODISCARD error create_unique_temp_file(wchar_t const *const base_filename,
+                                        wchar_t const *const ext,
+                                        void *const data,
+                                        size_t const datalen,
+                                        struct wstr *const dest);
+NODISCARD error create_unique_file(wchar_t const *const base_fullpath,
+                                   wchar_t const *const ext,
+                                   void *const data,
+                                   size_t const datalen,
+                                   struct wstr *const dest);
 NODISCARD error delete_file(struct wstr const *const path);
 
 NODISCARD error from_cp(UINT const code_page, struct str const *const src, struct wstr *const dest);

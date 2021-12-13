@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -15,15 +15,13 @@ NODISCARD error gcmz_exists_in_save_dir(struct wstr const *const path, bool *con
 NODISCARD error gcmz_advance_frame(int const n);
 NODISCARD error gcmz_drop(HWND const window, POINT const pt, struct wstr const *const *const filepath);
 
-enum gcmz_layer_height
-{
+enum gcmz_layer_height {
   gcmz_layer_height_small = 22,
   gcmz_layer_height_medium = 26,
   gcmz_layer_height_large = 31,
 };
 
-struct gcmz_analysed_info
-{
+struct gcmz_analysed_info {
   POINT edit_cursor;
   int layer_height;
   int zoom_level;

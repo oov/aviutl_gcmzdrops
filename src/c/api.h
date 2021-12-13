@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
 #include <threads.h>
@@ -12,34 +12,29 @@
 #include "3rd/base.c/base.h"
 #include "files.h"
 
-struct cv
-{
+struct cv {
   int var;
   cnd_t cnd;
   mtx_t mtx;
 };
 
-struct api_request_params
-{
+struct api_request_params {
   struct files files;
   int layer;
   int frame_advance;
 
   void (*complete)(struct api_request_params *params);
 
-  struct
-  {
+  struct {
     struct cv *process;
   } priv;
 };
 
-struct api
-{
+struct api {
   void (*request)(void *userdata, struct api_request_params *params, error err);
   void *userdata;
 
-  struct
-  {
+  struct {
     HWND window;
     HANDLE mutex;
     HANDLE fmo;

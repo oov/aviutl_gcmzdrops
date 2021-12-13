@@ -2,10 +2,8 @@
 
 #include "gcmzdrops.h"
 
-NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR *const message)
-{
-  switch (code)
-  {
+NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR *const message) {
+  switch (code) {
   case err_gcmz_unsupported_aviutl_version:
     return scpy(message, NSTR("AviUtl のバージョンが動作対象外です。"));
   case err_gcmz_exedit_not_found:
@@ -31,7 +29,8 @@ NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR 
   case err_gcmz_failed_to_detect_layer_height:
     return scpy(message, NSTR("拡張編集ウィンドウのレイヤーの高さ検出に失敗しました。"));
   case err_gcmz_exists_different_hash_value_file:
-    return scpy(message, NSTR("保存先フォルダーに内容の異なるファイルが既に存在しているためファイルを保存できません。"));
+    return scpy(message,
+                NSTR("保存先フォルダーに内容の異なるファイルが既に存在しているためファイルを保存できません。"));
 
   case err_gcmz_lua:
     return scpy(message, NSTR("Lua スクリプトの実行中にエラーが発生しました。"));
@@ -41,8 +40,7 @@ NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR 
   return scpy(message, NSTR("未知のエラーコードです。"));
 }
 
-error error_gcmz_init(void)
-{
+error error_gcmz_init(void) {
   error err = error_register_message_mapper(err_type_generic, generic_error_message_mapper_jp);
   if (efailed(err)) {
     return err;

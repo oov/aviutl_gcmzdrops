@@ -1,10 +1,8 @@
 #include "datauri.c"
 #include "test.h"
 
-static void test_base64_decode(void)
-{
-  static const struct test_data
-  {
+static void test_base64_decode(void) {
+  static const struct test_data {
     wchar_t const *input;
     char const *output;
     uint_least32_t code;
@@ -75,20 +73,19 @@ static void test_base64_decode(void)
       },
       {
           .input = L"QWxwaGFCZXRhR2FtbWHml6XmnKzoqp7jga7mlofnq6BVVEYtOA==",
-          .output = "\x41\x6C\x70\x68\x61\x42\x65\x74\x61\x47\x61\x6D\x6D\x61\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E\xE3\x81\xAE\xE6\x96\x87\xE7\xAB\xA0\x55\x54\x46\x2D\x38",
+          .output = "\x41\x6C\x70\x68\x61\x42\x65\x74\x61\x47\x61\x6D\x6D\x61\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E\xE3"
+                    "\x81\xAE\xE6\x96\x87\xE7\xAB\xA0\x55\x54\x46\x2D\x38",
           .code = 0,
       },
   };
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
-  for (size_t i = 0; i < n; ++i)
-  {
+  for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d %ls", i, td->input);
 
     size_t decoded_len = 0;
     TEST_EISG_F(base64_decoded_len(td->input, wcslen(td->input), &decoded_len), td->code);
-    if (td->code != 0)
-    {
+    if (td->code != 0) {
       continue;
     }
 
@@ -101,8 +98,7 @@ static void test_base64_decode(void)
     TEST_ASSERT(p != NULL);
 
     TEST_EISG_F(base64_decode(td->input, wcslen(td->input), p, expected_len), td->code);
-    if (td->code != 0)
-    {
+    if (td->code != 0) {
       free(p);
       continue;
     }
@@ -113,8 +109,7 @@ static void test_base64_decode(void)
   }
 }
 
-static void test_base64_error(void)
-{
+static void test_base64_error(void) {
   wchar_t const *input = L"YWJjZA==";
   size_t input_len = wcslen(input);
   TEST_EISG_F(base64_decoded_len(NULL, 0, NULL), err_invalid_arugment);
@@ -131,10 +126,8 @@ static void test_base64_error(void)
   TEST_SUCCEEDED_F(base64_decode(L"", 0, NULL, 0)); // special case
 }
 
-static void test_percent_decode(void)
-{
-  static const struct test_data
-  {
+static void test_percent_decode(void) {
+  static const struct test_data {
     wchar_t const *input;
     char const *output;
     uint_least32_t code;
@@ -191,15 +184,13 @@ static void test_percent_decode(void)
       },
   };
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
-  for (size_t i = 0; i < n; ++i)
-  {
+  for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d %ls", i, td->input);
 
     size_t decoded_len = 0;
     TEST_EISG_F(percent_decoded_len(td->input, wcslen(td->input), &decoded_len), td->code);
-    if (td->code != 0)
-    {
+    if (td->code != 0) {
       continue;
     }
 
@@ -212,8 +203,7 @@ static void test_percent_decode(void)
     TEST_ASSERT(p != NULL);
 
     TEST_EISG_F(percent_decode(td->input, wcslen(td->input), p, expected_len), td->code);
-    if (td->code != 0)
-    {
+    if (td->code != 0) {
       free(p);
       continue;
     }
@@ -224,8 +214,7 @@ static void test_percent_decode(void)
   }
 }
 
-static void test_percent_error(void)
-{
+static void test_percent_error(void) {
   wchar_t const *input = L"a%20bc";
   size_t input_len = wcslen(input);
   TEST_EISG_F(percent_decoded_len(NULL, 0, NULL), err_invalid_arugment);
@@ -242,10 +231,8 @@ static void test_percent_error(void)
   TEST_SUCCEEDED_F(percent_decode(L"", 0, NULL, 0)); // special case
 }
 
-static void test_parse_decode(void)
-{
-  static const struct test_data
-  {
+static void test_parse_decode(void) {
+  static const struct test_data {
     wchar_t const *input;
     struct data_uri output;
     wchar_t const *suggest_filename;
@@ -261,76 +248,79 @@ static void test_parse_decode(void)
       },
       {
           .input = L"data:,",
-          .output = {
-              .mime = L"text/plain",
-              .charset = L"US-ASCII",
-              .encoding = data_uri_encoding_percent,
-              .decoded = NULL,
-              .decoded_len = 0,
-          },
+          .output =
+              {
+                  .mime = L"text/plain",
+                  .charset = L"US-ASCII",
+                  .encoding = data_uri_encoding_percent,
+                  .decoded = NULL,
+                  .decoded_len = 0,
+              },
           .suggest_filename = L"noname.txt",
           .code = 0,
       },
       {
           .input = L"data:text/javascript,a%3f",
-          .output = {
-              .mime = L"text/javascript",
-              .charset = L"",
-              .encoding = data_uri_encoding_percent,
-              .decoded = "a?",
-              .decoded_len = 2,
-          },
+          .output =
+              {
+                  .mime = L"text/javascript",
+                  .charset = L"",
+                  .encoding = data_uri_encoding_percent,
+                  .decoded = "a?",
+                  .decoded_len = 2,
+              },
           .suggest_filename = L"noname.bin",
           .code = 0,
       },
       {
           .input = L"data:text/javascript;charset=UTF-8;base64,YWJj",
-          .output = {
-              .mime = L"text/javascript",
-              .charset = L"UTF-8",
-              .encoding = data_uri_encoding_base64,
-              .decoded = "abc",
-              .decoded_len = 3,
-          },
+          .output =
+              {
+                  .mime = L"text/javascript",
+                  .charset = L"UTF-8",
+                  .encoding = data_uri_encoding_base64,
+                  .decoded = "abc",
+                  .decoded_len = 3,
+              },
           .suggest_filename = L"noname.bin",
           .code = 0,
       },
       {
           .input = L"data:text/javascript;base64,YWJj",
-          .output = {
-              .mime = L"text/javascript",
-              .charset = L"",
-              .encoding = data_uri_encoding_base64,
-              .decoded = "abc",
-              .decoded_len = 3,
-          },
+          .output =
+              {
+                  .mime = L"text/javascript",
+                  .charset = L"",
+                  .encoding = data_uri_encoding_base64,
+                  .decoded = "abc",
+                  .decoded_len = 3,
+              },
           .suggest_filename = L"noname.bin",
           .code = 0,
       },
       {
           .input = L"data:text/javascript;filename=test.js;base64,YWJj",
-          .output = {
-              .mime = L"text/javascript",
-              .charset = L"",
-              .encoding = data_uri_encoding_base64,
-              .ext_filename = L"test.js",
-              .decoded = "abc",
-              .decoded_len = 3,
-          },
+          .output =
+              {
+                  .mime = L"text/javascript",
+                  .charset = L"",
+                  .encoding = data_uri_encoding_base64,
+                  .ext_filename = L"test.js",
+                  .decoded = "abc",
+                  .decoded_len = 3,
+              },
           .suggest_filename = L"test.js",
           .code = 0,
       },
   };
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
-  for (size_t i = 0; i < n; ++i)
-  {
+  for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
 
     struct data_uri d = {0};
     TEST_EISG_F(data_uri_parse(td->input, wcslen(td->input), &d), td->code);
-    if (td->code != 0)
-    {
+    if (td->code != 0) {
       continue;
     }
 
@@ -352,27 +342,21 @@ static void test_parse_decode(void)
 
     TEST_CHECK(d.decoded_len == 0);
     TEST_CHECK(d.decoded == NULL);
-    if (!TEST_SUCCEEDED_F(data_uri_decode(&d)))
-    {
+    if (!TEST_SUCCEEDED_F(data_uri_decode(&d))) {
       continue;
     }
-    if (!TEST_CHECK(td->output.decoded_len == d.decoded_len))
-    {
+    if (!TEST_CHECK(td->output.decoded_len == d.decoded_len)) {
       continue;
     }
-    if (d.decoded_len > 0)
-    {
+    if (d.decoded_len > 0) {
       TEST_CHECK(memcmp(td->output.decoded, d.decoded, d.decoded_len) == 0);
       TEST_DUMP("expected", td->output.decoded, d.decoded_len);
       TEST_DUMP("got", d.decoded, d.decoded_len);
-    }
-    else
-    {
+    } else {
       TEST_CHECK(td->output.decoded == NULL);
     }
     struct wstr fn = {0};
-    if (TEST_SUCCEEDED_F(data_uri_suggest_filename(&d, &fn)))
-    {
+    if (TEST_SUCCEEDED_F(data_uri_suggest_filename(&d, &fn))) {
       TEST_CHECK(wcscmp(fn.ptr, td->suggest_filename) == 0);
       TEST_MSG("expected %ls(%d)", td->suggest_filename, wcslen(td->suggest_filename));
       TEST_MSG("got %ls(%d)", fn.ptr, fn.len);
@@ -383,8 +367,7 @@ static void test_parse_decode(void)
   }
 }
 
-void test_get_mime(void)
-{
+void test_get_mime(void) {
   struct data_uri d = {
       .mime = L"text/plain",
   };
@@ -392,16 +375,14 @@ void test_get_mime(void)
   TEST_EISG_F(data_uri_get_mime(&d, NULL), err_null_pointer);
 
   struct wstr tmp = {0};
-  if (TEST_SUCCEEDED_F(data_uri_get_mime(&d, &tmp)))
-  {
+  if (TEST_SUCCEEDED_F(data_uri_get_mime(&d, &tmp))) {
     TEST_CHECK(wcscmp(tmp.ptr, d.mime) == 0);
   }
   struct data_uri d2 = {
       .mime = L"text/plain",
       .charset = L"UTF-8",
   };
-  if (TEST_SUCCEEDED_F(data_uri_get_mime(&d2, &tmp)))
-  {
+  if (TEST_SUCCEEDED_F(data_uri_get_mime(&d2, &tmp))) {
     TEST_CHECK(wcscmp(tmp.ptr, L"text/plain; charset=UTF-8") == 0);
   }
   ereport(sfree(&tmp));
