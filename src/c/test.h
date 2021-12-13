@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "3rd/base.c/base.h"
 #include "error_gcmz.h"
