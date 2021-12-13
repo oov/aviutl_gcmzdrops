@@ -362,6 +362,8 @@ error aviutl_exit(void)
     FreeLibrary(g_lua51);
     g_lua51 = NULL;
   }
+  g_exedit_fp = NULL;
+  g_is_enpatched = false;
   return eok();
 }
 
