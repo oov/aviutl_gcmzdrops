@@ -2,8 +2,6 @@
 
 #include <shlwapi.h>
 
-#include "3rd/base.c/error_win32.h"
-
 static HINSTANCE g_hinstance = NULL;
 
 void set_hinstance(HINSTANCE const h)
@@ -63,14 +61,14 @@ error disable_family_windows(HWND const exclude, HWND **const disabled_windows)
   };
   if (!EnumWindows(disable_family_windows_callback, (LPARAM)&d))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto failed;
   }
   err = apush(&d, INVALID_HANDLE_VALUE);
   if (efailed(err))
   {
     efree(&err);
-    err = err_hr(HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY));
+    err = errhr(HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY));
     goto failed;
   }
 
@@ -177,16 +175,16 @@ error set_client_size(HWND const window, LONG const width, LONG const height)
   RECT wr = {0};
   if (!GetWindowRect(window, &wr))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   RECT cr = {0};
   if (!GetClientRect(window, &cr))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   if (!SetWindowPos(window, NULL, 0, 0, (wr.right - wr.left) - (cr.right - cr.left) + width, (wr.bottom - wr.top) - (cr.bottom - cr.top) + height, SWP_NOMOVE | SWP_NOZORDER))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   return eok();
 }
@@ -426,7 +424,7 @@ error get_window_text(HWND const window, struct wstr *const dest)
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
     if (FAILED(hr))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
   }
@@ -443,7 +441,7 @@ error get_window_text(HWND const window, struct wstr *const dest)
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
     if (FAILED(hr))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
   }
@@ -484,7 +482,7 @@ error get_module_file_name(HINSTANCE const hinst, struct wstr *const dest)
   } while (n == r);
   if (r == 0)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   tmp.len = r;
@@ -518,7 +516,7 @@ error get_temp_dir(struct wstr *const dest)
 
   if (!GetTempPathW(MAX_PATH + 1, tmp.ptr))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   tmp.len = wcslen(tmp.ptr);
@@ -557,7 +555,7 @@ NODISCARD static error get_file_attributes(struct wstr const *const path, DWORD 
   DWORD const r = GetFileAttributesW(path->ptr);
   if (r == INVALID_FILE_ATTRIBUTES)
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   *attr = r;
   return eok();
@@ -578,7 +576,7 @@ error file_exists(struct wstr const *const path, bool *const exists)
   error err = get_file_attributes(path, &attr);
   if (efailed(err))
   {
-    if (err_is_hr(err, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) || err_is_hr(err, HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)))
+    if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) || eis_hr(err, HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)))
     {
       efree(&err);
       *exists = false;
@@ -606,7 +604,7 @@ error get_long_path_name(struct wstr const *const src, struct wstr *const dest)
   DWORD len = GetLongPathNameW(src->ptr, NULL, 0);
   if (len == 0)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   err = sgrow(&tmp, len);
@@ -618,7 +616,7 @@ error get_long_path_name(struct wstr const *const src, struct wstr *const dest)
   len = GetLongPathNameW(src->ptr, tmp.ptr, len);
   if (len == 0)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   tmp.len = len;
@@ -707,14 +705,14 @@ NODISCARD static error get_file_information(struct wstr const *const path, BY_HA
   HANDLE const h = CreateFileW(path->ptr, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, fa, NULL);
   if (h == INVALID_HANDLE_VALUE)
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   BY_HANDLE_FILE_INFORMATION fi = {0};
   if (!GetFileInformationByHandle(h, &fi))
   {
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
     CloseHandle(h);
-    return err_hr(hr);
+    return errhr(hr);
   }
   CloseHandle(h);
   *bhfi = fi;
@@ -850,7 +848,7 @@ error create_unique_file(wchar_t const *const base_fullpath, wchar_t const *cons
         hash = base_splitmix32_next(hash);
         continue;
       }
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
     if (data != NULL && datalen > 0)
@@ -858,7 +856,7 @@ error create_unique_file(wchar_t const *const base_fullpath, wchar_t const *cons
       DWORD written = 0;
       if (!WriteFile(file, data, datalen, &written, NULL) || written != datalen)
       {
-        err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+        err = errhr(HRESULT_FROM_WIN32(GetLastError()));
         CloseHandle(file);
         DeleteFileW(tmp.ptr);
         goto cleanup;
@@ -876,7 +874,7 @@ error create_unique_file(wchar_t const *const base_fullpath, wchar_t const *cons
     goto cleanup;
   }
 
-  err = err_hr(HRESULT_FROM_WIN32(ERROR_FILE_EXISTS));
+  err = errhr(HRESULT_FROM_WIN32(ERROR_FILE_EXISTS));
 
 cleanup:
   ereport(sfree(&tmp));
@@ -887,7 +885,7 @@ error delete_file(struct wstr const *const path)
 {
   if (!DeleteFileW(path->ptr))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   return eok();
 }
@@ -920,7 +918,7 @@ error from_cp(UINT const code_page, struct str const *const src, struct wstr *co
   int dlen = MultiByteToWideChar(code_page, 0, src->ptr, src->len, NULL, 0);
   if (!dlen)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -933,7 +931,7 @@ error from_cp(UINT const code_page, struct str const *const src, struct wstr *co
 
   if (!MultiByteToWideChar(code_page, 0, src->ptr, src->len, tmp.ptr, dlen))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -980,7 +978,7 @@ error to_cp(UINT const code_page, struct wstr const *const src, struct str *cons
   int dlen = WideCharToMultiByte(code_page, 0, src->ptr, src->len, NULL, 0, NULL, NULL);
   if (!dlen)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -993,7 +991,7 @@ error to_cp(UINT const code_page, struct wstr const *const src, struct str *cons
 
   if (!WideCharToMultiByte(code_page, 0, src->ptr, src->len, tmp.ptr, dlen, NULL, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 

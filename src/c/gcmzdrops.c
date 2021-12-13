@@ -5,7 +5,6 @@
 #include <ole2.h>
 
 #include "3rd/base.c/base.h"
-#include "3rd/base.c/error_win32.h"
 #include "api.h"
 #include "droptarget.h"
 #include "error_gcmz.h"
@@ -670,7 +669,7 @@ NODISCARD static error scroll_to_edit_cursor(HWND const exedit_window, HWND cons
   };
   if (!GetScrollInfo(sb_horz, SB_CTL, &si))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -770,7 +769,7 @@ NODISCARD static error process_api(struct api_request_params *const params)
   };
   if (!GetScrollInfo(sb_vert, SB_CTL, &si))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   if (params->layer < 0)
@@ -1015,9 +1014,9 @@ static BOOL wndproc_init(HWND const window)
   dt->super.lpVtbl->Release((void *)dt);
   if (FAILED(hr))
   {
-    err = err_hr(hr);
+    err = errhr(hr);
     wchar_t const *msg = NULL;
-    if (err_is_hr(err, DRAGDROP_E_ALREADYREGISTERED))
+    if (eis_hr(err, DRAGDROP_E_ALREADYREGISTERED))
     {
       msg = ERRMSG_INIT L"\r\n\r\n"
                         L"ドラッグ＆ドロップハンドラーの登録に失敗しました。\r\n"
@@ -1055,7 +1054,7 @@ static BOOL wndproc_init(HWND const window)
                        L"外部連携用 API は利用できません。"
 
     wchar_t const *msg = NULL;
-    if (err_is_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS)))
+    if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS)))
     {
       msg = ERRMSG_INITAPI L"\r\n\r\n"
                            L"このエラーは主に AviUtl を多重起動した場合に発生します。\r\n"
@@ -1100,7 +1099,7 @@ static BOOL wndproc_exit(void)
     HRESULT hr = RevokeDragDrop(aviutl_get_exedit_window_must());
     if (FAILED(hr))
     {
-      ereportmsg(err_hr(hr), &native_unmanaged(NSTR("ドラッグ＆ドロップハンドラーの登録解除に失敗しました。")));
+      ereportmsg(errhr(hr), &native_unmanaged(NSTR("ドラッグ＆ドロップハンドラーの登録解除に失敗しました。")));
     }
   }
   ereport(aviutl_exit());

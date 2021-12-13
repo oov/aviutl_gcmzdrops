@@ -4,7 +4,6 @@
 #include <lua5.1/lauxlib.h>
 #include <combaseapi.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
 #include "luafuncs.h"
@@ -159,7 +158,7 @@ NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern
   HANDLE h = FindFirstFileW(pattern->ptr, &fd);
   if (h == INVALID_HANDLE_VALUE)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   do

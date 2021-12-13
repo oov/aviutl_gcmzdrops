@@ -2,8 +2,6 @@
 
 #include <commctrl.h>
 
-#include "3rd/base.c/error_win32.h"
-
 error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu *const m, UINT_PTR *const selected)
 {
   if (!window || !m)
@@ -19,7 +17,7 @@ error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu 
   h = CreatePopupMenu();
   if (!h)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   for (size_t i = 0, mlen = m->len; i < mlen; ++i)
@@ -29,7 +27,7 @@ error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu 
     {
       if (!AppendMenuW(h, MF_ENABLED | MF_STRING, mi->id, mi->caption.ptr))
       {
-        err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+        err = errhr(HRESULT_FROM_WIN32(GetLastError()));
         goto cleanup;
       }
       continue;
@@ -37,7 +35,7 @@ error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu 
     hh = CreatePopupMenu();
     if (!hh)
     {
-      err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+      err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       goto cleanup;
     }
     for (size_t j = 0, milen = mi->len; j < milen; ++j)
@@ -45,13 +43,13 @@ error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu 
       struct scpopup_menu_sub_item *msi = mi->ptr + j;
       if (!AppendMenuW(hh, MF_ENABLED | MF_STRING, msi->id, msi->caption.ptr))
       {
-        err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+        err = errhr(HRESULT_FROM_WIN32(GetLastError()));
         goto cleanup;
       }
     }
     if (!AppendMenuW(h, MF_ENABLED | MF_STRING | MF_POPUP, (UINT_PTR)hh, mi->caption.ptr))
     {
-      err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+      err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       goto cleanup;
     }
     hh = NULL;
@@ -62,7 +60,7 @@ error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu 
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
     if (hr != HRESULT_FROM_WIN32(ERROR_SUCCESS))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
   }

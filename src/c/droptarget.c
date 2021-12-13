@@ -2,7 +2,6 @@
 
 #include <shlobj.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "datauri.h"
 #include "sniffer.h"
 #include "util.h"
@@ -70,7 +69,7 @@ NODISCARD static error get_data(STGMEDIUM *const sm, IDataObject *const dataobj,
   HRESULT hr = dataobj->lpVtbl->GetData(dataobj, &etc, sm);
   if (FAILED(hr))
   {
-    return err_hr(hr);
+    return errhr(hr);
   }
   return eok();
 }
@@ -89,13 +88,13 @@ NODISCARD static error read_from_hglobal(HGLOBAL const h, void **const data, siz
   void *p = GlobalLock(h);
   if (!p)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   SIZE_T sz = GlobalSize(h);
   if (sz == 0)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   void *r = NULL;
@@ -144,7 +143,7 @@ NODISCARD static error read_from_istream(IStream *const st, void **const data, s
     hr = st->lpVtbl->Read(st, buf, bufsize, &read);
     if (FAILED(hr))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
     if (hr == S_FALSE)
@@ -950,7 +949,7 @@ error clipboard_get(struct clipboard *const c)
   HRESULT hr = OleGetClipboard(&dataobj);
   if (FAILED(hr))
   {
-    err = err_hr(hr);
+    err = errhr(hr);
     goto failed;
   }
 

@@ -4,7 +4,6 @@
 #include <lua5.1/lauxlib.h>
 #include <combaseapi.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "3rd/crc64/crc64.h"
 #include "3rd/detect/detect.h"
 #include "aviutl.h"
@@ -604,7 +603,7 @@ static int luafn_findallfile(lua_State *const L)
     {
       goto cleanup;
     }
-    err = err_hr(hr);
+    err = errhr(hr);
     goto cleanup;
   }
   do
@@ -723,7 +722,7 @@ NODISCARD static error luafn_calcfilehash_core(struct wstr const *const path, ui
   HANDLE h = CreateFileW(path->ptr, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (h == INVALID_HANDLE_VALUE)
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   enum
   {
@@ -736,7 +735,7 @@ NODISCARD static error luafn_calcfilehash_core(struct wstr const *const path, ui
     DWORD read = 0;
     if (!ReadFile(h, buf, buf_size, &read, NULL))
     {
-      error err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+      error err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       CloseHandle(h);
       return err;
     }
@@ -1736,7 +1735,7 @@ NODISCARD static error copy_and_drop(HWND const window, POINT const pt, struct w
   }
   if (!CopyFileW(filepath->ptr, newpath.ptr, TRUE))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   err = files_add_delete_on_failure(&newpath);

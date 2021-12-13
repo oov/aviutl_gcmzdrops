@@ -26,7 +26,6 @@ add_library(aviutl_plugin SHARED)
 set_target_properties(aviutl_plugin PROPERTIES OUTPUT_NAME "GCMZDrops.auf" PREFIX "" SUFFIX "" RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 target_sources(aviutl_plugin PRIVATE
   3rd/base.c/base.c
-  3rd/base.c/error_win32.c
   3rd/crc64/crc64.c
   3rd/detect/detect.c
   api.c
@@ -101,13 +100,13 @@ endforeach(target)
 
 add_executable(test_base 3rd/base.c/base_test.c)
 list(APPEND tests test_base)
-add_executable(test_util 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util_test.c)
+add_executable(test_util 3rd/base.c/base.c error_gcmz.c util_test.c)
 list(APPEND tests test_util)
-add_executable(test_datauri 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util.c sniffer.c datauri_test.c)
+add_executable(test_datauri 3rd/base.c/base.c error_gcmz.c util.c sniffer.c datauri_test.c)
 list(APPEND tests test_datauri)
-add_executable(test_gcmzfuncs 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c task.c util.c gcmzfuncs_test.c)
+add_executable(test_gcmzfuncs 3rd/base.c/base.c error_gcmz.c task.c util.c gcmzfuncs_test.c)
 list(APPEND tests test_gcmzfuncs)
-add_executable(test_luafuncs 3rd/base.c/base.c 3rd/base.c/error_win32.c error_gcmz.c util.c files.c 3rd/crc64/crc64.c 3rd/detect/detect.c luafuncs_test.c)
+add_executable(test_luafuncs 3rd/base.c/base.c error_gcmz.c util.c files.c 3rd/crc64/crc64.c 3rd/detect/detect.c luafuncs_test.c)
 list(APPEND tests test_luafuncs)
 
 foreach(target ${tests})

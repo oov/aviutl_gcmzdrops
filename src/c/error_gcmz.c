@@ -43,5 +43,13 @@ NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR 
 
 error error_gcmz_init(void)
 {
-  return error_register_message_mapper(err_type_gcmz, get_message);
+  error err = error_register_message_mapper(err_type_generic, generic_error_message_mapper_jp);
+  if (efailed(err)) {
+    return err;
+  }
+  err = error_register_message_mapper(err_type_gcmz, get_message);
+  if (efailed(err)) {
+    return err;
+  }
+  return eok();
 }

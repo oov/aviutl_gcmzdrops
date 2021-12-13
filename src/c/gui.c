@@ -2,7 +2,6 @@
 
 #include <Shlobj.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "aviutl.h"
 #include "gcmzdrops.h"
 #include "gcmzfuncs.h"
@@ -47,7 +46,7 @@ NODISCARD static error create_font(HWND const window, HFONT *const font, int *co
   };
   if (!SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICSW), &ncm, 0))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
 
   HDC dc = GetDC(window);
@@ -291,7 +290,7 @@ NODISCARD static error select_directory(HWND const parent, struct wstr *const ca
   HRESULT hr = SHGetDesktopFolder(&desktop_folder);
   if (FAILED(hr))
   {
-    err = err_hr(hr);
+    err = errhr(hr);
     goto cleanup;
   }
   hr = desktop_folder->lpVtbl->ParseDisplayName(desktop_folder, NULL, NULL, dir->ptr, NULL, &idl, NULL);
@@ -472,7 +471,7 @@ error gui_set_save_dir(wchar_t const *const dir)
 {
   if (!SetWindowTextW(g_save_dir, dir))
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   return eok();
 }

@@ -44,7 +44,7 @@ static void test_init(void)
   }
   if (!CreateDirectoryW(tmp.ptr, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -64,7 +64,7 @@ static void test_exit(void)
   }
   if (!RemoveDirectoryW(tmp.ptr))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 

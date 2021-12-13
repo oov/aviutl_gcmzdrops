@@ -8,7 +8,6 @@
 #endif
 
 #include "3rd/base.c/base.h"
-#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 #include "files.h"
 #include "util.h"
@@ -96,13 +95,13 @@ void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct base_
   h = CreateFileW(tmp.ptr, FILE_APPEND_DATA, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (h == INVALID_HANDLE_VALUE)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   DWORD written = 0;
   if (!WriteFile(h, u8str.ptr, u8str.len, &written, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -138,7 +137,6 @@ static void main_init(HINSTANCE const inst)
   base_init();
   mtx_init(&g_reporter_mtx, mtx_plain);
   error_register_reporter(gcmz_reporter);
-  ereportmsg(error_win32_init(), &native_unmanaged(NSTR("WIN32 エラーメッセージマッパーの登録に失敗しました。")));
   ereportmsg(error_gcmz_init(), &native_unmanaged(NSTR("エラーメッセージマッパーの登録に失敗しました。")));
   set_hinstance(inst);
 }

@@ -3,7 +3,6 @@
 #include <shlobj.h>
 #include <shellapi.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "aviutl.h"
 #include "error_gcmz.h"
 #include "gcmzdrops.h"
@@ -232,7 +231,7 @@ NODISCARD static error gcmz_is_need_copy_mode_auto(struct wstr const *const path
     HRESULT const hr = SHGetFolderPathW(0, csidls[i], NULL, SHGFP_TYPE_CURRENT, dir.ptr);
     if (FAILED(hr))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto cleanup;
     }
     if (hr == S_FALSE)
@@ -498,13 +497,13 @@ NODISCARD static error create_drop_data(HWND const window, POINT const pt, struc
   h = GlobalAlloc(GMEM_ZEROINIT, sizeof(DROPFILES) + filepath_bytes);
   if (!h)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto failed;
   }
   df = GlobalLock(h);
   if (!df)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto failed;
   }
   *df = (DROPFILES){
@@ -530,7 +529,7 @@ NODISCARD static error create_drop_data(HWND const window, POINT const pt, struc
     HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
     if (hr != HRESULT_FROM_WIN32(NO_ERROR))
     {
-      err = err_hr(hr);
+      err = errhr(hr);
       goto failed;
     }
   }
@@ -734,7 +733,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
   HANDLE h = CreateFileW(bmpname.ptr, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
   if (h == INVALID_HANDLE_VALUE)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   DWORD written = 0;
@@ -753,7 +752,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
 
   if (!WriteFile(h, &bfh, sizeof(BITMAPFILEHEADER), &written, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     CloseHandle(h);
     goto cleanup;
   }
@@ -765,7 +764,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
   }
   if (!WriteFile(h, &bih, sizeof(BITMAPINFOHEADER), &written, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     CloseHandle(h);
     goto cleanup;
   }
@@ -778,7 +777,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
   DWORD const len = ((width * 3 + 3) & ~3) * height;
   if (!WriteFile(h, image, len, &written, NULL))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     CloseHandle(h);
     goto cleanup;
   }
@@ -848,7 +847,7 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai)
 
   if (!GetClientRect(exedit_window, &exedit_client_rect))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
@@ -901,7 +900,7 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai)
       DIB_RGB_COLORS, (void **)&p, NULL, 0);
   if (bmp == NULL)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   old_bmp = SelectObject(dc, bmp);
@@ -1095,7 +1094,7 @@ error gcmz_prompt(struct wstr const *const caption, struct wstr *const value, bo
     {
       return ib.err;
     }
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   *result = r == IDOK;
   return eok();
@@ -1126,7 +1125,7 @@ error gcmz_confirm(struct wstr const *const caption, bool *const result)
       MB_ICONQUESTION | MB_OKCANCEL);
   if (!r)
   {
-    return err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   *result = r == IDOK;
   return eok();

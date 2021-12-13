@@ -3,13 +3,11 @@
 #include <stdio.h>
 
 #include "3rd/base.c/base.h"
-#include "3rd/base.c/error_win32.h"
 #include "error_gcmz.h"
 
 static inline void test_init_(void)
 {
   base_init();
-  ereport(error_win32_init());
   ereport(error_gcmz_init());
 #ifdef TEST_MY_INIT
   TEST_MY_INIT;

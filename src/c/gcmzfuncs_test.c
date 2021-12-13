@@ -273,7 +273,7 @@ NODISCARD static error read_image(struct wstr *path, uint8_t **p, size_t *width,
   HANDLE file = CreateFileW(path->ptr, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (file == INVALID_HANDLE_VALUE)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   int w = 0, h = 0, n = 0;

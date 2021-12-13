@@ -2,7 +2,6 @@
 
 #include <jansson.h>
 
-#include "3rd/base.c/error_win32.h"
 #include "aviutl.h"
 #include "error_gcmz.h"
 #include "task.h"
@@ -371,7 +370,7 @@ static int api_thread(void *const userdata)
     wc.cbWndExtra = sizeof(struct api *);
     if (RegisterClassExW(&wc) == 0)
     {
-      err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+      err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       goto failed;
     }
     HWND h = CreateWindowExW(
@@ -387,7 +386,7 @@ static int api_thread(void *const userdata)
         NULL);
     if (!h)
     {
-      err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+      err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       goto failed;
     }
     api->priv.window = h;
@@ -479,7 +478,7 @@ error api_init(struct api *const api)
   HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
   if (FAILED(hr))
   {
-    err = err_hr(hr);
+    err = errhr(hr);
     goto failed;
   }
 
@@ -490,7 +489,7 @@ error api_init(struct api *const api)
   hr = HRESULT_FROM_WIN32(GetLastError());
   if (FAILED(hr))
   {
-    err = err_hr(hr);
+    err = errhr(hr);
     goto failed;
   }
 
@@ -603,7 +602,7 @@ error api_update_mapped_data(struct api *const api)
   p = MapViewOfFile(api->priv.fmo, FILE_MAP_WRITE, 0, 0, 0);
   if (!p)
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   switch (WaitForSingleObject(api->priv.mutex, INFINITE))
@@ -615,7 +614,7 @@ error api_update_mapped_data(struct api *const api)
     err = errg(err_abort);
     break;
   case WAIT_FAILED:
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     break;
   default:
     err = errg(err_fail);
@@ -628,18 +627,18 @@ error api_update_mapped_data(struct api *const api)
   memcpy(p, &d, sizeof(struct gcmzdrops_fmo));
   if (!FlushViewOfFile(p, 0))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   if (!ReleaseMutex(api->priv.mutex))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   mtx_locked = false;
   if (!UnmapViewOfFile(p))
   {
-    err = err_hr(HRESULT_FROM_WIN32(GetLastError()));
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
   p = NULL;
