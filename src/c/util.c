@@ -97,50 +97,6 @@ int message_box(HWND const window, wchar_t const *const msg, wchar_t const *cons
   return r;
 }
 
-void error_ods(error e, wchar_t const *const msg) {
-  error err = eok();
-  struct wstr tmp = {0};
-  struct wstr errmsg = {0};
-  err = scpy(&tmp, L"gcmzdrops: ");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, msg);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  if (efailed(e)) {
-    err = scat(&tmp, L"\r\n");
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-    err = error_to_string(e, &errmsg);
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-    err = scat(&tmp, errmsg.ptr);
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-  }
-  OutputDebugStringW(tmp.ptr);
-
-cleanup:
-  if (efailed(err)) {
-    efree(&err);
-    OutputDebugStringW(L"gcmzdrops: ");
-    OutputDebugStringW(msg);
-    OutputDebugStringW(L"**could not print error details for some reason**");
-  }
-  ereport(sfree(&tmp));
-  ereport(sfree(&errmsg));
-}
-
 error set_client_size(HWND const window, LONG const width, LONG const height) {
   RECT wr = {0};
   if (!GetWindowRect(window, &wr)) {

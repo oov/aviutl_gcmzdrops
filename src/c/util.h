@@ -14,8 +14,6 @@ NODISCARD error disable_family_windows(HWND const exclude, HWND **const disabled
 void restore_disabled_family_windows(HWND *const disabled_windows);
 int message_box(HWND const window, wchar_t const *const msg, wchar_t const *const title, UINT const flags);
 
-void error_ods(error e, wchar_t const *const msg);
-
 NODISCARD error set_client_size(HWND const window, LONG const width, LONG const height);
 
 NODISCARD error atoi64(struct wstr const *const s, int64_t *const dest);

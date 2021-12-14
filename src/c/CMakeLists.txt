@@ -92,10 +92,14 @@ foreach(target ${targets})
     -Wextra
     -Werror=return-type
     -pedantic-errors
+    -ffunction-sections
+    -fdata-sections
     $<$<CONFIG:Debug>:-O0>
     $<$<CONFIG:Release>:-O2>
   )
   target_link_options(${target} PRIVATE
+    -Wl,--gc-sections
+    -Wl,--print-gc-sections
     --rtlib=compiler-rt
     -Wl,--kill-at
     -no-pthread
