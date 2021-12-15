@@ -1,5 +1,5 @@
+#include "3rd/base.c/test.h"
 #include "gcmzfuncs.c"
-#include "test.h"
 
 #define STBI_NO_STDIO
 #define STBI_NO_LINEAR

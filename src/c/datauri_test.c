@@ -1,5 +1,5 @@
+#include "3rd/base.c/test.h"
 #include "datauri.c"
-#include "test.h"
 
 static void test_base64_decode(void) {
   static const struct test_data {
