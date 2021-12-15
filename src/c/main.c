@@ -120,30 +120,32 @@ cleanup:
   eignore(sfree(&tmp));
 }
 
-static void main_init(HINSTANCE const inst) {
-  base_init();
+static BOOL main_init(HINSTANCE const inst) {
+  if (!base_init()) {
+    return FALSE;
+  }
   mtx_init(&g_reporter_mtx, mtx_plain);
   error_register_reporter(gcmz_reporter);
   ereportmsg(error_gcmz_init(), &native_unmanaged(NSTR("エラーメッセージマッパーの登録に失敗しました。")));
   set_hinstance(inst);
+  return TRUE;
 }
 
-static void main_exit(void) {
+static BOOL main_exit(void) {
   files_cleanup(false);
   error_register_reporter(NULL);
   mtx_destroy(&g_reporter_mtx);
   base_exit();
+  return TRUE;
 }
 
 BOOL WINAPI DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved) {
   (void)reserved;
   switch (reason) {
   case DLL_PROCESS_ATTACH:
-    main_init(inst);
-    break;
+    return main_init(inst);
   case DLL_PROCESS_DETACH:
-    main_exit();
-    break;
+    return main_exit();
   }
   return TRUE;
 }
