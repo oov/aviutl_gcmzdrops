@@ -1,6 +1,5 @@
 #include "lua.h"
 
-#include <combaseapi.h>
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 
@@ -9,13 +8,17 @@
 #include "luafuncs.h"
 #include "util.h"
 
-static void *lua_alloc(void *const ud, void *const ptr, size_t const osize, size_t const nsize) {
+static void *lua_alloc(void *const ud, void *ptr, size_t const osize, size_t const nsize) {
   (void)ud;
   (void)osize;
-  if (ptr == NULL && nsize == 0) {
-    return NULL;
+  if (nsize) {
+    if (!ereport(mem(&ptr, nsize, 1))) {
+      return NULL;
+    }
+    return ptr;
   }
-  return CoTaskMemRealloc(ptr, nsize);
+  ereport(mem_free(&ptr));
+  return NULL;
 }
 
 NODISCARD static error pcall_(lua_State *const L, int const nargs, int const nresults ERR_FILEPOS_PARAMS) {
