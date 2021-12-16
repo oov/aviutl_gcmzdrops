@@ -24,7 +24,7 @@
 // SOFTWARE.
 #include "detect.h"
 
-int detect_japanese_encoding(struct detector_state *ds, uint8_t *bs, size_t bs_len)
+int detect_japanese_encoding(struct detector_state *ds, uint8_t const*bs, size_t bs_len)
 {
     if (bs_len >= 2 && bs[0] == 0xff && bs[1] == 0xfe)
     {

@@ -48,4 +48,4 @@ struct detector_state
     size_t likely_iso2022jp;
 };
 
-int detect_japanese_encoding(struct detector_state *ds, uint8_t *bs, size_t bs_len);
+int detect_japanese_encoding(struct detector_state *ds, uint8_t const*bs, size_t bs_len);

@@ -24,21 +24,21 @@ static HRESULT STDMETHODCALLTYPE QueryInterface(struct IDropTarget *This, REFIID
 static ULONG STDMETHODCALLTYPE AddRef(struct IDropTarget *This) {
   struct drop_target *const this = (void *)This;
   if (!this || this->super.lpVtbl != &g_drop_target_vtable) {
-    return E_INVALIDARG;
+    return 1;
   }
-  return InterlockedIncrement(&this->refcount);
+  return (ULONG)InterlockedIncrement(&this->refcount);
 }
 
 static ULONG STDMETHODCALLTYPE Release(struct IDropTarget *This) {
   struct drop_target *const this = (void *)This;
   if (!this || this->super.lpVtbl != &g_drop_target_vtable) {
-    return E_INVALIDARG;
+    return 1;
   }
   LONG r = InterlockedDecrement(&this->refcount);
   if (r == 0) {
     CoTaskMemRealloc(this, 0);
   }
-  return r;
+  return (ULONG)r;
 }
 
 NODISCARD static error
@@ -121,7 +121,7 @@ NODISCARD static error read_from_istream(IStream *const st, void **const data, s
     if (hr == S_FALSE) {
       break;
     }
-    error err = mem(&r, sz + read, sizeof(BYTE));
+    err = mem(&r, sz + read, sizeof(BYTE));
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -246,7 +246,7 @@ NODISCARD static error files_add_temp_file(struct files *const files,
     err = ethru(err);
     goto cleanup;
   }
-  err = files_add(files, &tmp, &wstr_unmanaged(mime));
+  err = files_add(files, &tmp, &wstr_unmanaged_const(mime));
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -317,7 +317,7 @@ NODISCARD static error try_parse_data_uri(struct wstr *const src, struct files *
     goto cleanup;
   }
   filename.ptr[extpos] = L'\0';
-  filename.len = extpos;
+  filename.len = (size_t)extpos;
 
   err = data_uri_get_mime(&d, &mime);
   if (efailed(err)) {
@@ -370,7 +370,7 @@ NODISCARD static error get_file_group_descriptor(IDataObject *const dataobj, FIL
   STGMEDIUM sm = {0};
   FILEGROUPDESCRIPTORW *fgd = NULL;
   size_t datalen = 0;
-  error err = get_data(&sm, dataobj, RegisterClipboardFormatW(L"FileGroupDescriptorW"), -1);
+  error err = get_data(&sm, dataobj, (CLIPFORMAT)RegisterClipboardFormatW(L"FileGroupDescriptorW"), -1);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -401,9 +401,9 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
   }
   UINT const n = fgd->cItems;
   for (UINT i = 0; i < n; ++i) {
-    FILEDESCRIPTORW const *const fd = fgd->fgd + i;
+    FILEDESCRIPTORW *const fd = fgd->fgd + i;
     int fnpos = 0;
-    err = extract_file_name(&wstr_unmanaged(fd->cFileName), &fnpos);
+    err = extract_file_name(&wstr_unmanaged_const(fd->cFileName), &fnpos);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -426,10 +426,10 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
       goto cleanup;
     }
     filename.ptr[extpos] = L'\0';
-    filename.len = extpos;
+    filename.len = (size_t)extpos;
 
     size_t plen = 0;
-    err = read_custom_format(dataobj, RegisterClipboardFormatW(L"FileContents"), i, &p, &plen);
+    err = read_custom_format(dataobj, (CLIPFORMAT)RegisterClipboardFormatW(L"FileContents"), (int)i, &p, &plen);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -481,9 +481,10 @@ NODISCARD static error try_read_from_hdrop(IDataObject *const dataobj, struct fi
   }
 
   if (df->fWide) {
-    wchar_t const *s = (void *)((char const *)(df) + df->pFiles);
+    wchar_t const *s = (void const *)((char const *)(df) + df->pFiles);
     while (*s != L'\0') {
-      err = files_add(files, &wstr_unmanaged(s), &wstr_unmanaged(L"application/octet-stream")); // TODO: use sniff
+      err = files_add(
+          files, &wstr_unmanaged_const(s), &wstr_unmanaged_const(L"application/octet-stream")); // TODO: use sniff
       if (efailed(err)) {
         err = ethru(err);
         goto cleanup;
@@ -496,7 +497,7 @@ NODISCARD static error try_read_from_hdrop(IDataObject *const dataobj, struct fi
 
   char const *s = (char const *)(df) + df->pFiles;
   while (*s != L'\0') {
-    struct str mbcs = str_unmanaged(s);
+    struct str const mbcs = str_unmanaged_const(s);
     ws = (struct wstr){0};
     err = from_mbcs(&mbcs, &ws);
     if (efailed(err)) {
@@ -547,8 +548,8 @@ NODISCARD static error try_read_from_dib(IDataObject *const dataobj, struct file
   memmove(p + sizeof(BITMAPFILEHEADER), p, plen);
   plen += sizeof(BITMAPFILEHEADER);
 
-  BITMAPINFOHEADER *const bih = (BITMAPINFOHEADER *)(p + sizeof(BITMAPFILEHEADER));
-  BITMAPFILEHEADER *const bfh = (BITMAPFILEHEADER *)(p);
+  BITMAPINFOHEADER *const bih = (BITMAPINFOHEADER *)(void *)(p + sizeof(BITMAPFILEHEADER));
+  BITMAPFILEHEADER *const bfh = (BITMAPFILEHEADER *)(void *)(p);
   bfh->bfType = 0x4d42;
   bfh->bfSize = sizeof(BITMAPFILEHEADER) + plen;
   bfh->bfReserved1 = 0;
@@ -595,13 +596,15 @@ NODISCARD static error read_data_object(IDataObject *const dataobj, struct files
   }
   efree(&err);
 
-  err = try_read_from_custom_format(dataobj, RegisterClipboardFormatW(L"PNG"), L"image/png", L".png", files);
+  err =
+      try_read_from_custom_format(dataobj, (CLIPFORMAT)RegisterClipboardFormatW(L"PNG"), L"image/png", L".png", files);
   if (esucceeded(err)) {
     goto succeeded;
   }
   efree(&err);
 
-  err = try_read_from_custom_format(dataobj, RegisterClipboardFormatW(L"JPEG"), L"image/jpeg", L".jpg", files);
+  err = try_read_from_custom_format(
+      dataobj, (CLIPFORMAT)RegisterClipboardFormatW(L"JPEG"), L"image/jpeg", L".jpg", files);
   if (esucceeded(err)) {
     goto succeeded;
   }

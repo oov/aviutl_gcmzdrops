@@ -1,20 +1,42 @@
+#include "3rd/base.c/base.h"
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
 #include <threads.h>
 #else
-#include "3rd/base.c/3rd/threads/threads.h"
-#endif
 
-#include "3rd/base.c/base.h"
+#ifdef __GNUC__
+
+#pragma GCC diagnostic push
+#if __has_warning("-Wreserved-macro-identifier")
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#endif
+#if __has_warning("-Wpadded")
+#pragma GCC diagnostic ignored "-Wpadded"
+#endif
+#if __has_warning("-Wmissing-noreturn")
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+#endif
+#include "3rd/base.c/3rd/threads/threads.h"
+#pragma GCC diagnostic pop
+
+#else
+
+#include "3rd/base.c/3rd/threads/threads.h"
+
+#endif // __GNUC__
+
+#endif // __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
+
 #include "error_gcmz.h"
 #include "files.h"
 #include "util.h"
 
 static mtx_t g_reporter_mtx = {0};
 
-void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct base_filepos const *const filepos) {
+static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct base_filepos const *const filepos) {
   mtx_lock(&g_reporter_mtx);
 
   HANDLE h = INVALID_HANDLE_VALUE;
@@ -80,7 +102,7 @@ void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct base_
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = fnpos;
+  tmp.len = (size_t)fnpos;
   wsprintfW(buf, L"gcmz-%04d%02d%02d.log", st.wYear, st.wMonth, st.wDay);
   err = scat(&tmp, buf);
   if (efailed(err)) {
@@ -139,7 +161,8 @@ static BOOL main_exit(void) {
   return TRUE;
 }
 
-BOOL WINAPI DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved) {
+BOOL APIENTRY DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved);
+BOOL APIENTRY DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved) {
   (void)reserved;
   switch (reason) {
   case DLL_PROCESS_ATTACH:

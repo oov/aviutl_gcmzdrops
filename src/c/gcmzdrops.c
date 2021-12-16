@@ -27,11 +27,11 @@ enum {
   L"ファイル名に使用できない文字が含まれています。\r\n"                                         \
   L"AviUtl では絵文字など一部の文字をファイル名に使用することができません。"
 
-bool g_drop_target_registered = false;
+static bool g_drop_target_registered = false;
 
-struct lua g_lua = {0};
-struct api g_api = {0};
-struct scpopup g_scpopup = {0};
+static struct lua g_lua = {0};
+static struct api g_api = {0};
+static struct scpopup g_scpopup = {0};
 
 static void update_mapped_data_task(void *const userdata) {
   (void)userdata;
@@ -202,7 +202,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
     ereport(gui_set_save_dir_to_default());
     goto cleanup;
   }
-  err = from_utf8(&(struct str){.ptr = data, .len = size}, &tmp);
+  err = from_utf8(&(struct str){.ptr = data, .len = (size_t)size}, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -221,7 +221,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
       efree(&err);
       ereport(gui_set_save_mode_to_default());
     } else {
-      ereport(gui_set_save_mode(v));
+      ereport(gui_set_save_mode((int)v));
     }
   }
   err = find_token(&tmp, L"savepath=", &pos, &len);
@@ -267,7 +267,7 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
     err = ethru(err);
     goto cleanup;
   }
-  err = utoa64(mode, &tmp2);
+  err = utoa64((uint64_t)mode, &tmp2);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -309,7 +309,7 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
   }
 
   if (size) {
-    *size = u8buf.len;
+    *size = (int)u8buf.len;
   }
   if (data) {
     memcpy(data, u8buf.ptr, u8buf.len);
@@ -570,10 +570,10 @@ NODISCARD static error scroll_to_edit_cursor(HWND const exedit_window, HWND cons
   }
 
   si.fMask = SIF_POS;
-  si.nPos = frame - si.nPage / 2;
+  si.nPos = frame - (int)si.nPage / 2;
   int const pos = SetScrollInfo(sb_horz, SB_CTL, &si, TRUE);
-  SendMessageW(exedit_window, WM_HSCROLL, MAKELONG(SB_THUMBTRACK, pos), (LPARAM)sb_horz);
-  SendMessageW(exedit_window, WM_HSCROLL, MAKELONG(SB_THUMBPOSITION, pos), (LPARAM)sb_horz);
+  SendMessageW(exedit_window, WM_HSCROLL, (WPARAM)MAKELONG(SB_THUMBTRACK, pos), (LPARAM)sb_horz);
+  SendMessageW(exedit_window, WM_HSCROLL, (WPARAM)MAKELONG(SB_THUMBPOSITION, pos), (LPARAM)sb_horz);
 
 cleanup:
   return err;
@@ -663,8 +663,8 @@ NODISCARD static error process_api(struct api_request_params *const params) {
     if (si.nPos > params->layer - 1) {
       si.nPos = params->layer - 1;
       pos = SetScrollInfo(sb_vert, SB_CTL, &si, TRUE);
-      SendMessageW(exedit_window, WM_VSCROLL, MAKELONG(SB_THUMBTRACK, pos), (LPARAM)sb_vert);
-      SendMessageW(exedit_window, WM_VSCROLL, MAKELONG(SB_THUMBPOSITION, pos), (LPARAM)sb_vert);
+      SendMessageW(exedit_window, WM_VSCROLL, (WPARAM)MAKELONG(SB_THUMBTRACK, pos), (LPARAM)sb_vert);
+      SendMessageW(exedit_window, WM_VSCROLL, (WPARAM)MAKELONG(SB_THUMBPOSITION, pos), (LPARAM)sb_vert);
     }
     pt.y += (params->layer - 1 - pos) * ai.layer_height;
   }
@@ -703,7 +703,7 @@ NODISCARD static error find_extended_filter_window(HWND *const window) {
     DWORD p = 0;
     GetWindowThreadProcessId(h, &p);
     if (p == pid) {
-      error err = get_window_text(h, &tmp);
+      err = get_window_text(h, &tmp);
       if (efailed(err)) {
         err = ethru(err);
         goto cleanup;
@@ -1027,7 +1027,8 @@ FILTER_DLL g_gcmzdrops_filter_dll = {
     .func_project_save = filter_project_save,
 };
 
-EXTERN_C FILTER_DLL __declspec(dllexport) * *__stdcall GetFilterTableList(void) {
+FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void);
+FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void) {
   static FILTER_DLL *filter_list[] = {&g_gcmzdrops_filter_dll, NULL};
   return (FILTER_DLL **)&filter_list;
 }

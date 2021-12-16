@@ -17,7 +17,7 @@ struct disable_family_windows_data {
   HWND exclude;
 };
 
-WINBOOL CALLBACK disable_family_windows_callback(HWND const window, LPARAM const lparam) {
+static WINBOOL CALLBACK disable_family_windows_callback(HWND const window, LPARAM const lparam) {
   struct disable_family_windows_data *const d = (void *)lparam;
   if (!IsWindowVisible(window) || !IsWindowEnabled(window) || d->exclude == window) {
     return TRUE;
@@ -192,7 +192,7 @@ error utoa64(uint64_t v, struct wstr *const dest) {
     buf[i--] = (v % 10) + L'0';
     v /= 10;
   }
-  buf[i] = v + L'0';
+  buf[i] = (wchar_t)v + L'0';
   error err = sncpy(dest, buf + i, buf_size - i);
   if (efailed(err)) {
     err = ethru(err);
@@ -207,8 +207,8 @@ error sanitize(struct wstr *const ws) {
   }
   for (wchar_t *s = ws->ptr, *end = ws->ptr + ws->len; s < end; ++s) {
     wchar_t const c = *s;
-    if ((0x00 <= c && c <= 0x1f) || c == 0x22 || c == 0x2a || c == 0x2b || c == 0x2f || c == 0x3a || c == 0x3c ||
-        c == 0x3e || c == 0x3f || c == 0x7c || c == 0x7f) {
+    if (c <= 0x1f || c == 0x22 || c == 0x2a || c == 0x2b || c == 0x2f || c == 0x3a || c == 0x3c || c == 0x3e ||
+        c == 0x3f || c == 0x7c || c == 0x7f) {
       *s = L'-';
     }
   }
@@ -282,7 +282,7 @@ error extract_file_extension(struct wstr const *const src, int *const pos) {
   }
   wchar_t const *const dot = wcsrchr(src->ptr + fnpos, L'.');
   if (dot == NULL) {
-    *pos = src->len;
+    *pos = (int)src->len;
     return eok();
   }
   *pos = dot - src->ptr;
@@ -322,7 +322,7 @@ error get_window_text(HWND const window, struct wstr *const dest) {
       goto cleanup;
     }
   }
-  tmp.len = slen;
+  tmp.len = (size_t)slen;
 
   err = scpy(dest, tmp.ptr);
   if (efailed(err)) {
@@ -731,7 +731,7 @@ error from_cp(UINT const code_page, struct str const *const src, struct wstr *co
     return eok();
   }
 
-  int dlen = MultiByteToWideChar(code_page, 0, src->ptr, src->len, NULL, 0);
+  int const dlen = MultiByteToWideChar(code_page, 0, src->ptr, (int)src->len, NULL, 0);
   if (!dlen) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
@@ -743,13 +743,13 @@ error from_cp(UINT const code_page, struct str const *const src, struct wstr *co
     goto cleanup;
   }
 
-  if (!MultiByteToWideChar(code_page, 0, src->ptr, src->len, tmp.ptr, dlen)) {
+  if (!MultiByteToWideChar(code_page, 0, src->ptr, (int)src->len, tmp.ptr, dlen)) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
   tmp.ptr[dlen] = L'\0';
-  tmp.len = dlen;
+  tmp.len = (size_t)dlen;
 
   err = scpy(dest, tmp.ptr);
   if (efailed(err)) {
@@ -782,7 +782,7 @@ error to_cp(UINT const code_page, struct wstr const *const src, struct str *cons
     return eok();
   }
 
-  int dlen = WideCharToMultiByte(code_page, 0, src->ptr, src->len, NULL, 0, NULL, NULL);
+  int const dlen = WideCharToMultiByte(code_page, 0, src->ptr, (int)src->len, NULL, 0, NULL, NULL);
   if (!dlen) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
@@ -794,13 +794,13 @@ error to_cp(UINT const code_page, struct wstr const *const src, struct str *cons
     goto cleanup;
   }
 
-  if (!WideCharToMultiByte(code_page, 0, src->ptr, src->len, tmp.ptr, dlen, NULL, NULL)) {
+  if (!WideCharToMultiByte(code_page, 0, src->ptr, (int)src->len, tmp.ptr, dlen, NULL, NULL)) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
 
   tmp.ptr[dlen] = '\0';
-  tmp.len = dlen;
+  tmp.len = (size_t)dlen;
 
   err = scpy(dest, tmp.ptr);
   if (efailed(err)) {

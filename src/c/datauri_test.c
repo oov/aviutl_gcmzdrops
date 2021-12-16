@@ -367,7 +367,7 @@ static void test_parse_decode(void) {
   }
 }
 
-void test_get_mime(void) {
+static void test_get_mime(void) {
   struct data_uri d = {
       .mime = L"text/plain",
   };

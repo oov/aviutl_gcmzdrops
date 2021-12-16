@@ -7,13 +7,38 @@
 #define STBI_ONLY_PNG
 #define STBI_NO_THREAD_LOCALS
 #define STB_IMAGE_IMPLEMENTATION
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#if __has_warning("-Wcast-qual")
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+#if __has_warning("-Wsign-conversion")
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
+#if __has_warning("-Wdisabled-macro-expansion")
+#pragma GCC diagnostic ignored "-Wdisabled-macro-expansion"
+#endif
+#if __has_warning("-Wcast-align")
+#pragma GCC diagnostic ignored "-Wcast-align"
+#endif
+#if __has_warning("-Wmissing-prototypes")
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#endif
+#if __has_warning("-Wimplicit-int-conversion")
+#pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+#endif
+
 #include "3rd/stb_image.h"
+#pragma GCC diagnostic pop
+#else
+#include "3rd/stb_image.h"
+#endif // __GNUC__
 
-wchar_t const *g_aviutl_project_path = NULL;
-wchar_t const *g_gui_save_dir = NULL;
-int g_gui_mode = gui_mode_auto;
+static wchar_t const *g_aviutl_project_path = NULL;
+static wchar_t const *g_gui_save_dir = NULL;
+static int g_gui_mode = gui_mode_auto;
 
-void test_gcmz_get_script_dir(void) {
+static void test_gcmz_get_script_dir(void) {
   struct wstr tmp = {0};
   if (TEST_SUCCEEDED_F(gcmz_get_script_dir(&tmp))) {
     wchar_t const *dirname = L"\\GCMZDrops";
@@ -25,7 +50,7 @@ void test_gcmz_get_script_dir(void) {
   }
 }
 
-void test_gcmz_get_project_dir(void) {
+static void test_gcmz_get_project_dir(void) {
   struct wstr tmp = {0};
   g_aviutl_project_path = NULL;
   TEST_EIS_F(gcmz_get_project_dir(&tmp), err_type_gcmz, err_gcmz_project_has_not_yet_been_saved);
@@ -38,7 +63,7 @@ void test_gcmz_get_project_dir(void) {
   }
 }
 
-void test_gcmz_get_save_dir(void) {
+static void test_gcmz_get_save_dir(void) {
   struct wstr tmp = {0};
   g_aviutl_project_path = NULL;
   g_gui_save_dir = L"C:\\test_gcmz_get_save_dir\\";
@@ -70,7 +95,7 @@ void test_gcmz_get_save_dir(void) {
   }
 }
 
-void test_gcmz_is_need_copy(void) {
+static void test_gcmz_is_need_copy(void) {
   struct wstr tmp = {0};
   struct wstr tempdir = {0};
   struct wstr desktopdir = {0};
@@ -96,6 +121,7 @@ void test_gcmz_is_need_copy(void) {
     int mode;
     wchar_t const *input;
     bool need_copy;
+    char reserved[3];
   } test_data[] = {
       {
           .mode = gui_mode_auto,
@@ -201,12 +227,13 @@ cleanup:
 struct cbdata {
   HANDLE h;
   bool eof;
+  char reserved[3];
 };
 
 static int cb_read(void *user, char *data, int size) {
   struct cbdata *d = user;
   DWORD read = 0;
-  if (!ReadFile(d->h, data, size, &read, NULL)) {
+  if (!ReadFile(d->h, data, (DWORD)size, &read, NULL)) {
     d->eof = true;
     return 0;
   } else {
@@ -214,7 +241,7 @@ static int cb_read(void *user, char *data, int size) {
       d->eof = true;
     }
   }
-  return read;
+  return (int)read;
 }
 
 static void cb_skip(void *user, int n) {
@@ -267,9 +294,9 @@ NODISCARD static error read_image(struct wstr *path, uint8_t **p, size_t *width,
   }
 
   // We need a padded bgr data, so remapping pixels.
-  size_t sline = w * 3;
-  size_t dline = ((w * 3 + 3) & ~3);
-  err = mem(&ptr, dline * h, 1);
+  size_t sline = (size_t)(w * 3);
+  size_t dline = (size_t)((w * 3 + 3) & ~3);
+  err = mem(&ptr, dline * (size_t)h, 1);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -287,8 +314,8 @@ NODISCARD static error read_image(struct wstr *path, uint8_t **p, size_t *width,
     dp += dline;
   }
   *p = ptr;
-  *width = w;
-  *height = h;
+  *width = (size_t)w;
+  *height = (size_t)h;
   ptr = NULL;
 
 cleanup:
@@ -306,7 +333,7 @@ cleanup:
   return err;
 }
 
-void test_analyse_exedit_window_image(void) {
+static void test_analyse_exedit_window_image(void) {
 #define LSTR(x) L##x
 #define STR(x) LSTR(#x)
 #define STRINGIZE(x) STR(x)

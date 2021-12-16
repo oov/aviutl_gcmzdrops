@@ -40,13 +40,6 @@ link_directories(
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/lib"
   "${CMAKE_CURRENT_BINARY_DIR}" # for lua51dl.a
 )
-link_libraries(
-  base
-  comctl32
-  shlwapi
-  lua51dl
-  jansson
-)
 add_compile_definitions(
   __STDC_NO_THREADS__
   _WIN32_WINNT=0x0502
@@ -62,6 +55,9 @@ add_compile_options(
   -mstackrealign
   -Wall
   -Wextra
+  -Werror
+  -Weverything
+  -Wshadow
   -Werror=return-type
   -pedantic-errors
   -ffunction-sections
@@ -73,16 +69,25 @@ add_link_options(
   -Wl,--gc-sections
   # -Wl,--print-gc-sections
   --rtlib=compiler-rt
-  -Wl,--kill-at
   -no-pthread
   -static
+  -Wl,--kill-at
   $<$<CONFIG:Release>:-s>
 )
 
+add_library(crc64 STATIC 3rd/crc64/crc64.c)
+add_library(detect STATIC 3rd/detect/detect.c)
+
+link_libraries(
+  comctl32
+  shlwapi
+  base
+  crc64
+  detect
+  lua51dl
+  jansson
+)
 add_library(gcmzdrops_auf SHARED
-  3rd/base.c/base.c
-  3rd/crc64/crc64.c
-  3rd/detect/detect.c
   api.c
   aviutl.c
   datauri.c
@@ -118,7 +123,7 @@ add_executable(test_datauri error_gcmz.c util.c sniffer.c datauri_test.c)
 list(APPEND tests test_datauri)
 add_executable(test_gcmzfuncs error_gcmz.c task.c util.c gcmzfuncs_test.c)
 list(APPEND tests test_gcmzfuncs)
-add_executable(test_luafuncs error_gcmz.c util.c files.c 3rd/crc64/crc64.c 3rd/detect/detect.c luafuncs_test.c)
+add_executable(test_luafuncs error_gcmz.c util.c files.c luafuncs_test.c)
 list(APPEND tests test_luafuncs)
 
 foreach(target ${tests})

@@ -102,7 +102,7 @@ static void test_createfile(void) {
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = fnpos;
+  tmp.len = (size_t)fnpos;
 
   if (!TEST_SUCCEEDED_F(exclude_trailing_path_delimiter(&tmp))) {
     goto cleanup;
@@ -209,7 +209,7 @@ static void test_createtempfile(void) {
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = fnpos;
+  tmp.len = (size_t)fnpos;
 
   if (!TEST_SUCCEEDED_F(exclude_trailing_path_delimiter(&tmp))) {
     goto cleanup;
@@ -274,7 +274,7 @@ cleanup:
   ereport(sfree(&got1));
 }
 
-void test_calcfilehash(void) {
+static void test_calcfilehash(void) {
   TEST_EISG_F(luafn_calcfilehash_core(NULL, NULL), err_invalid_arugment);
   TEST_EISG_F(luafn_calcfilehash_core(&wstr_unmanaged(L"test_calcfilehash.txt"), NULL), err_null_pointer);
 
@@ -323,7 +323,7 @@ cleanup:
   ereport(sfree(&tempfile));
 }
 
-void test_hashtostring(void) {
+static void test_hashtostring(void) {
   TEST_EISG_F(luafn_hashtostring_core(0, NULL), err_null_pointer);
 
   static const struct test_data {
@@ -353,11 +353,11 @@ void test_hashtostring(void) {
   ereport(sfree(&tmp));
 }
 
-void test_encode_exo_text(void) {
+static void test_encode_exo_text(void) {
   wchar_t const *input = L"hello world";
   char const *expected = "680065006c006c006f00200077006f0072006c0064000000";
   struct str got = {0};
-  error err = encode_exo_text(&wstr_unmanaged(input), &got);
+  error err = encode_exo_text(&wstr_unmanaged_const(input), &got);
   if (!TEST_SUCCEEDED_F(err)) {
     goto cleanup;
   }
@@ -370,7 +370,7 @@ cleanup:
   ereport(sfree(&got));
 }
 
-void test_decode_exo_text(void) {
+static void test_decode_exo_text(void) {
   struct str input = {0};
   TEST_SUCCEEDED_F(scpy(&input, "680065006c006c006f00200077006f0072006c00640000"));
   while (input.len < 4096) {
@@ -390,11 +390,11 @@ cleanup:
   ereport(sfree(&input));
 }
 
-void test_encode_lua_string(void) {
+static void test_encode_lua_string(void) {
   char const *input = "hello\r\nworld";
   char const *expected = "\"hello\\r\\nworld\"";
   struct str got = {0};
-  error err = encode_lua_string(&str_unmanaged(input), &got);
+  error err = encode_lua_string(&str_unmanaged_const(input), &got);
   if (!TEST_SUCCEEDED_F(err)) {
     goto cleanup;
   }
@@ -407,7 +407,7 @@ cleanup:
   ereport(sfree(&got));
 }
 
-void test_convertencoding(void) {
+static void test_convertencoding(void) {
   static const struct test_data {
     void *input;
     UINT input_cp;
@@ -552,7 +552,7 @@ void test_convertencoding(void) {
       TEST_CHECK(tmp.len > 0);
       size_t expected_len = td->output_cp >= 1200 ? wcslen(td->expected) : strlen(td->expected);
       if (td->output_cp == 1200 || td->output_cp == 1201) {
-        TEST_CHECK(wcsncmp((wchar_t const *)tmp.ptr, (wchar_t const *)td->expected, expected_len) == 0);
+        TEST_CHECK(wcsncmp((void const *)tmp.ptr, (wchar_t const *)td->expected, expected_len) == 0);
       } else {
         TEST_CHECK(strncmp(tmp.ptr, td->expected, expected_len) == 0);
       }

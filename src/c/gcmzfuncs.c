@@ -28,7 +28,7 @@ error gcmz_get_script_dir(struct wstr *const dest) {
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = fnpos;
+  tmp.len = (size_t)fnpos;
 
   err = scat(&tmp, L"GCMZDrops");
   if (efailed(err)) {
@@ -64,7 +64,7 @@ error gcmz_get_project_dir(struct wstr *const dest) {
     err = ethru(err);
     goto cleanup;
   }
-  tmp.len = pos;
+  tmp.len = (size_t)pos;
   tmp.ptr[tmp.len] = L'\0';
   err = exclude_trailing_path_delimiter(&tmp);
   if (efailed(err)) {
@@ -205,7 +205,6 @@ NODISCARD static error gcmz_is_need_copy_mode_auto(struct wstr const *const path
       continue;
     }
     dir.len = wcslen(dir.ptr);
-    bool contains = false;
     err = file_contains(&dir, &longpath, &contains);
     if (efailed(err)) {
       err = ethru(err);
@@ -291,7 +290,7 @@ error gcmz_is_need_copy(struct wstr const *const path, bool *const need_copy) {
     goto cleanup;
   }
   for (size_t i = 0; i < ext.len; ++i) {
-    ext.ptr[i] = to_lower(ext.ptr[i]);
+    ext.ptr[i] = (wchar_t)to_lower(ext.ptr[i]);
   }
   if (wcscmp(ext.ptr, L".txt") == 0 || wcscmp(ext.ptr, L".exo") == 0 || wcscmp(ext.ptr, L".exa") == 0) {
     ereport(sfree(&ext));
@@ -508,7 +507,7 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
     return emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("拡張編集ウィンドウの表示エリアが小さすぎます。")));
   }
 
-  size_t const line_bytes = (width * 3 + 3) & ~3;
+  size_t const line_bytes = (width * 3 + 3) & ~3U;
   struct gcmz_analysed_info tmp = {
       .edit_cursor = {-1, -1},
       .zoom_level = 0,
@@ -584,7 +583,7 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
       uint8_t const b = pp[0], g = pp[1], r = pp[2];
       if ((b == tb && g == tg && r == tr) || (b == eb24 && g == eg24 && r == er24) ||
           (b == eb16 && g == eg16 && r == er16)) {
-        tmp.edit_cursor = (POINT){timeline_left + i, timeline_top};
+        tmp.edit_cursor = (POINT){(LONG)(timeline_left + i), timeline_top};
         break;
       }
       pp += 3;
@@ -614,7 +613,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
     goto cleanup;
   }
   bmpname.ptr[fnpos] = L'\0';
-  bmpname.len = fnpos;
+  bmpname.len = (size_t)fnpos;
 
   SYSTEMTIME st = {0};
   GetLocalTime(&st);
@@ -646,8 +645,8 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
   };
   BITMAPINFOHEADER bih = {
       .biSize = sizeof(BITMAPINFOHEADER),
-      .biWidth = width,
-      .biHeight = -height,
+      .biWidth = (LONG)width,
+      .biHeight = (LONG)-height,
       .biPlanes = 1,
       .biBitCount = 24,
       .biCompression = BI_RGB,
@@ -673,7 +672,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
     CloseHandle(h);
     goto cleanup;
   }
-  DWORD const len = ((width * 3 + 3) & ~3) * height;
+  DWORD const len = ((width * 3 + 3) & ~3U) * height;
   if (!WriteFile(h, image, len, &written, NULL)) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     CloseHandle(h);
@@ -728,6 +727,9 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai) {
   HBITMAP bmp = NULL;
   HBITMAP old_bmp = NULL;
 
+  uint8_t *p = NULL;
+  size_t width = 0, height = 0;
+
   error err = aviutl_get_exedit_window(&exedit_window);
   if (efailed(err)) {
     err = ethru(err);
@@ -758,8 +760,8 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai) {
     goto cleanup;
   }
 
-  size_t width = exedit_client_rect.right - exedit_client_rect.left;
-  size_t height = exedit_client_rect.bottom - exedit_client_rect.top;
+  width = (size_t)(exedit_client_rect.right - exedit_client_rect.left);
+  height = (size_t)(exedit_client_rect.bottom - exedit_client_rect.top);
 
   // Set a cap to avoid consuming too much memory.
   // But there is no basis for this setting value.
@@ -768,14 +770,13 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai) {
     height = 160;
   }
 
-  uint8_t *p = NULL;
   bmp = CreateDIBSection(dc,
                          &(BITMAPINFO){
                              .bmiHeader =
                                  {
                                      .biSize = sizeof(BITMAPINFOHEADER),
-                                     .biWidth = width,
-                                     .biHeight = -height,
+                                     .biWidth = (LONG)width,
+                                     .biHeight = (LONG)-height,
                                      .biPlanes = 1,
                                      .biBitCount = 24,
                                      .biCompression = BI_RGB,
@@ -802,7 +803,7 @@ error gcmz_analyse_exedit_window(struct gcmz_analysed_info *const ai) {
       goto cleanup;
     }
   } else {
-    if (!BitBlt(dc, 0, 0, width, height, exedit_dc, 0, 0, SRCCOPY)) {
+    if (!BitBlt(dc, 0, 0, (int)width, (int)height, exedit_dc, 0, 0, SRCCOPY)) {
       err = errg(err_fail);
       goto cleanup;
     }

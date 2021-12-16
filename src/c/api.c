@@ -64,7 +64,7 @@ static int cv_wait_while(struct cv *cv, int var) {
 }
 
 NODISCARD static error
-parse_api0_found_token(struct wstr *const ws, struct api_request_params *const params, size_t *const found) {
+parse_api0_found_token(struct wstr const *const ws, struct api_request_params *const params, size_t *const found) {
   error err = eok();
   int64_t v = 0;
   switch (*found) {
@@ -74,7 +74,7 @@ parse_api0_found_token(struct wstr *const ws, struct api_request_params *const p
       err = ethru(err);
       goto cleanup;
     }
-    params->layer = v;
+    params->layer = (int)v;
     break;
   case 1:
     err = atoi64(ws, &v);
@@ -82,7 +82,7 @@ parse_api0_found_token(struct wstr *const ws, struct api_request_params *const p
       err = ethru(err);
       goto cleanup;
     }
-    params->frame_advance = v;
+    params->frame_advance = (int)v;
     break;
   default:
     err = files_add(&params->files, ws, &wstr_unmanaged(L"application/octet-stream"));
@@ -122,7 +122,8 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
       err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("無効なフォーマットです。")));
       goto cleanup;
     }
-    err = parse_api0_found_token(&(struct wstr){.ptr = (wchar_t *)p + i - token, .len = token}, params, &found);
+    err = parse_api0_found_token(
+        &(struct wstr const){.ptr = (wchar_t *)base_deconster_(p + i - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -130,7 +131,8 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
     token = 0;
   }
   if (token) {
-    err = parse_api0_found_token(&(struct wstr){.ptr = (wchar_t *)p + len - token, .len = token}, params, &found);
+    err = parse_api0_found_token(
+        &(struct wstr const){.ptr = (wchar_t *)base_deconster_(p + len - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -177,7 +179,7 @@ NODISCARD static error parse_api1(struct str *const s, struct api_request_params
       err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("ファイル名が正しくありません。")));
       goto cleanup;
     }
-    err = from_utf8(&str_unmanaged(json_string_value(item)), &tmp);
+    err = from_utf8(&str_unmanaged_const(json_string_value(item)), &tmp);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -190,8 +192,8 @@ NODISCARD static error parse_api1(struct str *const s, struct api_request_params
     ++added;
   }
 
-  params->layer = layer;
-  params->frame_advance = frame_advance;
+  params->layer = (int)layer;
+  params->frame_advance = (int)frame_advance;
 
 cleanup:
   if (efailed(err)) {
@@ -296,7 +298,7 @@ cleanup:
 static LRESULT WINAPI wndproc(HWND const window, UINT const message, WPARAM const wparam, LPARAM const lparam) {
   switch (message) {
   case WM_COPYDATA:
-    return process((struct api *)GetWindowLongPtrW(window, 0), (HWND)wparam, (COPYDATASTRUCT *)lparam);
+    return process((struct api *)(GetWindowLongPtrW(window, 0)), (HWND)wparam, (COPYDATASTRUCT *)lparam);
   case WM_CLOSE:
     DestroyWindow(window);
     return 0;

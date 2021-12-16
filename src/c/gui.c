@@ -1,6 +1,6 @@
 #include "gui.h"
 
-#include <Shlobj.h>
+#include <shlobj.h>
 
 #include "aviutl.h"
 #include "gcmzdrops.h"
@@ -55,7 +55,7 @@ NODISCARD static error create_font(HWND const window, HFONT *const font, int *co
   return eok();
 }
 
-NODISCARD error get_ini_file_name(struct str *const dest) {
+static NODISCARD error get_ini_file_name(struct str *const dest) {
   struct wstr tmp = {0};
   error err = get_module_file_name(NULL, &tmp);
   if (efailed(err)) {
@@ -69,7 +69,7 @@ NODISCARD error get_ini_file_name(struct str *const dest) {
     goto cleanup;
   }
   tmp.ptr[extpos] = L'\0';
-  tmp.len = extpos;
+  tmp.len = (size_t)extpos;
   err = scat(&tmp, L".ini");
   if (efailed(err)) {
     err = ethru(err);
@@ -86,14 +86,14 @@ cleanup:
   return err;
 }
 
-NODISCARD error load_defaults(void) {
+static NODISCARD error load_defaults(void) {
   struct str inifile = {0};
   error err = get_ini_file_name(&inifile);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  g_default_save_mode = GetPrivateProfileIntA(GCMZDROPS_NAME_MBCS, "save_mode", g_initial_save_mode, inifile.ptr);
+  g_default_save_mode = (int)GetPrivateProfileIntA(GCMZDROPS_NAME_MBCS, "save_mode", g_initial_save_mode, inifile.ptr);
 
   enum {
     bufsize = 1024,
@@ -112,7 +112,7 @@ cleanup:
   return err;
 }
 
-NODISCARD error save_defaults(void) {
+static NODISCARD error save_defaults(void) {
   struct str tmp = {0};
   struct str inifile = {0};
   error err = get_ini_file_name(&inifile);

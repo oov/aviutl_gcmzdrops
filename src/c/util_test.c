@@ -4,8 +4,8 @@
 static void test_atoi64(void) {
   static const struct test_data {
     wchar_t const *input;
-    int64_t output;
     uint_least32_t code;
+    int64_t output;
   } test_data[] = {
       {
           .input = L"0",
@@ -55,7 +55,7 @@ static void test_atoi64(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     int64_t r = 0;
-    if (TEST_EISG_F(atoi64(&wstr_unmanaged(td->input), &r), td->code) && td->code == 0) {
+    if (TEST_EISG_F(atoi64(&wstr_unmanaged_const(td->input), &r), td->code) && td->code == 0) {
       TEST_CHECK(r == td->output);
     }
   }
@@ -64,8 +64,8 @@ static void test_atoi64(void) {
 static void test_atou64(void) {
   static const struct test_data {
     wchar_t const *input;
-    uint64_t output;
     uint_least32_t code;
+    uint64_t output;
   } test_data[] = {
       {
           .input = L"0",
@@ -100,7 +100,7 @@ static void test_atou64(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     uint64_t r = 0;
-    if (TEST_EISG_F(atou64(&wstr_unmanaged(td->input), &r), td->code) && td->code == 0) {
+    if (TEST_EISG_F(atou64(&wstr_unmanaged_const(td->input), &r), td->code) && td->code == 0) {
       TEST_CHECK(r == td->output);
     }
   }
@@ -110,6 +110,7 @@ static void test_utoa64(void) {
   static const struct test_data {
     uint64_t input;
     wchar_t const *output;
+    int32_t reserved;
   } test_data[] = {
       {
           .input = 0ULL,
@@ -272,7 +273,7 @@ static void test_extract_file_name(void) {
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
-    struct wstr src = wstr_unmanaged(td->input);
+    struct wstr src = wstr_unmanaged_const(td->input);
     int pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_name(&src, &pos))) {
       TEST_CHECK(pos == td->output);
@@ -352,7 +353,7 @@ static void test_extract_file_extension(void) {
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
-    struct wstr src = wstr_unmanaged(td->input);
+    struct wstr const src = wstr_unmanaged_const(td->input);
     int pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_extension(&src, &pos))) {
       TEST_CHECK(pos == td->output);
@@ -367,6 +368,7 @@ static void test_file_contains(void) {
     wchar_t const *dir;
     wchar_t const *file;
     bool contains;
+    char reserved[3];
   } test_data[] = {
       {
           .dir = L"C:\\example\\dir",
@@ -415,7 +417,7 @@ static void test_file_contains(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->file);
     bool contains = false;
-    if (TEST_SUCCEEDED_F(file_contains(&wstr_unmanaged(td->dir), &wstr_unmanaged(td->file), &contains))) {
+    if (TEST_SUCCEEDED_F(file_contains(&wstr_unmanaged_const(td->dir), &wstr_unmanaged_const(td->file), &contains))) {
       TEST_CHECK(contains == td->contains);
     }
   }

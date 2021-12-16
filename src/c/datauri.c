@@ -62,8 +62,8 @@ base64_decode(wchar_t const *const ws, size_t const wslen, void *const data, siz
     if (p0 == 255 || p1 == 255 || p2 == 255 || p3 == 255) {
       return errg(err_fail);
     }
-    uint_least32_t const v = (p0 << 18) | (p1 << 12) | (p2 << 6) | (p3 << 0);
-    *d++ = (v >> 16);
+    uint_least32_t const v = (uint_least32_t)((p0 << 18) | (p1 << 12) | (p2 << 6) | (p3 << 0));
+    *d++ = (v >> 16) & 0xff;
     *d++ = (v >> 8) & 0xff;
     *d++ = (v >> 0) & 0xff;
   }
@@ -76,8 +76,8 @@ base64_decode(wchar_t const *const ws, size_t const wslen, void *const data, siz
     if (p0 == 255 || p1 == 255 || p2 == 255) {
       return errg(err_fail);
     }
-    uint_least32_t const v = (p0 << 18) | (p1 << 12) | (p2 << 6);
-    *d++ = (v >> 16);
+    uint_least32_t const v = (uint_least32_t)((p0 << 18) | (p1 << 12) | (p2 << 6));
+    *d++ = (v >> 16) & 0xff;
     if (remain == 3) {
       *d++ = (v >> 8) & 0xff;
     }
@@ -85,9 +85,9 @@ base64_decode(wchar_t const *const ws, size_t const wslen, void *const data, siz
   return eok();
 }
 
-static inline int hex2int(wchar_t c) {
+static inline uint_least8_t hex2int(wchar_t c) {
   if (L'0' <= c && c <= L'9') {
-    return c - L'0';
+    return (c & 0xff) - L'0';
   }
   if ((L'A' <= c && c <= L'F') || (L'a' <= c && c <= L'f')) {
     return (c & 0x5f) - L'A' + 10;
@@ -149,7 +149,7 @@ percent_decode(wchar_t const *const ws, size_t const wslen, void *const data, si
       if (n == datalen) {
         return errg(err_not_sufficient_buffer);
       }
-      *d++ = c;
+      *d++ = c & 0xff;
       ++n;
       continue;
     }
@@ -167,7 +167,7 @@ percent_decode(wchar_t const *const ws, size_t const wslen, void *const data, si
     if (n == datalen) {
       return errg(err_not_sufficient_buffer);
     }
-    *d++ = (v1 << 4) | (v2 << 0);
+    *d++ = (uint8_t)((v1 << 4) | (v2 << 0));
     ++n;
     i += 2;
   }
@@ -197,12 +197,12 @@ error data_uri_parse(wchar_t const *ws, size_t wslen, struct data_uri *const d) 
   struct wstr tmp2 = {0};
   error err = eok();
 
-  size_t const headerlen = comma - ws;
+  size_t const headerlen = (size_t)(comma - ws);
   if (headerlen > 0) {
     wchar_t const *cur = ws;
     while (cur < comma) {
       wchar_t const *const sep = wcspbrk(cur, L";,");
-      size_t const len = sep - cur;
+      size_t const len = (size_t)(sep - cur);
       if (len == 6 && wcsncmp(cur, L"base64", 6) == 0) {
         dd.encoding = data_uri_encoding_base64;
         cur += len + 1;
@@ -275,8 +275,8 @@ error data_uri_parse(wchar_t const *ws, size_t wslen, struct data_uri *const d) 
     wcscpy(dd.mime, L"text/plain");
     wcscpy(dd.charset, L"US-ASCII");
   }
-  dd.encoded = (wchar_t *)comma + 1;
-  dd.encoded_len = wslen - (dd.encoded - ws);
+  dd.encoded = (wchar_t const *)comma + 1;
+  dd.encoded_len = wslen - (size_t)(dd.encoded - ws);
   *d = dd;
 
 cleanup:
@@ -418,7 +418,7 @@ error data_uri_suggest_filename(struct data_uri const *const d, struct wstr *con
   // If filename is stored, use it.
   if (d->ext_filename[0] != L'\0') {
     int pos = 0;
-    err = extract_file_name(&wstr_unmanaged(d->ext_filename), &pos);
+    err = extract_file_name(&wstr_unmanaged_const(d->ext_filename), &pos);
     if (esucceeded(err)) {
       err = scpy(dest, d->ext_filename + pos);
       if (efailed(err)) {

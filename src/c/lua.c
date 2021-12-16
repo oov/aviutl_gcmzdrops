@@ -150,7 +150,7 @@ NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern
       err = ethru(err);
       goto cleanup;
     }
-    ws.len = extpos;
+    ws.len = (size_t)extpos;
     ws.ptr[extpos] = L'\0';
     err = luafn_push_wstr(L, &ws);
     if (efailed(err)) {
@@ -349,7 +349,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
     goto cleanup;
   }
 
-  int n = lua_objlen(L, -1);
+  int const n = (int)lua_objlen(L, -1);
   for (int i = 1; i <= n; ++i) {
     lua_rawgeti(L, -1, i);
     if (lua_isboolean(L, -1)) {
@@ -365,7 +365,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
       lua_pop(L, 1);
       err = apush(menu,
                   ((struct scpopup_menu_item){
-                      .id = MAKELONG(i, 0),
+                      .id = (UINT_PTR)MAKELONG(i, 0),
                       .caption = ws,
                   }));
       if (efailed(err)) {
@@ -376,7 +376,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
       continue;
     }
     if (lua_istable(L, -1)) {
-      int m = lua_objlen(L, -1);
+      int const m = (int)lua_objlen(L, -1);
       if (m == 0) {
         lua_pop(L, 1);
         continue;
@@ -390,7 +390,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
       lua_pop(L, 1);
       err = apush(menu,
                   ((struct scpopup_menu_item){
-                      .id = MAKELONG(i, 0),
+                      .id = (UINT_PTR)MAKELONG(i, 0),
                       .caption = ws,
                   }));
       if (efailed(err)) {
@@ -409,7 +409,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
         lua_pop(L, 1);
         err = apush(menu_item,
                     ((struct scpopup_menu_sub_item){
-                        .id = MAKELONG(i, j),
+                        .id = (UINT_PTR)MAKELONG(i, j),
                         .caption = ws,
                     }));
         if (efailed(err)) {

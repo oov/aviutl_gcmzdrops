@@ -9,6 +9,7 @@ struct file {
   struct wstr path;
   struct wstr mime;
   bool temporary;
+  char reserved[3];
 };
 
 struct files {

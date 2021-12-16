@@ -27,7 +27,7 @@ NODISCARD static error verify_installation(void) {
     goto cleanup;
   }
   path.ptr[fnpos] = L'\0';
-  path.len = fnpos;
+  path.len = (size_t)fnpos;
 
   err = scat(&path, L"exedit.auf");
   if (efailed(err)) {
@@ -143,13 +143,13 @@ static int atou32(TCHAR const *s, uint32_t *const ret) {
     if (i >= 10 || '0' > s[i] || s[i] > '9') {
       break;
     }
-    r = r * 10 + s[i++] - '0';
+    r = r * 10 + (uint64_t)(s[i++] - '0');
   }
   if (i == 0 || r > 0xffffffff) {
     return 0;
   }
   *ret = r & 0xffffffff;
-  return i;
+  return (int)i;
 }
 
 NODISCARD static error verify_exedit_version(FILTER const *const exedit_fp) {
@@ -193,7 +193,7 @@ NODISCARD static error load_lua51(HMODULE *const lua51) {
     goto cleanup;
   }
   path.ptr[fnpos] = L'\0';
-  path.len = fnpos;
+  path.len = (size_t)fnpos;
 
   err = scat(&path, L"lua51.dll");
   if (efailed(err)) {

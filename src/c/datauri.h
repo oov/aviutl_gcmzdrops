@@ -15,7 +15,7 @@ struct data_uri {
   wchar_t charset[128];
   wchar_t ext_filename[128]; // Non-standard extension
   int encoding;
-  wchar_t *encoded;
+  wchar_t const *encoded;
   size_t encoded_len;
   void *decoded;
   size_t decoded_len;
