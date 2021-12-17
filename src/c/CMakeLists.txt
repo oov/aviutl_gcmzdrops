@@ -12,13 +12,13 @@ add_custom_target(generate_version_h COMMAND
 )
 
 find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
-add_custom_target(generate_lua51dl COMMAND
+add_custom_target(generate_lua51_delayed COMMAND
   ${CMAKE_COMMAND}
   -Dlocal_dir="${CMAKE_CURRENT_BINARY_DIR}"
   -Ddll="${LUA51DLL}"
   -Ddef="${CMAKE_CURRENT_BINARY_DIR}/lua51.def"
-  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51.a"
-  -Ddelayed_lib="${CMAKE_CURRENT_BINARY_DIR}/liblua51dl.a"
+  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_dynamic.a"
+  -Ddelayed_lib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_delayed.a"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/makelib.cmake"
 )
 
@@ -38,7 +38,7 @@ include_directories(
 )
 link_directories(
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/lib"
-  "${CMAKE_CURRENT_BINARY_DIR}" # for lua51dl.a
+  "${CMAKE_CURRENT_BINARY_DIR}" # for liblua51_delayed.a
 )
 add_compile_definitions(
   __STDC_NO_THREADS__
@@ -84,7 +84,7 @@ link_libraries(
   base
   crc64
   detect
-  lua51dl
+  lua51_delayed
   jansson
 )
 add_library(gcmzdrops_auf SHARED
@@ -112,7 +112,7 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_lua51dl)
+add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_delayed)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../lua/" DESTINATION "${CMAKE_BINARY_DIR}/bin/GCMZDrops/")
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
