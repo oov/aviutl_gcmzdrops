@@ -464,7 +464,10 @@ error lua_dropper_select(struct lua *const l, HWND const window, POINT const pt,
   return eok();
 }
 
-error lua_call_on_drag_enter(struct lua *const l, struct files *const f, POINTL const point, DWORD const key_state) {
+error lua_call_on_drag_enter(struct lua *const l,
+                             struct files const *const f,
+                             POINTL const point,
+                             DWORD const key_state) {
   if (!l || !l->L || !f) {
     return errg(err_invalid_arugment);
   }
@@ -496,7 +499,10 @@ error lua_call_on_drag_enter(struct lua *const l, struct files *const f, POINTL 
   return eok();
 }
 
-error lua_call_on_drag_over(struct lua *const l, struct files *const f, POINTL const point, DWORD const key_state) {
+error lua_call_on_drag_over(struct lua *const l,
+                            struct files const *const f,
+                            POINTL const point,
+                            DWORD const key_state) {
   if (!l || !l->L || !f) {
     return errg(err_invalid_arugment);
   }
@@ -543,8 +549,11 @@ error lua_call_on_drag_leave(struct lua *const l) {
   return eok();
 }
 
-error lua_call_on_drop(
-    struct lua *const l, struct files *const f, POINTL const point, DWORD const key_state, int const frame_advance) {
+error lua_call_on_drop(struct lua *const l,
+                       struct files const *const f,
+                       POINTL const point,
+                       DWORD const key_state,
+                       int const frame_advance) {
   if (!l || !l->L || !f) {
     return errg(err_invalid_arugment);
   }
@@ -578,8 +587,11 @@ error lua_call_on_drop(
   return eok();
 }
 
-error lua_call_on_drop_simulated(
-    struct lua *const l, struct files *const f, POINTL const point, DWORD const key_state, int const frame_advance) {
+error lua_call_on_drop_simulated(struct lua *const l,
+                                 struct files const *const f,
+                                 POINTL const point,
+                                 DWORD const key_state,
+                                 int const frame_advance) {
   if (!l || !l->L || !f) {
     return errg(err_invalid_arugment);
   }
