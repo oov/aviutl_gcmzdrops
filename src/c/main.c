@@ -3,32 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
-#include <threads.h>
-#else
-
-#ifdef __GNUC__
-
-#pragma GCC diagnostic push
-#if __has_warning("-Wreserved-macro-identifier")
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#endif
-#if __has_warning("-Wpadded")
-#pragma GCC diagnostic ignored "-Wpadded"
-#endif
-#if __has_warning("-Wmissing-noreturn")
-#pragma GCC diagnostic ignored "-Wmissing-noreturn"
-#endif
-#include "3rd/base.c/3rd/threads/threads.h"
-#pragma GCC diagnostic pop
-
-#else
-
-#include "3rd/base.c/3rd/threads/threads.h"
-
-#endif // __GNUC__
-
-#endif // __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
+#include "3rd/base.c/threads.h"
 
 #include "error_gcmz.h"
 #include "files.h"
@@ -155,9 +130,8 @@ static BOOL main_init(HINSTANCE const inst) {
 
 static BOOL main_exit(void) {
   files_cleanup(false);
-  error_register_reporter(NULL);
-  mtx_destroy(&g_reporter_mtx);
   base_exit();
+  mtx_destroy(&g_reporter_mtx);
   return TRUE;
 }
 
