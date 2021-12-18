@@ -30,15 +30,15 @@ enum {
 static bool g_drop_target_registered = false;
 
 static struct lua g_lua = {0};
-static struct api g_api = {0};
+static struct api *g_api = NULL;
 static struct scpopup g_scpopup = {0};
 
 static void update_mapped_data_task(void *const userdata) {
   (void)userdata;
-  if (!api_initialized(&g_api)) {
+  if (!api_initialized(g_api)) {
     return;
   }
-  ereportmsg(api_update_mapped_data(&g_api), &native_unmanaged(NSTR("外部連携API用データの更新に失敗しました。")));
+  ereportmsg(api_update_mapped_data(g_api), &native_unmanaged(NSTR("外部連携API用データの更新に失敗しました。")));
 }
 
 static void update_mapped_data(void) {
@@ -579,7 +579,7 @@ cleanup:
   return err;
 }
 
-NODISCARD static error process_api(struct api_request_params *const params) {
+NODISCARD static error process_api(struct api_request_params const *const params) {
   struct lua lua = {0};
   HWND exedit_window = NULL, sb_horz = NULL, sb_vert = NULL;
   int original_zoom_level = -1;
@@ -724,7 +724,7 @@ cleanup:
   return err;
 }
 
-NODISCARD static error adjust_window_visibility(struct api_request_params *const params) {
+NODISCARD static error adjust_window_visibility(struct api_request_params const *const params) {
   HWND exedit_window = NULL;
   HWND extended_filter_window = NULL;
   bool visible = false;
@@ -781,8 +781,8 @@ cleanup:
   return err;
 }
 
-static void request_callback(void *const userdata, struct api_request_params *const params, error e) {
-  error err = e;
+static void request_callback(struct api_request_params *const params, api_request_complete_func const complete) {
+  error err = params->err;
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -797,10 +797,13 @@ static void request_callback(void *const userdata, struct api_request_params *co
 cleanup:
   files_cleanup(efailed(err));
   if (efailed(err)) {
-    error_message_box(
-        err, (HWND)userdata, L"外部連携 API の処理中にエラーが発生しました。", GCMZDROPS_NAME_VERSION_WIDE, false);
+    error_message_box(err,
+                      (HWND)params->userdata,
+                      L"外部連携 API の処理中にエラーが発生しました。",
+                      GCMZDROPS_NAME_VERSION_WIDE,
+                      false);
   }
-  params->complete(params);
+  complete(params);
   return;
 }
 
@@ -913,8 +916,7 @@ static BOOL wndproc_init(HWND const window) {
 #undef ERRMSG_INITAPI
     error_message_box(err, window, msg, GCMZDROPS_NAME_VERSION_WIDE, false);
   } else {
-    g_api.request = request_callback;
-    g_api.userdata = (void *)aviutl_get_my_window_must();
+    api_set_callback(g_api, request_callback, (void *)aviutl_get_my_window_must());
   }
 
   ereport(gui_set_save_mode_to_default());
@@ -926,7 +928,7 @@ static BOOL wndproc_init(HWND const window) {
 static BOOL wndproc_exit(void) {
   ereport(lua_exit(&g_lua));
 
-  if (api_initialized(&g_api)) {
+  if (api_initialized(g_api)) {
     ereportmsg(api_exit(&g_api), &native_unmanaged(NSTR("外部連携用 API の終了に失敗しました。")));
   }
 

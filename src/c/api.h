@@ -3,70 +3,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
-#include <threads.h>
-#else
-
-#ifdef __GNUC__
-
-#pragma GCC diagnostic push
-#if __has_warning("-Wreserved-macro-identifier")
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#endif
-#if __has_warning("-Wpadded")
-#pragma GCC diagnostic ignored "-Wpadded"
-#endif
-#if __has_warning("-Wmissing-noreturn")
-#pragma GCC diagnostic ignored "-Wmissing-noreturn"
-#endif
-#include "3rd/base.c/3rd/threads/threads.h"
-#pragma GCC diagnostic pop
-
-#else
-
-#include "3rd/base.c/3rd/threads/threads.h"
-
-#endif // __GNUC__
-
-#endif // __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
-
 #include "3rd/base.c/base.h"
 #include "files.h"
 
-struct cv {
-  int var;
-  cnd_t cnd;
-  mtx_t mtx;
-};
-
+struct api;
 struct api_request_params {
   struct files files;
   int layer;
   int frame_advance;
 
-  void (*complete)(struct api_request_params *params);
-
-  struct {
-    struct cv *process;
-  } priv;
-};
-
-struct api {
-  void (*request)(void *userdata, struct api_request_params *params, error err);
+  error err;
   void *userdata;
-
-  struct {
-    HWND window;
-    HANDLE mutex;
-    HANDLE fmo;
-
-    thrd_t thread;
-    struct cv state;
-    struct cv process;
-  } priv;
 };
 
-NODISCARD error api_init(struct api *const api);
+typedef void (*api_request_complete_func)(struct api_request_params *const params);
+typedef void (*api_request_func)(struct api_request_params *const params, api_request_complete_func const complete);
+
+NODISCARD error api_init(struct api **const api);
+void api_set_callback(struct api *const api, api_request_func const callback, void *const userdata);
 NODISCARD error api_update_mapped_data(struct api *const api);
-NODISCARD error api_exit(struct api *const api);
+NODISCARD error api_exit(struct api **const api);
 NODISCARD bool api_initialized(struct api const *const api);

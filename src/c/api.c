@@ -2,10 +2,36 @@
 
 #include <jansson.h>
 
+#include "3rd/base.c/threads.h"
+
 #include "aviutl.h"
 #include "error_gcmz.h"
 #include "task.h"
 #include "util.h"
+
+struct cv {
+  int var;
+  cnd_t cnd;
+  mtx_t mtx;
+};
+
+struct api {
+  api_request_func request;
+  void *userdata;
+
+  HWND window;
+  HANDLE mutex;
+  HANDLE fmo;
+
+  thrd_t thread;
+  struct cv state;
+  struct cv process;
+};
+
+struct api_request_params_internal {
+  struct api_request_params params;
+  struct cv *process;
+};
 
 struct gcmzdrops_fmo {
   uint32_t window;
@@ -210,23 +236,24 @@ cleanup:
 
 struct process_task_data {
   struct api *api;
-  struct api_request_params params;
+  struct api_request_params_internal pi;
   error err;
 };
 
 static void process_complete(struct api_request_params *const params) {
-  cv_lock(params->priv.process);
-  cv_signal(params->priv.process, state_succeeded);
-  cv_unlock(params->priv.process);
+  struct api_request_params_internal *pi = (void *)params;
+  cv_lock(pi->process);
+  cv_signal(pi->process, state_succeeded);
+  cv_unlock(pi->process);
 }
 
 static void process_task(void *const userdata) {
   struct process_task_data *const d = userdata;
   struct api *const api = d->api;
   if (api->request) {
-    api->request(api->userdata, &d->params, d->err);
+    api->request(&d->pi.params, process_complete);
   } else {
-    efree(&d->err);
+    efree(&d->pi.params.err);
   }
 }
 
@@ -243,7 +270,7 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
             .ptr = cds->lpData,
             .len = cds->cbData / 2,
         },
-        &d.params);
+        &d.pi.params);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -255,7 +282,7 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
             .ptr = cds->lpData,
             .len = cds->cbData,
         },
-        &d.params);
+        &d.pi.params);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -266,30 +293,28 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
     goto cleanup;
   }
 
-  if (d.params.layer == 0 || d.params.layer < -100 || d.params.layer > 100) {
+  if (d.pi.params.layer == 0 || d.pi.params.layer < -100 || d.pi.params.layer > 100) {
     err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("レイヤー番号が不正です。")));
     goto cleanup;
   }
-  cv_lock(&api->priv.process);
-  d.params.priv.process = &api->priv.process;
-  d.params.complete = process_complete;
-  api->priv.process.var = state_undefined;
+  cv_lock(&api->process);
+  d.pi.process = &api->process;
+  api->process.var = state_undefined;
   task_add(process_task, &d);
-  cv_wait_while(&api->priv.process, state_undefined);
-  cv_unlock(&api->priv.process);
+  cv_wait_while(&api->process, state_undefined);
+  cv_unlock(&api->process);
 
 cleanup:
-  ereport(files_free(&d.params.files, false));
+  ereport(files_free(&d.pi.params.files, false));
   if (efailed(err)) {
     d.err = err;
     err = NULL; // err is owned by request handler
-    cv_lock(&api->priv.process);
-    d.params.priv.process = &api->priv.process;
-    d.params.complete = process_complete;
-    api->priv.process.var = state_undefined;
+    cv_lock(&api->process);
+    d.pi.process = &api->process;
+    api->process.var = state_undefined;
     task_add(process_task, &d);
-    cv_wait_while(&api->priv.process, state_undefined);
-    cv_unlock(&api->priv.process);
+    cv_wait_while(&api->process, state_undefined);
+    cv_unlock(&api->process);
     return FALSE;
   }
   return TRUE;
@@ -342,13 +367,13 @@ static int api_thread(void *const userdata) {
       err = errhr(HRESULT_FROM_WIN32(GetLastError()));
       goto failed;
     }
-    api->priv.window = h;
+    api->window = h;
     SetWindowLongPtrW(h, 0, (LONG)api);
   }
 
-  cv_lock(&api->priv.state);
-  cv_signal(&api->priv.state, state_succeeded);
-  cv_unlock(&api->priv.state);
+  cv_lock(&api->state);
+  cv_signal(&api->state, state_succeeded);
+  cv_unlock(&api->state);
 
   MSG msg = {0};
   while (GetMessageW(&msg, NULL, 0, 0) > 0) {
@@ -359,9 +384,9 @@ static int api_thread(void *const userdata) {
 
 failed:
   ereportmsg(err, &native_unmanaged(NSTR("API 用スレッドでエラーが発生しました。")));
-  cv_lock(&api->priv.state);
-  cv_signal(&api->priv.state, state_failed);
-  cv_unlock(&api->priv.state);
+  cv_lock(&api->state);
+  cv_signal(&api->state, state_failed);
+  cv_unlock(&api->state);
   return 1;
 }
 
@@ -369,20 +394,20 @@ NODISCARD static error api_thread_init(struct api *const api) {
   error err = eok();
   bool thread_started = false;
 
-  cv_init(&api->priv.state);
-  cv_init(&api->priv.process);
+  cv_init(&api->state);
+  cv_init(&api->process);
 
-  cv_lock(&api->priv.state);
-  api->priv.state.var = state_undefined;
-  if (thrd_create(&api->priv.thread, api_thread, api) != thrd_success) {
-    cv_unlock(&api->priv.state);
+  cv_lock(&api->state);
+  api->state.var = state_undefined;
+  if (thrd_create(&api->thread, api_thread, api) != thrd_success) {
+    cv_unlock(&api->state);
     err = errg(err_fail);
     goto failed;
   }
   thread_started = true;
 
-  int state = cv_wait_while(&api->priv.state, state_undefined);
-  cv_unlock(&api->priv.state);
+  int state = cv_wait_while(&api->state, state_undefined);
+  cv_unlock(&api->state);
 
   switch (state) {
   case state_succeeded:
@@ -398,22 +423,22 @@ NODISCARD static error api_thread_init(struct api *const api) {
 
 failed:
   if (thread_started) {
-    thrd_join(&api->priv.thread, NULL);
+    thrd_join(&api->thread, NULL);
   }
-  cv_exit(&api->priv.process);
-  cv_exit(&api->priv.state);
+  cv_exit(&api->process);
+  cv_exit(&api->state);
   return err;
 }
 
 NODISCARD static error api_thread_exit(struct api *const api) {
-  SendMessage(api->priv.window, WM_SYSCOMMAND, SC_CLOSE, 0);
-  thrd_join(&api->priv.thread, NULL);
-  cv_exit(&api->priv.process);
-  cv_exit(&api->priv.state);
+  SendMessage(api->window, WM_SYSCOMMAND, SC_CLOSE, 0);
+  thrd_join(&api->thread, NULL);
+  cv_exit(&api->process);
+  cv_exit(&api->state);
   return eok();
 }
 
-error api_init(struct api *const api) {
+error api_init(struct api **const api) {
   error err = eok();
   HANDLE mutex = 0, fmo = 0;
 
@@ -438,16 +463,26 @@ error api_init(struct api *const api) {
     goto failed;
   }
 
-  err = api_thread_init(api);
+  err = mem(api, 1, sizeof(struct api));
   if (efailed(err)) {
     err = ethru(err);
     goto failed;
   }
-  api->priv.mutex = mutex;
-  api->priv.fmo = fmo;
+  (*api)->mutex = mutex;
+  (*api)->fmo = fmo;
+
+  err = api_thread_init(*api);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto failed;
+  }
+
   return eok();
 
 failed:
+  if (*api) {
+    ereport(mem_free(api));
+  }
   if (fmo) {
     CloseHandle(fmo);
     fmo = NULL;
@@ -459,7 +494,12 @@ failed:
   return err;
 }
 
-bool api_initialized(struct api const *const api) { return api->priv.fmo && api->priv.mutex; }
+void api_set_callback(struct api *const api, api_request_func const callback, void *const userdata) {
+  api->request = callback;
+  api->userdata = userdata;
+}
+
+bool api_initialized(struct api const *const api) { return api->fmo && api->mutex; }
 
 error api_update_mapped_data(struct api *const api) {
   if (!api_initialized(api)) {
@@ -468,7 +508,7 @@ error api_update_mapped_data(struct api *const api) {
 
   error err = eok();
   struct gcmzdrops_fmo d = {
-      .window = (uint32_t)api->priv.window,
+      .window = (uint32_t)api->window,
       .gcmz_api_ver = 2,
   };
   void *p = NULL;
@@ -528,12 +568,12 @@ error api_update_mapped_data(struct api *const api) {
     d.flags = flags;
   }
 
-  p = MapViewOfFile(api->priv.fmo, FILE_MAP_WRITE, 0, 0, 0);
+  p = MapViewOfFile(api->fmo, FILE_MAP_WRITE, 0, 0, 0);
   if (!p) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
-  switch (WaitForSingleObject(api->priv.mutex, INFINITE)) {
+  switch (WaitForSingleObject(api->mutex, INFINITE)) {
   case WAIT_OBJECT_0:
     mtx_locked = true;
     break;
@@ -555,7 +595,7 @@ error api_update_mapped_data(struct api *const api) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
-  if (!ReleaseMutex(api->priv.mutex)) {
+  if (!ReleaseMutex(api->mutex)) {
     err = errhr(HRESULT_FROM_WIN32(GetLastError()));
     goto cleanup;
   }
@@ -568,7 +608,7 @@ error api_update_mapped_data(struct api *const api) {
 
 cleanup:
   if (mtx_locked) {
-    ReleaseMutex(api->priv.mutex);
+    ReleaseMutex(api->mutex);
   }
   if (p) {
     UnmapViewOfFile(p);
@@ -576,15 +616,17 @@ cleanup:
   return err;
 }
 
-error api_exit(struct api *const api) {
-  ereportmsg(api_thread_exit(api), &native_unmanaged(NSTR("API 用スレッドの終了に失敗しました。")));
-  if (api->priv.mutex) {
-    CloseHandle(api->priv.mutex);
-    api->priv.mutex = NULL;
+error api_exit(struct api **const api) {
+  ereportmsg(api_thread_exit(*api), &native_unmanaged(NSTR("API 用スレッドの終了に失敗しました。")));
+  if ((*api)->mutex) {
+    CloseHandle((*api)->mutex);
+    (*api)->mutex = NULL;
   }
-  if (api->priv.fmo) {
-    CloseHandle(api->priv.fmo);
-    api->priv.fmo = NULL;
+  if ((*api)->fmo) {
+    CloseHandle((*api)->fmo);
+    (*api)->fmo = NULL;
   }
-  return eok();
+  error err = mem_free(api);
+  *api = NULL;
+  return err;
 }
