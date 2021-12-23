@@ -9,12 +9,6 @@
 #include "task.h"
 #include "util.h"
 
-struct cv {
-  int var;
-  cnd_t cnd;
-  mtx_t mtx;
-};
-
 struct api {
   api_request_func request;
   void *userdata;
@@ -24,13 +18,13 @@ struct api {
   HANDLE fmo;
 
   thrd_t thread;
-  struct cv state;
-  struct cv process;
+  struct cndvar state;
+  struct cndvar process;
 };
 
 struct api_request_params_internal {
   struct api_request_params params;
-  struct cv *process;
+  struct cndvar *process;
 };
 
 struct gcmzdrops_fmo {
@@ -51,43 +45,6 @@ enum {
   state_succeeded = 1,
   state_failed = 2,
 };
-
-static void cv_init(struct cv *const cv) {
-  assert(cv != NULL);
-  mtx_init(&cv->mtx, mtx_plain | mtx_recursive);
-  cnd_init(&cv->cnd);
-  cv->var = 0;
-}
-
-static void cv_exit(struct cv *const cv) {
-  assert(cv != NULL);
-  cnd_destroy(&cv->cnd);
-  mtx_destroy(&cv->mtx);
-}
-
-static void cv_lock(struct cv *const cv) {
-  assert(cv != NULL);
-  mtx_lock(&cv->mtx);
-}
-
-static void cv_unlock(struct cv *const cv) {
-  assert(cv != NULL);
-  mtx_unlock(&cv->mtx);
-}
-
-static void cv_signal(struct cv *const cv, int const var) {
-  assert(cv != NULL);
-  cv->var = var;
-  cnd_signal(&cv->cnd);
-}
-
-static int cv_wait_while(struct cv *cv, int var) {
-  assert(cv != NULL);
-  while (cv->var == var) {
-    cnd_wait(&cv->cnd, &cv->mtx);
-  }
-  return cv->var;
-}
 
 NODISCARD static error
 parse_api0_found_token(struct wstr const *const ws, struct api_request_params *const params, size_t *const found) {
@@ -242,9 +199,9 @@ struct process_task_data {
 
 static void process_complete(struct api_request_params *const params) {
   struct api_request_params_internal *pi = (void *)params;
-  cv_lock(pi->process);
-  cv_signal(pi->process, state_succeeded);
-  cv_unlock(pi->process);
+  cndvar_lock(pi->process);
+  cndvar_signal(pi->process, state_succeeded);
+  cndvar_unlock(pi->process);
 }
 
 static void process_task(void *const userdata) {
@@ -297,24 +254,24 @@ static BOOL process(struct api *const api, HWND const sender, COPYDATASTRUCT *co
     err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("レイヤー番号が不正です。")));
     goto cleanup;
   }
-  cv_lock(&api->process);
+  cndvar_lock(&api->process);
   d.pi.process = &api->process;
   api->process.var = state_undefined;
   task_add(process_task, &d);
-  cv_wait_while(&api->process, state_undefined);
-  cv_unlock(&api->process);
+  cndvar_wait_while(&api->process, state_undefined);
+  cndvar_unlock(&api->process);
 
 cleanup:
   ereport(files_free(&d.pi.params.files, false));
   if (efailed(err)) {
     d.err = err;
     err = NULL; // err is owned by request handler
-    cv_lock(&api->process);
+    cndvar_lock(&api->process);
     d.pi.process = &api->process;
     api->process.var = state_undefined;
     task_add(process_task, &d);
-    cv_wait_while(&api->process, state_undefined);
-    cv_unlock(&api->process);
+    cndvar_wait_while(&api->process, state_undefined);
+    cndvar_unlock(&api->process);
     return FALSE;
   }
   return TRUE;
@@ -371,9 +328,9 @@ static int api_thread(void *const userdata) {
     SetWindowLongPtrW(h, 0, (LONG)api);
   }
 
-  cv_lock(&api->state);
-  cv_signal(&api->state, state_succeeded);
-  cv_unlock(&api->state);
+  cndvar_lock(&api->state);
+  cndvar_signal(&api->state, state_succeeded);
+  cndvar_unlock(&api->state);
 
   MSG msg = {0};
   while (GetMessageW(&msg, NULL, 0, 0) > 0) {
@@ -384,9 +341,9 @@ static int api_thread(void *const userdata) {
 
 failed:
   ereportmsg(err, &native_unmanaged(NSTR("API 用スレッドでエラーが発生しました。")));
-  cv_lock(&api->state);
-  cv_signal(&api->state, state_failed);
-  cv_unlock(&api->state);
+  cndvar_lock(&api->state);
+  cndvar_signal(&api->state, state_failed);
+  cndvar_unlock(&api->state);
   return 1;
 }
 
@@ -394,20 +351,21 @@ NODISCARD static error api_thread_init(struct api *const api) {
   error err = eok();
   bool thread_started = false;
 
-  cv_init(&api->state);
-  cv_init(&api->process);
+  cndvar_init(&api->state);
+  cndvar_init(&api->process);
 
-  cv_lock(&api->state);
+  cndvar_lock(&api->state);
   api->state.var = state_undefined;
   if (thrd_create(&api->thread, api_thread, api) != thrd_success) {
-    cv_unlock(&api->state);
+    cndvar_unlock(&api->state);
     err = errg(err_fail);
     goto failed;
   }
   thread_started = true;
 
-  int state = cv_wait_while(&api->state, state_undefined);
-  cv_unlock(&api->state);
+  cndvar_wait_while(&api->state, state_undefined);
+  int const state = api->state.var;
+  cndvar_unlock(&api->state);
 
   switch (state) {
   case state_succeeded:
@@ -425,16 +383,16 @@ failed:
   if (thread_started) {
     thrd_join(&api->thread, NULL);
   }
-  cv_exit(&api->process);
-  cv_exit(&api->state);
+  cndvar_exit(&api->process);
+  cndvar_exit(&api->state);
   return err;
 }
 
 NODISCARD static error api_thread_exit(struct api *const api) {
   SendMessage(api->window, WM_SYSCOMMAND, SC_CLOSE, 0);
   thrd_join(&api->thread, NULL);
-  cv_exit(&api->process);
-  cv_exit(&api->state);
+  cndvar_exit(&api->process);
+  cndvar_exit(&api->state);
   return eok();
 }
 
