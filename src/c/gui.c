@@ -62,7 +62,7 @@ static NODISCARD error get_ini_file_name(struct str *const dest) {
     err = ethru(err);
     goto cleanup;
   }
-  int extpos = 0;
+  ptrdiff_t extpos = 0;
   err = extract_file_extension(&tmp, &extpos);
   if (efailed(err)) {
     err = ethru(err);

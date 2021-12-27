@@ -23,8 +23,8 @@ NODISCARD error sanitize(struct wstr *const ws);
 
 NODISCARD error include_trailing_path_delimiter(struct wstr *const ws);
 NODISCARD error exclude_trailing_path_delimiter(struct wstr *const ws);
-NODISCARD error extract_file_name(struct wstr const *const src, int *const pos);
-NODISCARD error extract_file_extension(struct wstr const *const src, int *const pos);
+NODISCARD error extract_file_name(struct wstr const *const src, ptrdiff_t *const pos);
+NODISCARD error extract_file_extension(struct wstr const *const src, ptrdiff_t *const pos);
 
 NODISCARD error get_window_text(HWND const window, struct wstr *const dest);
 NODISCARD error get_module_file_name(HINSTANCE const hinst, struct wstr *const dest);

@@ -162,7 +162,7 @@ static void generic_lua_error_handler(error e, wchar_t const *const default_msg)
 
 NODISCARD static error
 find_token(struct wstr const *const input, wchar_t const *const key, int *const pos, size_t *const len) {
-  int p = 0;
+  ptrdiff_t p = 0;
   error err = sstr(input, key, &p);
   if (efailed(err)) {
     err = ethru(err);
@@ -207,7 +207,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
     err = ethru(err);
     goto cleanup;
   }
-  int pos = -1;
+  ptrdiff_t pos = -1;
   size_t len = 0;
   err = find_token(&tmp, L"mode=", &pos, &len);
   if (efailed(err)) {

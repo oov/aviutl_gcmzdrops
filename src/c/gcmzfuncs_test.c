@@ -42,7 +42,7 @@ static void test_gcmz_get_script_dir(void) {
   struct wstr tmp = {0};
   if (TEST_SUCCEEDED_F(gcmz_get_script_dir(&tmp))) {
     wchar_t const *dirname = L"\\GCMZDrops";
-    int pos = 0;
+    ptrdiff_t pos = 0;
     TEST_CHECK(tmp.len > 0);
     TEST_SUCCEEDED_F(sstr(&tmp, dirname, &pos));
     TEST_CHECK((int)(tmp.len - wcslen(dirname)) == pos);

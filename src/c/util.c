@@ -241,7 +241,7 @@ error exclude_trailing_path_delimiter(struct wstr *const ws) {
   return eok();
 }
 
-error extract_file_name(struct wstr const *const src, int *const pos) {
+error extract_file_name(struct wstr const *const src, ptrdiff_t *const pos) {
   if (!src) {
     return errg(err_invalid_arugment);
   }
@@ -267,14 +267,14 @@ error extract_file_name(struct wstr const *const src, int *const pos) {
   return eok();
 }
 
-error extract_file_extension(struct wstr const *const src, int *const pos) {
+error extract_file_extension(struct wstr const *const src, ptrdiff_t *const pos) {
   if (!src) {
     return errg(err_invalid_arugment);
   }
   if (!pos) {
     return errg(err_null_pointer);
   }
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   error err = extract_file_name(src, &fnpos);
   if (efailed(err)) {
     err = ethru(err);

@@ -21,7 +21,7 @@ error gcmz_get_script_dir(struct wstr *const dest) {
     err = ethru(err);
     goto cleanup;
   }
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   err = extract_file_name(&tmp, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -58,7 +58,7 @@ error gcmz_get_project_dir(struct wstr *const dest) {
     goto cleanup;
   }
 
-  int pos = 0;
+  ptrdiff_t pos = 0;
   err = extract_file_name(&tmp, &pos);
   if (efailed(err)) {
     err = ethru(err);
@@ -97,7 +97,7 @@ error gcmz_get_save_dir(struct wstr *const dest) {
     goto cleanup;
   }
 
-  int phpos = 0;
+  ptrdiff_t phpos = 0;
   err = sstr(&dir, placeholder, &phpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -278,7 +278,7 @@ error gcmz_is_need_copy(struct wstr const *const path, bool *const need_copy) {
   }
 
   struct wstr ext = {0};
-  int extpos = 0;
+  ptrdiff_t extpos = 0;
   error err = extract_file_extension(path, &extpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -606,7 +606,7 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
     goto cleanup;
   }
 
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   err = extract_file_name(&bmpname, &fnpos);
   if (efailed(err)) {
     err = ethru(err);

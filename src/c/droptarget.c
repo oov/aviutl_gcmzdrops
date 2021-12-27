@@ -305,7 +305,7 @@ NODISCARD static error try_parse_data_uri(struct wstr *const src, struct files *
     err = ethru(err);
     goto cleanup;
   }
-  int extpos = 0;
+  ptrdiff_t extpos = 0;
   err = extract_file_extension(&filename, &extpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -402,7 +402,7 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
   UINT const n = fgd->cItems;
   for (UINT i = 0; i < n; ++i) {
     FILEDESCRIPTORW *const fd = fgd->fgd + i;
-    int fnpos = 0;
+    ptrdiff_t fnpos = 0;
     err = extract_file_name(&wstr_unmanaged_const(fd->cFileName), &fnpos);
     if (efailed(err)) {
       err = ethru(err);
@@ -414,7 +414,7 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
       err = ethru(err);
       goto cleanup;
     }
-    int extpos = 0;
+    ptrdiff_t extpos = 0;
     err = extract_file_extension(&filename, &extpos);
     if (efailed(err)) {
       err = ethru(err);

@@ -146,7 +146,7 @@ NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern
         (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
       continue;
     }
-    int extpos = 0;
+    ptrdiff_t extpos = 0;
     struct wstr ws = wstr_unmanaged(fd.cFileName);
     err = extract_file_extension(&ws, &extpos);
     if (efailed(err)) {

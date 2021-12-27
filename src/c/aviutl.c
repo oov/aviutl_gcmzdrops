@@ -20,7 +20,7 @@ NODISCARD static error verify_installation(void) {
     goto cleanup;
   }
 
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   err = extract_file_name(&path, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -105,7 +105,7 @@ NODISCARD static error find_blocked_filter(void) {
         efree(&err);
         continue;
       }
-      int pos = 0;
+      ptrdiff_t pos = 0;
       err = extract_file_name(&s, &pos);
       if (efailed(err)) {
         efree(&err);
@@ -136,7 +136,7 @@ NODISCARD static error verify_aviutl_version(void) {
   return eok();
 }
 
-static int atou32(TCHAR const *s, uint32_t *const ret) {
+static size_t atou32(TCHAR const *s, uint32_t *const ret) {
   uint64_t r = 0;
   size_t i = 0;
   while (s[i]) {
@@ -149,7 +149,7 @@ static int atou32(TCHAR const *s, uint32_t *const ret) {
     return 0;
   }
   *ret = r & 0xffffffff;
-  return (int)i;
+  return i;
 }
 
 NODISCARD static error verify_exedit_version(FILTER const *const exedit_fp) {
@@ -160,7 +160,7 @@ NODISCARD static error verify_exedit_version(FILTER const *const exedit_fp) {
   }
   verstr += strlen(version_token);
   uint32_t major = 0, minor = 0;
-  int len = atou32(verstr, &major);
+  size_t len = atou32(verstr, &major);
   if (!len) {
     goto failed;
   }
@@ -186,7 +186,7 @@ NODISCARD static error load_lua51(HMODULE *const lua51) {
     goto cleanup;
   }
 
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   err = extract_file_name(&path, &fnpos);
   if (efailed(err)) {
     err = ethru(err);

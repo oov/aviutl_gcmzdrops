@@ -70,7 +70,7 @@ static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struc
     err = ethru(err);
     goto cleanup;
   }
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   err = extract_file_name(&tmp, &fnpos);
   if (efailed(err)) {
     err = ethru(err);

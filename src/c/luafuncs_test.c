@@ -97,7 +97,7 @@ static void test_createfile(void) {
     goto cleanup;
   }
 
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   if (!TEST_SUCCEEDED_F(extract_file_name(&tmp, &fnpos))) {
     goto cleanup;
   }
@@ -204,7 +204,7 @@ static void test_createtempfile(void) {
     goto cleanup;
   }
 
-  int fnpos = 0;
+  ptrdiff_t fnpos = 0;
   if (!TEST_SUCCEEDED_F(extract_file_name(&tmp, &fnpos))) {
     goto cleanup;
   }

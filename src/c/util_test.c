@@ -274,7 +274,7 @@ static void test_extract_file_name(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     struct wstr src = wstr_unmanaged_const(td->input);
-    int pos = 0;
+    ptrdiff_t pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_name(&src, &pos))) {
       TEST_CHECK(pos == td->output);
       TEST_MSG("expected %d", td->output);
@@ -354,7 +354,7 @@ static void test_extract_file_extension(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     struct wstr const src = wstr_unmanaged_const(td->input);
-    int pos = 0;
+    ptrdiff_t pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_extension(&src, &pos))) {
       TEST_CHECK(pos == td->output);
       TEST_MSG("expected %d", td->output);
