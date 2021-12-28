@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "3rd/base.c/base.h"
+#include "3rd/base.c/include/base.h"
 
 struct file {
   struct wstr path;

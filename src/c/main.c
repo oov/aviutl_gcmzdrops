@@ -1,9 +1,9 @@
-#include "3rd/base.c/base.h"
+#include "3rd/base.c/include/base.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "3rd/base.c/threads.h"
+#include "3rd/base.c/include/threads.h"
 
 #include "error_gcmz.h"
 #include "files.h"

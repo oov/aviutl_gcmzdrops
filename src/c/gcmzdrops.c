@@ -4,7 +4,8 @@
 #include <ole2.h>
 #include <shellapi.h>
 
-#include "3rd/base.c/base.h"
+#include "3rd/base.c/include/base.h"
+
 #include "api.h"
 #include "droptarget.h"
 #include "error_gcmz.h"

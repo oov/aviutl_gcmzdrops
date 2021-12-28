@@ -1,4 +1,4 @@
-#include "3rd/base.c/test.h"
+#include "3rd/base.c/include/test.h"
 #include "util.c"
 
 static void test_atoi64(void) {

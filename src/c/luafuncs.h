@@ -7,7 +7,8 @@
 
 #include <lua5.1/lua.h>
 
-#include "3rd/base.c/base.h"
+#include "3rd/base.c/include/base.h"
+
 #include "files.h"
 
 NODISCARD error luafn_push_wstr(lua_State *const L, struct wstr const *const ws);

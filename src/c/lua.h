@@ -5,7 +5,8 @@
 
 #include <lua5.1/lua.h>
 
-#include "3rd/base.c/base.h"
+#include "3rd/base.c/include/base.h"
+
 #include "files.h"
 #include "scpopup.h"
 

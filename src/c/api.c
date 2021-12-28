@@ -2,7 +2,7 @@
 
 #include <jansson.h>
 
-#include "3rd/base.c/threads.h"
+#include "3rd/base.c/include/threads.h"
 
 #include "aviutl.h"
 #include "error_gcmz.h"

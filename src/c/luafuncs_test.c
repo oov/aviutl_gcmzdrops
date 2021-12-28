@@ -64,7 +64,7 @@ cleanup:
 
 #define TEST_MY_INIT test_init()
 #define TEST_MY_FINI test_exit()
-#include "3rd/base.c/test.h"
+#include "3rd/base.c/include/test.h"
 
 static void test_createfile(void) {
   TEST_EISG_F(luafn_createfile_core(NULL, NULL, NULL), err_invalid_arugment);
