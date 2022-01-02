@@ -22,12 +22,6 @@ static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struc
 
   SYSTEMTIME st = {0};
   GetLocalTime(&st);
-
-  error err = scpy(&msg, message->ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
   wsprintfW(buf,
             L"\r\n(reported at %04d-%02d-%02d %02d:%02d:%02d on %hs:%d %hs())\r\n",
             st.wYear,
@@ -39,17 +33,12 @@ static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struc
             filepos->file,
             filepos->line,
             filepos->func);
-  err = scat(&msg, buf);
+  error err = error_to_string(e, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = error_to_string(e, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&msg, tmp.ptr);
+  err = scpym(&msg, message->ptr, buf, tmp.ptr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;

@@ -74,27 +74,12 @@ NODISCARD static error build_error_message(error e, wchar_t const *const main_me
     goto cleanup;
   }
   bool const nodetail = eis(e, err_type_gcmz, err_gcmz_lua);
-  err = scpy(&msg, main_message);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&msg, L"\r\n\r\n");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
   err = nodetail ? error_to_string_short(e, &tmp) : error_to_string(e, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = scat(&msg, tmp.ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scpy(dest, msg.ptr);
+  err = scpym(&msg, main_message, L"\r\n\r\n", tmp.ptr, msg.ptr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -254,51 +239,27 @@ cleanup:
 static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const data, int *const size) {
   struct str u8buf = {0};
   struct wstr tmp = {0};
-  struct wstr tmp2 = {0};
+  struct wstr modestr = {0};
+  struct wstr savepathstr = {0};
   aviutl_set_pointers(fp, editp);
 
-  error err = scpy(&tmp, L"mode=");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
   int mode = 0;
-  err = gui_get_save_mode(&mode);
+  error err = gui_get_save_mode(&mode);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = utoa64((uint64_t)mode, &tmp2);
+  err = utoa64((uint64_t)mode, &modestr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = scat(&tmp, tmp2.ptr);
+  err = gui_get_save_dir(&savepathstr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = scat(&tmp, L"\r\n");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, L"savepath=");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = gui_get_save_dir(&tmp2);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, tmp2.ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, L"\r\n");
+  err = scpym(&tmp, L"mode=", modestr.ptr, L"\r\nsavepath=", savepathstr.ptr, L"\r\n");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -318,7 +279,8 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
   update_mapped_data();
 
 cleanup:
-  ereport(sfree(&tmp2));
+  ereport(sfree(&savepathstr));
+  ereport(sfree(&modestr));
   ereport(sfree(&tmp));
   ereport(sfree(&u8buf));
   aviutl_set_pointers(NULL, NULL);

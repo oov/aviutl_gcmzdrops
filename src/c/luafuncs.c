@@ -32,17 +32,8 @@ error luafn_push_wstr(lua_State *const L, struct wstr const *const ws) {
 
 static error build_invalid_char_error(struct NATIVE_STR const *const filename ERR_FILEPOS_PARAMS) {
   struct NATIVE_STR s = {0};
-  error err = scpy(&s, NSTR("ファイル名 \""));
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  err = scat(&s, filename->ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  err = scat(&s, NSTR("\" には AviUtl 上で使用できない文字が含まれています。"));
+  error err =
+      scpym(&s, NSTR("ファイル名 \""), filename->ptr, NSTR("\" には AviUtl 上で使用できない文字が含まれています。"));
   if (efailed(err)) {
     err = ethru(err);
     goto failed;
@@ -211,12 +202,7 @@ static int luafn_debug_print(lua_State *const L) {
     err = ethru(err);
     goto cleanup;
   }
-  err = scpy(&tmp, L"GCMZDrops: ");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, msg.ptr);
+  err = scpym(&tmp, L"GCMZDrops: ", msg.ptr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;

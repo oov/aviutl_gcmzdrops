@@ -512,12 +512,7 @@ error data_uri_get_mime(struct data_uri const *const d, struct wstr *const dest)
   }
   bool const has_charset = d->charset[0] != L'\0';
   if (has_charset) {
-    err = scat(&tmp, L"; charset=");
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-    err = scat(&tmp, d->charset);
+    err = scatm(&tmp, L"; charset=", d->charset);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;

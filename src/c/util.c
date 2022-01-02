@@ -649,12 +649,7 @@ error create_unique_file(wchar_t const *const base_fullpath,
   uint32_t hash = base_splitmix32_next(GetTickCount() + GetCurrentProcessId() + GetCurrentThreadId());
   wchar_t numstr[16] = {0};
   for (int i = 0; i < 9; ++i) {
-    err = scat(&tmp, numstr);
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-    err = scat(&tmp, ext);
+    err = scatm(&tmp, numstr, ext);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;

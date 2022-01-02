@@ -23,19 +23,8 @@ friendly_report(error e, NATIVE_CHAR const *const s1, NATIVE_CHAR const *const s
   if (esucceeded(e)) {
     return;
   }
-
   struct NATIVE_STR s = {0};
-  error err = scpy(&s, s1);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  err = scat(&s, s2);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  err = scat(&s, s3);
+  error err = scpym(&s, s1, s2, s3);
   if (efailed(err)) {
     err = ethru(err);
     goto failed;
