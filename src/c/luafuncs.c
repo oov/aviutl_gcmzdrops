@@ -279,7 +279,7 @@ luafn_createfile_core(struct wstr const *const name_, struct wstr const *const e
     goto cleanup;
   }
 
-  ptrdiff_t pos = 0;
+  size_t pos = 0;
   err = extract_file_name(&name, &pos);
   if (efailed(err)) {
     err = ethru(err);
@@ -287,7 +287,7 @@ luafn_createfile_core(struct wstr const *const name_, struct wstr const *const e
   }
   err = sanitize(&(struct wstr){
       .ptr = name.ptr + pos,
-      .len = name.len - (size_t)pos,
+      .len = name.len - pos,
   });
   if (efailed(err)) {
     err = ethru(err);
@@ -399,7 +399,7 @@ luafn_createtempfile_core(struct wstr const *const name_, struct wstr const *con
     goto cleanup;
   }
 
-  ptrdiff_t pos = 0;
+  size_t pos = 0;
   err = extract_file_name(&name, &pos);
   if (efailed(err)) {
     err = ethru(err);
@@ -407,7 +407,7 @@ luafn_createtempfile_core(struct wstr const *const name_, struct wstr const *con
   }
   err = sanitize(&(struct wstr){
       .ptr = name.ptr + pos,
-      .len = name.len - (size_t)pos,
+      .len = name.len - pos,
   });
   if (efailed(err)) {
     err = ethru(err);
@@ -1450,7 +1450,7 @@ NODISCARD static error copy_and_drop(HWND const window, POINT const pt, struct w
     err = ethru(err);
     goto cleanup;
   }
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(filepath, &fnpos);
   if (efailed(err)) {
     err = ethru(err);

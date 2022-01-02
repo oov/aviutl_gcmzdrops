@@ -70,14 +70,14 @@ static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struc
     err = ethru(err);
     goto cleanup;
   }
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(&tmp, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = (size_t)fnpos;
+  tmp.len = fnpos;
   wsprintfW(buf, L"gcmz-%04d%02d%02d.log", st.wYear, st.wMonth, st.wDay);
   err = scat(&tmp, buf);
   if (efailed(err)) {

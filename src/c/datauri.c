@@ -417,7 +417,7 @@ error data_uri_suggest_filename(struct data_uri const *const d, struct wstr *con
 
   // If filename is stored, use it.
   if (d->ext_filename[0] != L'\0') {
-    ptrdiff_t pos = 0;
+    size_t pos = 0;
     err = extract_file_name(&wstr_unmanaged_const(d->ext_filename), &pos);
     if (esucceeded(err)) {
       err = scpy(dest, d->ext_filename + pos);
@@ -442,7 +442,7 @@ error data_uri_suggest_filename(struct data_uri const *const d, struct wstr *con
       err = ethru(err);
       goto cleanup;
     }
-    ptrdiff_t pos = 0;
+    size_t pos = 0;
     err = extract_file_name(&tmp, &pos);
     if (efailed(err)) {
       err = ethru(err);

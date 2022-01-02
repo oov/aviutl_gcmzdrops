@@ -62,14 +62,14 @@ static NODISCARD error get_ini_file_name(struct str *const dest) {
     err = ethru(err);
     goto cleanup;
   }
-  ptrdiff_t extpos = 0;
+  size_t extpos = 0;
   err = extract_file_extension(&tmp, &extpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   tmp.ptr[extpos] = L'\0';
-  tmp.len = (size_t)extpos;
+  tmp.len = extpos;
   err = scat(&tmp, L".ini");
   if (efailed(err)) {
     err = ethru(err);

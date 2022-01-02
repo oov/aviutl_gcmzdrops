@@ -241,7 +241,7 @@ error exclude_trailing_path_delimiter(struct wstr *const ws) {
   return eok();
 }
 
-error extract_file_name(struct wstr const *const src, ptrdiff_t *const pos) {
+error extract_file_name(struct wstr const *const src, size_t *const pos) {
   if (!src) {
     return errg(err_invalid_arugment);
   }
@@ -259,22 +259,22 @@ error extract_file_name(struct wstr const *const src, ptrdiff_t *const pos) {
     return eok();
   }
   if (bslash != NULL && slash != NULL) {
-    *pos = max(bslash, slash) + 1 - src->ptr;
+    *pos = (size_t)(max(bslash, slash) + 1 - src->ptr);
     return eok();
   }
 
-  *pos = (bslash != NULL ? bslash : slash) + 1 - src->ptr;
+  *pos = (size_t)((bslash != NULL ? bslash : slash) + 1 - src->ptr);
   return eok();
 }
 
-error extract_file_extension(struct wstr const *const src, ptrdiff_t *const pos) {
+error extract_file_extension(struct wstr const *const src, size_t *const pos) {
   if (!src) {
     return errg(err_invalid_arugment);
   }
   if (!pos) {
     return errg(err_null_pointer);
   }
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   error err = extract_file_name(src, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -282,10 +282,10 @@ error extract_file_extension(struct wstr const *const src, ptrdiff_t *const pos)
   }
   wchar_t const *const dot = wcsrchr(src->ptr + fnpos, L'.');
   if (dot == NULL) {
-    *pos = (int)src->len;
+    *pos = src->len;
     return eok();
   }
-  *pos = dot - src->ptr;
+  *pos = (size_t)(dot - src->ptr);
   return eok();
 }
 

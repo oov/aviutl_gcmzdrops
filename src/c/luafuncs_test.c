@@ -97,12 +97,12 @@ static void test_createfile(void) {
     goto cleanup;
   }
 
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   if (!TEST_SUCCEEDED_F(extract_file_name(&tmp, &fnpos))) {
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = (size_t)fnpos;
+  tmp.len = fnpos;
 
   if (!TEST_SUCCEEDED_F(exclude_trailing_path_delimiter(&tmp))) {
     goto cleanup;
@@ -204,12 +204,12 @@ static void test_createtempfile(void) {
     goto cleanup;
   }
 
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   if (!TEST_SUCCEEDED_F(extract_file_name(&tmp, &fnpos))) {
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = (size_t)fnpos;
+  tmp.len = fnpos;
 
   if (!TEST_SUCCEEDED_F(exclude_trailing_path_delimiter(&tmp))) {
     goto cleanup;

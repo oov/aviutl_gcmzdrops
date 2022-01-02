@@ -305,7 +305,7 @@ NODISCARD static error try_parse_data_uri(struct wstr *const src, struct files *
     err = ethru(err);
     goto cleanup;
   }
-  ptrdiff_t extpos = 0;
+  size_t extpos = 0;
   err = extract_file_extension(&filename, &extpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -317,7 +317,7 @@ NODISCARD static error try_parse_data_uri(struct wstr *const src, struct files *
     goto cleanup;
   }
   filename.ptr[extpos] = L'\0';
-  filename.len = (size_t)extpos;
+  filename.len = extpos;
 
   err = data_uri_get_mime(&d, &mime);
   if (efailed(err)) {
@@ -402,7 +402,7 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
   UINT const n = fgd->cItems;
   for (UINT i = 0; i < n; ++i) {
     FILEDESCRIPTORW *const fd = fgd->fgd + i;
-    ptrdiff_t fnpos = 0;
+    size_t fnpos = 0;
     err = extract_file_name(&wstr_unmanaged_const(fd->cFileName), &fnpos);
     if (efailed(err)) {
       err = ethru(err);
@@ -414,7 +414,7 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
       err = ethru(err);
       goto cleanup;
     }
-    ptrdiff_t extpos = 0;
+    size_t extpos = 0;
     err = extract_file_extension(&filename, &extpos);
     if (efailed(err)) {
       err = ethru(err);
@@ -426,7 +426,7 @@ NODISCARD static error try_read_from_file_contents(IDataObject *const dataobj, s
       goto cleanup;
     }
     filename.ptr[extpos] = L'\0';
-    filename.len = (size_t)extpos;
+    filename.len = extpos;
 
     size_t plen = 0;
     err = read_custom_format(dataobj, (CLIPFORMAT)RegisterClipboardFormatW(L"FileContents"), (int)i, &p, &plen);

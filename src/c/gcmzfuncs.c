@@ -21,14 +21,14 @@ error gcmz_get_script_dir(struct wstr *const dest) {
     err = ethru(err);
     goto cleanup;
   }
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(&tmp, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   tmp.ptr[fnpos] = L'\0';
-  tmp.len = (size_t)fnpos;
+  tmp.len = fnpos;
 
   err = scat(&tmp, L"GCMZDrops");
   if (efailed(err)) {
@@ -58,13 +58,13 @@ error gcmz_get_project_dir(struct wstr *const dest) {
     goto cleanup;
   }
 
-  ptrdiff_t pos = 0;
+  size_t pos = 0;
   err = extract_file_name(&tmp, &pos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  tmp.len = (size_t)pos;
+  tmp.len = pos;
   tmp.ptr[tmp.len] = L'\0';
   err = exclude_trailing_path_delimiter(&tmp);
   if (efailed(err)) {
@@ -278,7 +278,7 @@ error gcmz_is_need_copy(struct wstr const *const path, bool *const need_copy) {
   }
 
   struct wstr ext = {0};
-  ptrdiff_t extpos = 0;
+  size_t extpos = 0;
   error err = extract_file_extension(path, &extpos);
   if (efailed(err)) {
     err = ethru(err);
@@ -606,14 +606,14 @@ NODISCARD static error save_dib(uint8_t const *const image, size_t const width, 
     goto cleanup;
   }
 
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(&bmpname, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   bmpname.ptr[fnpos] = L'\0';
-  bmpname.len = (size_t)fnpos;
+  bmpname.len = fnpos;
 
   SYSTEMTIME st = {0};
   GetLocalTime(&st);

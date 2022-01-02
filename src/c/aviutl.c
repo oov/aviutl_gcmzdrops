@@ -20,14 +20,14 @@ NODISCARD static error verify_installation(void) {
     goto cleanup;
   }
 
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(&path, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   path.ptr[fnpos] = L'\0';
-  path.len = (size_t)fnpos;
+  path.len = fnpos;
 
   err = scat(&path, L"exedit.auf");
   if (efailed(err)) {
@@ -105,7 +105,7 @@ NODISCARD static error find_blocked_filter(void) {
         efree(&err);
         continue;
       }
-      ptrdiff_t pos = 0;
+      size_t pos = 0;
       err = extract_file_name(&s, &pos);
       if (efailed(err)) {
         efree(&err);
@@ -186,14 +186,14 @@ NODISCARD static error load_lua51(HMODULE *const lua51) {
     goto cleanup;
   }
 
-  ptrdiff_t fnpos = 0;
+  size_t fnpos = 0;
   err = extract_file_name(&path, &fnpos);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
   path.ptr[fnpos] = L'\0';
-  path.len = (size_t)fnpos;
+  path.len = fnpos;
 
   err = scat(&path, L"lua51.dll");
   if (efailed(err)) {

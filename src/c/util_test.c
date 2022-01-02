@@ -246,7 +246,7 @@ static void test_exclude_trailing_path_delimiter(void) {
 static void test_extract_file_name(void) {
   static const struct test_data {
     wchar_t const *input;
-    int output;
+    size_t output;
   } test_data[] = {
       {
           .input = L"your.exe",
@@ -274,7 +274,7 @@ static void test_extract_file_name(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     struct wstr src = wstr_unmanaged_const(td->input);
-    ptrdiff_t pos = 0;
+    size_t pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_name(&src, &pos))) {
       TEST_CHECK(pos == td->output);
       TEST_MSG("expected %d", td->output);
@@ -286,7 +286,7 @@ static void test_extract_file_name(void) {
 static void test_extract_file_extension(void) {
   static const struct test_data {
     wchar_t const *input;
-    int output;
+    size_t output;
   } test_data[] = {
       {
           .input = L"your.exe",
@@ -354,7 +354,7 @@ static void test_extract_file_extension(void) {
     struct test_data const *const td = test_data + i;
     TEST_CASE_("test #%d \"%ls\"", i, td->input);
     struct wstr const src = wstr_unmanaged_const(td->input);
-    ptrdiff_t pos = 0;
+    size_t pos = 0;
     if (TEST_SUCCEEDED_F(extract_file_extension(&src, &pos))) {
       TEST_CHECK(pos == td->output);
       TEST_MSG("expected %d", td->output);
