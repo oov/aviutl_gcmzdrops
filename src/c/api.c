@@ -381,7 +381,7 @@ NODISCARD static error api_thread_init(struct api *const api) {
 
 failed:
   if (thread_started) {
-    thrd_join(&api->thread, NULL);
+    thrd_join(api->thread, NULL);
   }
   cndvar_exit(&api->process);
   cndvar_exit(&api->state);
@@ -390,7 +390,7 @@ failed:
 
 NODISCARD static error api_thread_exit(struct api *const api) {
   SendMessage(api->window, WM_SYSCOMMAND, SC_CLOSE, 0);
-  thrd_join(&api->thread, NULL);
+  thrd_join(api->thread, NULL);
   cndvar_exit(&api->process);
   cndvar_exit(&api->state);
   return eok();
