@@ -42,6 +42,7 @@ NODISCARD error create_unique_temp_file(wchar_t const *const base_filename,
                                         struct wstr *const dest);
 NODISCARD error create_unique_file(wchar_t const *const base_fullpath,
                                    wchar_t const *const ext,
+                                   DWORD const file_attributes,
                                    void *const data,
                                    size_t const datalen,
                                    struct wstr *const dest);

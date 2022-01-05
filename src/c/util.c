@@ -615,7 +615,8 @@ error create_unique_temp_file(wchar_t const *const base_filename,
     err = ethru(err);
     goto cleanup;
   }
-  err = create_unique_file(tmp.ptr, ext, data, datalen, dest);
+  err = create_unique_file(
+      tmp.ptr, ext, FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, data, datalen, dest);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -628,6 +629,7 @@ cleanup:
 
 error create_unique_file(wchar_t const *const base_fullpath,
                          wchar_t const *const ext,
+                         DWORD const file_attributes,
                          void *const data,
                          size_t const datalen,
                          struct wstr *const dest) {
@@ -654,13 +656,8 @@ error create_unique_file(wchar_t const *const base_fullpath,
       err = ethru(err);
       goto cleanup;
     }
-    HANDLE file = CreateFileW(tmp.ptr,
-                              GENERIC_READ | GENERIC_WRITE,
-                              FILE_SHARE_READ,
-                              NULL,
-                              CREATE_NEW,
-                              FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_NOT_CONTENT_INDEXED,
-                              NULL);
+    HANDLE file =
+        CreateFileW(tmp.ptr, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, file_attributes, NULL);
     if (file == INVALID_HANDLE_VALUE) {
       HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
       if (hr == HRESULT_FROM_WIN32(ERROR_FILE_EXISTS)) {

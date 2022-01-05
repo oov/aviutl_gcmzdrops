@@ -306,7 +306,7 @@ luafn_createfile_core(struct wstr const *const name_, struct wstr const *const e
     err = ethru(err);
     goto cleanup;
   }
-  err = create_unique_file(tmp.ptr, ext.ptr, NULL, 0, &fullpath);
+  err = create_unique_file(tmp.ptr, ext.ptr, FILE_ATTRIBUTE_NORMAL, NULL, 0, &fullpath);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
