@@ -8,30 +8,29 @@
 #define STBI_NO_THREAD_LOCALS
 #define STB_IMAGE_IMPLEMENTATION
 #ifdef __GNUC__
-#pragma GCC diagnostic push
-#if __has_warning("-Wcast-qual")
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif
-#if __has_warning("-Wsign-conversion")
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#endif
-#if __has_warning("-Wdisabled-macro-expansion")
-#pragma GCC diagnostic ignored "-Wdisabled-macro-expansion"
-#endif
-#if __has_warning("-Wcast-align")
-#pragma GCC diagnostic ignored "-Wcast-align"
-#endif
-#if __has_warning("-Wmissing-prototypes")
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#endif
-#if __has_warning("-Wimplicit-int-conversion")
-#pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
-#endif
-
-#include "3rd/stb_image.h"
-#pragma GCC diagnostic pop
+#  pragma GCC diagnostic push
+#  if __has_warning("-Wcast-qual")
+#    pragma GCC diagnostic ignored "-Wcast-qual"
+#  endif
+#  if __has_warning("-Wsign-conversion")
+#    pragma GCC diagnostic ignored "-Wsign-conversion"
+#  endif
+#  if __has_warning("-Wdisabled-macro-expansion")
+#    pragma GCC diagnostic ignored "-Wdisabled-macro-expansion"
+#  endif
+#  if __has_warning("-Wcast-align")
+#    pragma GCC diagnostic ignored "-Wcast-align"
+#  endif
+#  if __has_warning("-Wmissing-prototypes")
+#    pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#  endif
+#  if __has_warning("-Wimplicit-int-conversion")
+#    pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+#  endif
+#  include "3rd/stb_image.h"
+#  pragma GCC diagnostic pop
 #else
-#include "3rd/stb_image.h"
+#  include "3rd/stb_image.h"
 #endif // __GNUC__
 
 static wchar_t const *g_aviutl_project_path = NULL;

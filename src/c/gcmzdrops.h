@@ -5,10 +5,10 @@
 #define GCMZDROPS_NAME_WIDE L"ごちゃまぜドロップス"
 
 #ifdef TEST_IMAGE_DIR
-#define VERSION "vX.X.X ( testing )"
-#define VERSION_WIDE L"vX.X.X ( testing )"
+#  define VERSION "vX.X.X ( testing )"
+#  define VERSION_WIDE L"vX.X.X ( testing )"
 #else
-#include "version.h"
+#  include "version.h"
 #endif
 #define GCMZDROPS_NAME_VERSION_MBCS (GCMZDROPS_NAME_MBCS " " VERSION)
 #define GCMZDROPS_NAME_VERSION_WIDE (GCMZDROPS_NAME_WIDE L" " VERSION_WIDE)
