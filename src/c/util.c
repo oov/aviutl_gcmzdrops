@@ -308,7 +308,7 @@ error get_window_text(HWND const window, struct wstr *const dest) {
       goto cleanup;
     }
   }
-  err = sgrow(&tmp, slen + 1);
+  err = sgrow(&tmp, (size_t)(slen + 1));
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -729,7 +729,7 @@ error from_cp(UINT const code_page, struct str const *const src, struct wstr *co
     goto cleanup;
   }
 
-  err = sgrow(&tmp, dlen + 1);
+  err = sgrow(&tmp, (size_t)(dlen + 1));
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -780,7 +780,7 @@ error to_cp(UINT const code_page, struct wstr const *const src, struct str *cons
     goto cleanup;
   }
 
-  err = sgrow(&tmp, dlen + 1);
+  err = sgrow(&tmp, (size_t)(dlen + 1));
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
