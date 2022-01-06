@@ -457,7 +457,7 @@ void api_set_callback(struct api *const api, api_request_func const callback, vo
   api->userdata = userdata;
 }
 
-bool api_initialized(struct api const *const api) { return api->fmo && api->mutex; }
+bool api_initialized(struct api const *const api) { return api && api->fmo && api->mutex; }
 
 error api_update_mapped_data(struct api *const api) {
   if (!api_initialized(api)) {
