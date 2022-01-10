@@ -55,88 +55,52 @@ NODISCARD static error create_font(HWND const window, HFONT *const font, int *co
   return eok();
 }
 
-static NODISCARD error get_ini_file_name(struct str *const dest) {
-  struct wstr tmp = {0};
-  error err = get_module_file_name(NULL, &tmp);
+static NODISCARD error load_defaults(void) {
+  struct str tmp = {0};
+  error err = aviutl_ini_load_int(&str_unmanaged_const("save_mode"), g_initial_save_mode, &g_default_save_mode);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  size_t extpos = 0;
-  err = extract_file_extension(&tmp, &extpos);
+  err = to_mbcs(&wstr_unmanaged_const(g_initial_save_dir), &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  tmp.ptr[extpos] = L'\0';
-  tmp.len = extpos;
-  err = scat(&tmp, L".ini");
+  err = aviutl_ini_load_str(&str_unmanaged_const("save_dir"), &tmp, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = to_mbcs(&tmp, dest);
+  err = from_mbcs(&tmp, &g_default_save_dir);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-
 cleanup:
   ereport(sfree(&tmp));
-  return err;
-}
-
-static NODISCARD error load_defaults(void) {
-  struct str inifile = {0};
-  error err = get_ini_file_name(&inifile);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  g_default_save_mode = (int)GetPrivateProfileIntA(GCMZDROPS_NAME_MBCS, "save_mode", g_initial_save_mode, inifile.ptr);
-
-  enum {
-    bufsize = 1024,
-  };
-  char buf[bufsize] = {0};
-  if (GetPrivateProfileStringA(GCMZDROPS_NAME_MBCS, "save_dir", "", buf, bufsize - 1, inifile.ptr)) {
-    err = from_mbcs(&str_unmanaged(buf), &g_default_save_dir);
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-  }
-
-cleanup:
-  ereport(sfree(&inifile));
   return err;
 }
 
 static NODISCARD error save_defaults(void) {
   struct str tmp = {0};
-  struct str inifile = {0};
-  error err = get_ini_file_name(&inifile);
+  error err = aviutl_ini_save_int(&str_unmanaged_const("save_mode"), g_default_save_mode);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = sgrow(&tmp, 64);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  wsprintfA(tmp.ptr, "%d", g_default_save_mode);
-  WritePrivateProfileStringA(GCMZDROPS_NAME_MBCS, "save_mode", tmp.ptr, inifile.ptr);
   err = to_mbcs(&g_default_save_dir, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  WritePrivateProfileStringA(GCMZDROPS_NAME_MBCS, "save_dir", tmp.ptr, inifile.ptr);
-
+  err = aviutl_ini_save_str(&str_unmanaged_const("save_dir"), &tmp);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
 cleanup:
   ereport(sfree(&tmp));
-  ereport(sfree(&inifile));
   return err;
 }
 

@@ -30,3 +30,9 @@ NODISCARD error aviutl_get_frame_n(int *const n);
 NODISCARD error aviutl_set_frame_n(int *const n);
 NODISCARD error aviutl_get_select_frame(int *const start, int *const end);
 NODISCARD error aviutl_set_select_frame(int const start, int const end);
+NODISCARD error aviutl_ini_load_int(struct str const *const key, int const defvalue, int *const dest);
+NODISCARD error aviutl_ini_load_str(struct str const *const key,
+                                    struct str const *const defvalue,
+                                    struct str *const dest);
+NODISCARD error aviutl_ini_save_int(struct str const *const key, int const value);
+NODISCARD error aviutl_ini_save_str(struct str const *const key, struct str const *const value);

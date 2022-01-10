@@ -528,3 +528,71 @@ error aviutl_set_select_frame(int const start, int const end) {
   }
   return eok();
 }
+
+error aviutl_ini_load_int(struct str const *const key, int const defvalue, int *const dest) {
+  if (!key) {
+    return errg(err_invalid_arugment);
+  }
+  if (!dest) {
+    return errg(err_null_pointer);
+  }
+  if (!g_fp) {
+    return errg(err_unexpected);
+  }
+  *dest = g_fp->exfunc->ini_load_int(base_deconster_(g_fp), key->ptr, defvalue);
+  return eok();
+}
+
+error aviutl_ini_load_str(struct str const *const key, struct str const *const defvalue, struct str *const dest) {
+  if (!key || !defvalue) {
+    return errg(err_invalid_arugment);
+  }
+  if (!dest) {
+    return errg(err_null_pointer);
+  }
+  if (!g_fp) {
+    return errg(err_unexpected);
+  }
+  struct str tmp = {0};
+  error err = sgrow(&tmp, 1024);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  if (!g_fp->exfunc->ini_load_str(base_deconster_(g_fp), key->ptr, tmp.ptr, defvalue->ptr)) {
+    err = errg(err_fail);
+    goto cleanup;
+  }
+  err = scpy(dest, tmp.ptr);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+cleanup:
+  ereport(sfree(&tmp));
+  return err;
+}
+
+error aviutl_ini_save_int(struct str const *const key, int const value) {
+  if (!key) {
+    return errg(err_invalid_arugment);
+  }
+  if (!g_fp) {
+    return errg(err_unexpected);
+  }
+  g_fp->exfunc->ini_save_int(base_deconster_(g_fp), key->ptr, value);
+  return eok();
+}
+
+error aviutl_ini_save_str(struct str const *const key, struct str const *const value) {
+  if (!key || !value) {
+    return errg(err_invalid_arugment);
+  }
+  if (!g_fp) {
+    return errg(err_unexpected);
+  }
+  if (!g_fp->exfunc->ini_save_str(base_deconster_(g_fp), key->ptr, value->ptr)) {
+    return errg(err_fail);
+  }
+  return eok();
+}
