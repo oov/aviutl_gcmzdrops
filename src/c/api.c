@@ -2,7 +2,7 @@
 
 #include <jansson.h>
 
-#include "3rd/base.c/include/threads.h"
+#include "ovthreads.h"
 
 #include "aviutl.h"
 #include "error_gcmz.h"
@@ -106,7 +106,7 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
       goto cleanup;
     }
     err = parse_api0_found_token(
-        &(struct wstr const){.ptr = (wchar_t *)base_deconster_(p + i - token), .len = token}, params, &found);
+        &(struct wstr const){.ptr = ovbase_deconster_(p + i - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -115,7 +115,7 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
   }
   if (token) {
     err = parse_api0_found_token(
-        &(struct wstr const){.ptr = (wchar_t *)base_deconster_(p + len - token), .len = token}, params, &found);
+        &(struct wstr const){.ptr = ovbase_deconster_(p + len - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;

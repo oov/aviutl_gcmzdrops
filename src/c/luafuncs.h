@@ -7,7 +7,7 @@
 
 #include <lua5.1/lua.h>
 
-#include "3rd/base.c/include/base.h"
+#include "ovbase.h"
 
 #include "files.h"
 

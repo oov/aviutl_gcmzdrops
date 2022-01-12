@@ -30,9 +30,10 @@ add_custom_target(${PROJECT_NAME}-format ALL
 
 option(LEAK_DETECTOR "" ON)
 option(ALLOCATE_LOGGER "" ON)
-add_subdirectory(3rd/base.c)
+add_subdirectory(3rd/ovbase)
 
 include_directories(
+  "${ovbase_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/include"
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
 )
@@ -80,12 +81,12 @@ add_library(detect STATIC 3rd/detect/detect.c)
 
 link_libraries(
   comctl32
-  shlwapi
-  base
   crc64
   detect
-  lua51_delayed
   jansson
+  lua51_delayed
+  ovbase
+  shlwapi
 )
 add_library(gcmzdrops_auf SHARED
   api.c

@@ -5,8 +5,8 @@
 
 #include <oleidl.h>
 
-#include "3rd/base.c/include/base.h"
 #include "files.h"
+#include "ovbase.h"
 
 struct drag_drop_info {
   POINTL point;

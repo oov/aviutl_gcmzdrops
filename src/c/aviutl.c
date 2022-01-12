@@ -539,7 +539,7 @@ error aviutl_ini_load_int(struct str const *const key, int const defvalue, int *
   if (!g_fp) {
     return errg(err_unexpected);
   }
-  *dest = g_fp->exfunc->ini_load_int(base_deconster_(g_fp), key->ptr, defvalue);
+  *dest = g_fp->exfunc->ini_load_int(ovbase_deconster_(g_fp), key->ptr, defvalue);
   return eok();
 }
 
@@ -559,7 +559,7 @@ error aviutl_ini_load_str(struct str const *const key, struct str const *const d
     err = ethru(err);
     goto cleanup;
   }
-  if (!g_fp->exfunc->ini_load_str(base_deconster_(g_fp), key->ptr, tmp.ptr, defvalue->ptr)) {
+  if (!g_fp->exfunc->ini_load_str(ovbase_deconster_(g_fp), key->ptr, tmp.ptr, defvalue->ptr)) {
     err = errg(err_fail);
     goto cleanup;
   }
@@ -580,7 +580,7 @@ error aviutl_ini_save_int(struct str const *const key, int const value) {
   if (!g_fp) {
     return errg(err_unexpected);
   }
-  g_fp->exfunc->ini_save_int(base_deconster_(g_fp), key->ptr, value);
+  g_fp->exfunc->ini_save_int(ovbase_deconster_(g_fp), key->ptr, value);
   return eok();
 }
 
@@ -591,7 +591,7 @@ error aviutl_ini_save_str(struct str const *const key, struct str const *const v
   if (!g_fp) {
     return errg(err_unexpected);
   }
-  if (!g_fp->exfunc->ini_save_str(base_deconster_(g_fp), key->ptr, value->ptr)) {
+  if (!g_fp->exfunc->ini_save_str(ovbase_deconster_(g_fp), key->ptr, value->ptr)) {
     return errg(err_fail);
   }
   return eok();

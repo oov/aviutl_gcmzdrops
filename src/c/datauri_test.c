@@ -1,5 +1,5 @@
-#include "3rd/base.c/include/test.h"
 #include "datauri.c"
+#include "ovtest.h"
 
 static void test_base64_decode(void) {
   static const struct test_data {

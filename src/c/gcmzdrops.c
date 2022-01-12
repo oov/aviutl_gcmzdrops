@@ -4,7 +4,7 @@
 #include <ole2.h>
 #include <shellapi.h>
 
-#include "3rd/base.c/include/base.h"
+#include "ovbase.h"
 
 #include "api.h"
 #include "droptarget.h"

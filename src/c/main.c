@@ -1,9 +1,9 @@
-#include "3rd/base.c/include/base.h"
+#include "ovbase.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "3rd/base.c/include/threads.h"
+#include "ovthreads.h"
 
 #include "error_gcmz.h"
 #include "files.h"
@@ -11,7 +11,7 @@
 
 static mtx_t g_reporter_mtx = {0};
 
-static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct base_filepos const *const filepos) {
+static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct ovbase_filepos const *const filepos) {
   mtx_lock(&g_reporter_mtx);
 
   HANDLE h = INVALID_HANDLE_VALUE;
@@ -107,7 +107,7 @@ cleanup:
 }
 
 static BOOL main_init(HINSTANCE const inst) {
-  if (!base_init()) {
+  if (!ovbase_init()) {
     return FALSE;
   }
   mtx_init(&g_reporter_mtx, mtx_plain);
@@ -119,7 +119,7 @@ static BOOL main_init(HINSTANCE const inst) {
 
 static BOOL main_exit(void) {
   files_cleanup(false);
-  base_exit();
+  ovbase_exit();
   mtx_destroy(&g_reporter_mtx);
   return TRUE;
 }
