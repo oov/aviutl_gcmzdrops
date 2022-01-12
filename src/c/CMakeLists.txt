@@ -8,7 +8,7 @@ add_custom_target(generate_version_h COMMAND
   -Dlocal_dir="${CMAKE_CURRENT_SOURCE_DIR}"
   -Dinput_file="${CMAKE_CURRENT_SOURCE_DIR}/version.h.in"
   -Doutput_file="${CMAKE_CURRENT_BINARY_DIR}/version.h"
-  -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/version.cmake"
+  -P "${PROJECT_SOURCE_DIR}/src/cmake/version.cmake"
 )
 
 find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
@@ -19,7 +19,7 @@ add_custom_target(generate_lua51_delayed COMMAND
   -Ddef="${CMAKE_CURRENT_BINARY_DIR}/lua51.def"
   -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_dynamic.a"
   -Ddelayed_lib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_delayed.a"
-  -P "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/makelib.cmake"
+  -P "${PROJECT_SOURCE_DIR}/src/cmake/makelib.cmake"
 )
 
 find_program(CLANG_FORMAT_EXE clang-format)
@@ -28,8 +28,6 @@ add_custom_target(${PROJECT_NAME}-format ALL
   COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${sources}
 )
 
-option(LEAK_DETECTOR "" ON)
-option(ALLOCATE_LOGGER "" ON)
 add_subdirectory(3rd/ovbase)
 
 include_directories(
@@ -115,8 +113,8 @@ set_target_properties(gcmzdrops_auf PROPERTIES
 )
 add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_delayed)
 
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../lua/" DESTINATION "${CMAKE_BINARY_DIR}/bin/GCMZDrops/")
-file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
+file(COPY "${PROJECT_SOURCE_DIR}/src/lua/" DESTINATION "${CMAKE_BINARY_DIR}/bin/GCMZDrops/")
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt" INPUT "${PROJECT_SOURCE_DIR}/README.md")
 
 add_executable(test_util error_gcmz.c util_test.c)
 list(APPEND tests test_util)

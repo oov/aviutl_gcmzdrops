@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          rm -rf CMakeCache.txt && cmake -GNinja -DLEAK_DETECTOR=OFF -DALLOCATE_LOGGER=OFF -DCMAKE_BUILD_TYPE=Release .. && ninja -v && ctest --output-on-failure
+          rm -rf CMakeCache.txt && cmake -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DLEAK_DETECTOR=OFF -DALLOCATE_LOGGER=OFF -DCMAKE_BUILD_TYPE=Release .. && ninja -v && ctest --output-on-failure
       - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
