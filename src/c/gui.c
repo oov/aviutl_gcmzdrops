@@ -1,11 +1,13 @@
 #include "gui.h"
 
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
+
 #include <shlobj.h>
 
 #include "aviutl.h"
 #include "gcmzdrops.h"
 #include "gcmzfuncs.h"
-#include "util.h"
 
 static HWND g_save_mode_label = NULL;
 static HWND g_save_mode = NULL;

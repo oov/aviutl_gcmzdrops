@@ -3,11 +3,12 @@
 #include <jansson.h>
 
 #include "ovthreads.h"
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
 
 #include "aviutl.h"
 #include "error_gcmz.h"
 #include "task.h"
-#include "util.h"
 
 struct api {
   api_request_func request;

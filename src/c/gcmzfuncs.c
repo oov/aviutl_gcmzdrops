@@ -1,5 +1,8 @@
 #include "gcmzfuncs.h"
 
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
+
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -8,7 +11,6 @@
 #include "gcmzdrops.h"
 #include "gui.h"
 #include "task.h"
-#include "util.h"
 
 error gcmz_get_script_dir(struct wstr *const dest) {
   if (!dest) {

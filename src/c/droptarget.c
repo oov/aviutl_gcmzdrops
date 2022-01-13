@@ -1,10 +1,12 @@
 #include "droptarget.h"
 
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
+
 #include <shlobj.h>
 
 #include "datauri.h"
 #include "sniffer.h"
-#include "util.h"
 
 static IDropTargetVtbl g_drop_target_vtable;
 

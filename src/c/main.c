@@ -4,10 +4,11 @@
 #include <windows.h>
 
 #include "ovthreads.h"
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
 
 #include "error_gcmz.h"
 #include "files.h"
-#include "util.h"
 
 static mtx_t g_reporter_mtx = {0};
 

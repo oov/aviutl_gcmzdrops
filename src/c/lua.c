@@ -1,12 +1,13 @@
 #include "lua.h"
 
+#include "ovutil/str.h"
+
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
 #include "luafuncs.h"
-#include "util.h"
 
 static void *lua_alloc(void *const ud, void *ptr, size_t const osize, size_t const nsize) {
   (void)ud;

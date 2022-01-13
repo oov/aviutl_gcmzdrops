@@ -5,6 +5,8 @@
 #include <shellapi.h>
 
 #include "ovbase.h"
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
 
 #include "api.h"
 #include "droptarget.h"
@@ -14,7 +16,6 @@
 #include "lua.h"
 #include "scpopup.h"
 #include "task.h"
-#include "util.h"
 
 enum {
   WM_DROP_TARGET_EVENT = WM_APP + 1,

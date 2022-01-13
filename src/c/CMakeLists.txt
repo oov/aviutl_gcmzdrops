@@ -29,9 +29,11 @@ add_custom_target(${PROJECT_NAME}-format ALL
 )
 
 add_subdirectory(3rd/ovbase)
+add_subdirectory(3rd/ovutil)
 
 include_directories(
   "${ovbase_SOURCE_DIR}/include"
+  "${ovutil_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/3rd/jansson/include"
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
 )
@@ -84,6 +86,7 @@ link_libraries(
   jansson
   lua51_delayed
   ovbase
+  ovutil
   shlwapi
 )
 add_library(gcmzdrops_auf SHARED
@@ -103,7 +106,6 @@ add_library(gcmzdrops_auf SHARED
   scpopup.c
   sniffer.c
   task.c
-  util.c
 )
 set_target_properties(gcmzdrops_auf PROPERTIES
   OUTPUT_NAME "GCMZDrops.auf"
@@ -116,13 +118,11 @@ add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_delayed)
 file(COPY "${PROJECT_SOURCE_DIR}/src/lua/" DESTINATION "${CMAKE_BINARY_DIR}/bin/GCMZDrops/")
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt" INPUT "${PROJECT_SOURCE_DIR}/README.md")
 
-add_executable(test_util error_gcmz.c util_test.c)
-list(APPEND tests test_util)
-add_executable(test_datauri error_gcmz.c util.c sniffer.c datauri_test.c)
+add_executable(test_datauri error_gcmz.c sniffer.c datauri_test.c)
 list(APPEND tests test_datauri)
-add_executable(test_gcmzfuncs error_gcmz.c task.c util.c gcmzfuncs_test.c)
+add_executable(test_gcmzfuncs error_gcmz.c task.c gcmzfuncs_test.c)
 list(APPEND tests test_gcmzfuncs)
-add_executable(test_luafuncs error_gcmz.c util.c files.c luafuncs_test.c)
+add_executable(test_luafuncs error_gcmz.c files.c luafuncs_test.c)
 list(APPEND tests test_luafuncs)
 
 foreach(target ${tests})

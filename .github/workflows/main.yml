@@ -19,11 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: true
+          submodules: recursive
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
-          install: git mingw-w64-${{ matrix.arch }}-tools mingw-w64-${{ matrix.arch }}-ninja mingw-w64-${{ matrix.arch }}-clang mingw-w64-${{ matrix.arch }}-compiler-rt mingw-w64-${{ matrix.arch }}-cmake mingw-w64-${{ matrix.arch }}-lua51
+          install: >-
+            git
+            mingw-w64-${{ matrix.arch }}-tools
+            mingw-w64-${{ matrix.arch }}-ninja
+            mingw-w64-${{ matrix.arch }}-clang
+            mingw-w64-${{ matrix.arch }}-compiler-rt
+            mingw-w64-${{ matrix.arch }}-cmake
+            mingw-w64-${{ matrix.arch }}-lua51
       - name: Run ninja
         shell: msys2 {0}
         run: |

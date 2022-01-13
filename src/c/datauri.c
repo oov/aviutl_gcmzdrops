@@ -1,7 +1,9 @@
 #include "datauri.h"
 
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
+
 #include "sniffer.h"
-#include "util.h"
 
 static const uint8_t base64_table[128] = {
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,

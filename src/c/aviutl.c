@@ -1,9 +1,9 @@
 #include "aviutl.h"
 
-#include <string.h>
+#include "ovutil/str.h"
+#include "ovutil/win32.h"
 
 #include "error_gcmz.h"
-#include "util.h"
 
 static FILTER const *g_fp = NULL;
 static void *g_editp = NULL;

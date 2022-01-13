@@ -1,6 +1,6 @@
 #include "files.h"
 
-#include "util.h"
+#include "ovutil/win32.h"
 
 enum tempfile_mode {
   tempfile_mode_delete_always = 0,
