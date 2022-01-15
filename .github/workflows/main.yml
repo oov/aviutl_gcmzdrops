@@ -25,12 +25,13 @@ jobs:
           msystem: ${{ matrix.msystem }}
           install: >-
             git
-            mingw-w64-${{ matrix.arch }}-tools
-            mingw-w64-${{ matrix.arch }}-ninja
             mingw-w64-${{ matrix.arch }}-clang
-            mingw-w64-${{ matrix.arch }}-compiler-rt
             mingw-w64-${{ matrix.arch }}-cmake
+            mingw-w64-${{ matrix.arch }}-compiler-rt
+            mingw-w64-${{ matrix.arch }}-lld
             mingw-w64-${{ matrix.arch }}-lua51
+            mingw-w64-${{ matrix.arch }}-ninja
+            mingw-w64-${{ matrix.arch }}-tools
       - name: Run ninja
         shell: msys2 {0}
         run: |
