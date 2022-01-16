@@ -45,24 +45,9 @@ NODISCARD static error add_include_path(lua_State *const L, struct wstr *const d
   if (!L || !dir) {
     return errg(err_invalid_arugment);
   }
-
   struct wstr tmp = {0};
   lua_getglobal(L, "package");
-  lua_getfield(L, -1, "path");
-  error err = luafn_towstr(L, -1, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  lua_pop(L, 1);
-  if (tmp.len > 0) {
-    err = scat(&tmp, L";");
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-  }
-  err = scat(&tmp, dir->ptr);
+  error err = scpy(&tmp, dir->ptr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -72,7 +57,7 @@ NODISCARD static error add_include_path(lua_State *const L, struct wstr *const d
     err = ethru(err);
     goto cleanup;
   }
-  err = scat(&tmp, L"?.lua");
+  err = scat(&tmp, L"?.lua;");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -82,44 +67,20 @@ NODISCARD static error add_include_path(lua_State *const L, struct wstr *const d
     err = ethru(err);
     goto cleanup;
   }
+  lua_getfield(L, -2, "path");
+  lua_concat(L, 2);
   lua_setfield(L, -2, "path");
-
-  lua_getfield(L, -1, "cpath");
-  err = luafn_towstr(L, -1, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  lua_pop(L, 1);
-  if (tmp.len > 0) {
-    err = scat(&tmp, L";");
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-  }
-  err = scat(&tmp, dir->ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = include_trailing_path_delimiter(&tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, L"?.dll");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
+  tmp.ptr[tmp.len - 4] = L'd';
+  tmp.ptr[tmp.len - 3] = L'l';
+  tmp.ptr[tmp.len - 2] = L'l';
   err = luafn_push_wstr(L, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
+  lua_getfield(L, -2, "cpath");
+  lua_concat(L, 2);
   lua_setfield(L, -2, "cpath");
-
   lua_pop(L, 1);
 
 cleanup:
@@ -184,6 +145,10 @@ NODISCARD static error execute_entrypoint(struct lua *const l, struct wstr *cons
   error err = pcall(L, 1, 1);
   if (efailed(err)) {
     err = ethru(err);
+    goto cleanup;
+  }
+  if (!lua_istable(L, -1)) {
+    err = errg(err_unexpected);
     goto cleanup;
   }
 
