@@ -15,14 +15,13 @@ add_custom_target(generate_version_h COMMAND
 )
 
 find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
-add_custom_target(generate_lua51_delayed COMMAND
+add_custom_target(generate_lua51_importlib COMMAND
   ${CMAKE_COMMAND}
   -Dlocal_dir="${CMAKE_CURRENT_BINARY_DIR}"
   -Ddll="${LUA51DLL}"
   -Ddef="${CMAKE_CURRENT_BINARY_DIR}/lua51.def"
-  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_dynamic.a"
-  -Ddelayed_lib="${CMAKE_CURRENT_BINARY_DIR}/liblua51_delayed.a"
-  -P "${ovutil_SOURCE_DIR}/src/cmake/makelib.cmake"
+  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51.a"
+  -P "${ovutil_SOURCE_DIR}/src/cmake/makelib-llvm.cmake"
 )
 
 add_custom_target(copy_related_files
@@ -59,7 +58,7 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_delayed copy_related_files)
+add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_importlib copy_related_files)
 list(APPEND targets gcmzdrops_auf)
 
 add_executable(test_datauri error_gcmz.c sniffer.c datauri_test.c)
@@ -101,8 +100,11 @@ foreach(target ${targets})
     -fdata-sections
     $<$<CONFIG:Debug>:-O0>
     $<$<CONFIG:Release>:-O2>
+    -flto
   )
   target_link_options(${target} PRIVATE
+    -fuse-ld=lld
+    -Wl,-delayload,lua51.dll
     -Wl,--gc-sections
     # -Wl,--print-gc-sections
     --rtlib=compiler-rt
@@ -116,7 +118,7 @@ foreach(target ${targets})
     $<$<NOT:$<STREQUAL:${target},crc64>>:crc64>
     $<$<NOT:$<STREQUAL:${target},detect>>:detect>
     jansson
-    lua51_delayed
+    lua51
     ovbase
     ovutil
     shlwapi
