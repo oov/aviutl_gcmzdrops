@@ -108,7 +108,7 @@ cleanup:
 }
 
 static BOOL main_init(HINSTANCE const inst) {
-  if (!ovbase_init()) {
+  if (!ovbase_init(generic_error_message_mapper_jp)) {
     return FALSE;
   }
   mtx_init(&g_reporter_mtx, mtx_plain);
