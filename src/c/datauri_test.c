@@ -5,7 +5,7 @@ static void test_base64_decode(void) {
   static const struct test_data {
     wchar_t const *input;
     char const *output;
-    uint_least32_t code;
+    int code;
   } test_data[] = {
       {
           .input = L"Y",
@@ -130,7 +130,7 @@ static void test_percent_decode(void) {
   static const struct test_data {
     wchar_t const *input;
     char const *output;
-    uint_least32_t code;
+    int code;
   } test_data[] = {
       {
           .input = L"a%",
@@ -236,7 +236,7 @@ static void test_parse_decode(void) {
     wchar_t const *input;
     struct data_uri output;
     wchar_t const *suggest_filename;
-    uint_least32_t code;
+    int code;
   } test_data[] = {
       {
           .input = L"",

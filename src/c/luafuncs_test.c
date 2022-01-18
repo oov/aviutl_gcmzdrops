@@ -329,7 +329,7 @@ static void test_hashtostring(void) {
   static const struct test_data {
     uint64_t input;
     wchar_t const *output;
-    uint_least32_t code;
+    int code;
   } test_data[] = {
       {
           .input = UINT64_C(16845390139448941002),

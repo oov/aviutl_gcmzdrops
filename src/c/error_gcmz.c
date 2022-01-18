@@ -2,7 +2,7 @@
 
 #include "gcmzdrops.h"
 
-NODISCARD static error get_message(uint_least32_t const code, struct NATIVE_STR *const message) {
+NODISCARD static error get_message(int const code, struct NATIVE_STR *const message) {
   switch (code) {
   case err_gcmz_unsupported_aviutl_version:
     return scpy(message, NSTR("AviUtl のバージョンが動作対象外です。"));

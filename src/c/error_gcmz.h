@@ -3,7 +3,7 @@
 #include "ovbase.h"
 
 enum {
-  err_type_gcmz = 2,
+  err_type_gcmz = 100,
 };
 
 enum err_gcmz {
