@@ -203,7 +203,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
   }
   if (pos != -1 && len > 0) {
     uint64_t v = 0;
-    err = atou64(&(struct wstr){.ptr = tmp.ptr + pos, .len = len}, &v);
+    err = atou64(&((struct wstr){.ptr = tmp.ptr + pos, .len = len}), &v);
     if (efailed(err)) {
       efree(&err);
       ereport(gui_set_save_mode_to_default());
