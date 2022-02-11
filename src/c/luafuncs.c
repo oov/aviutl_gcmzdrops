@@ -595,7 +595,7 @@ static int luafn_calchash(lua_State *const L) {
   size_t slen = 0;
   char const *const s = lua_tolstring(L, 2, &slen);
   hash = crc64(hash, (unsigned char const *)s, slen);
-  lua_pushlstring(L, (const char *)&hash, sizeof(uint64_t));
+  lua_pushlstring(L, (char const *)&hash, sizeof(uint64_t));
 
 cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
@@ -649,7 +649,7 @@ static int luafn_calcfilehash(lua_State *const L) {
     err = ethru(err);
     goto cleanup;
   }
-  lua_pushlstring(L, (const char *)&hash, sizeof(uint64_t));
+  lua_pushlstring(L, (char const *)&hash, sizeof(uint64_t));
 
 cleanup:
   ereport(sfree(&path));
@@ -664,7 +664,7 @@ NODISCARD static error base32_encode(struct str const *const src, struct wstr *c
   struct wstr tmp = {0};
   error err = eok();
 
-  static wchar_t const *const table = L"abcdefghijklmnopqrstuvwxyz234567";
+  static wchar_t const table[] = L"abcdefghijklmnopqrstuvwxyz234567";
   wchar_t buf[8] = {0};
   uint8_t const *const sp = (void *)src->ptr;
   size_t const slen = src->len;

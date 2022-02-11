@@ -40,7 +40,7 @@ static int g_gui_mode = gui_mode_auto;
 static void test_gcmz_get_script_dir(void) {
   struct wstr tmp = {0};
   if (TEST_SUCCEEDED_F(gcmz_get_script_dir(&tmp))) {
-    wchar_t const *dirname = L"\\GCMZDrops";
+    static wchar_t const dirname[] = L"\\GCMZDrops";
     ptrdiff_t pos = 0;
     TEST_CHECK(tmp.len > 0);
     TEST_SUCCEEDED_F(sstr(&tmp, dirname, &pos));
@@ -56,7 +56,7 @@ static void test_gcmz_get_project_dir(void) {
   g_aviutl_project_path = L"C:\\test_gcmz_get_project_dir\\example.aup";
   if (TEST_SUCCEEDED_F(gcmz_get_project_dir(&tmp))) {
     TEST_CHECK(tmp.len > 0);
-    wchar_t const *dirname = L"C:\\test_gcmz_get_project_dir";
+    static wchar_t const dirname[] = L"C:\\test_gcmz_get_project_dir";
     TEST_CHECK(wcscmp(tmp.ptr, dirname) == 0);
     TEST_SUCCEEDED_F(sfree(&tmp));
   }
@@ -68,7 +68,7 @@ static void test_gcmz_get_save_dir(void) {
   g_gui_save_dir = L"C:\\test_gcmz_get_save_dir\\";
   if (TEST_SUCCEEDED_F(gcmz_get_save_dir(&tmp))) {
     TEST_CHECK(tmp.len > 0);
-    wchar_t const *dirname = L"C:\\test_gcmz_get_save_dir";
+    static wchar_t const dirname[] = L"C:\\test_gcmz_get_save_dir";
     TEST_CHECK(wcscmp(tmp.ptr, dirname) == 0);
     TEST_SUCCEEDED_F(sfree(&tmp));
   }
@@ -80,7 +80,7 @@ static void test_gcmz_get_save_dir(void) {
   g_aviutl_project_path = L"C:\\test_gcmz_get_save_dir2\\example.aup";
   g_gui_save_dir = L"%PROJECTDIR%\\";
   if (TEST_SUCCEEDED_F(gcmz_get_save_dir(&tmp))) {
-    wchar_t const *dirname = L"C:\\test_gcmz_get_save_dir2";
+    static wchar_t const dirname[] = L"C:\\test_gcmz_get_save_dir2";
     TEST_CHECK(wcscmp(tmp.ptr, dirname) == 0);
     TEST_SUCCEEDED_F(sfree(&tmp));
   }
@@ -88,7 +88,7 @@ static void test_gcmz_get_save_dir(void) {
   g_aviutl_project_path = L"C:\\test_gcmz_get_save_dir3\\example.aup";
   g_gui_save_dir = L"%PROJECTDIR%\\gcmz\\";
   if (TEST_SUCCEEDED_F(gcmz_get_save_dir(&tmp))) {
-    wchar_t const *dirname = L"C:\\test_gcmz_get_save_dir3\\gcmz";
+    static wchar_t const dirname[] = L"C:\\test_gcmz_get_save_dir3\\gcmz";
     TEST_CHECK(wcscmp(tmp.ptr, dirname) == 0);
     TEST_SUCCEEDED_F(sfree(&tmp));
   }

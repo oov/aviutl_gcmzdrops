@@ -354,8 +354,8 @@ static void test_hashtostring(void) {
 }
 
 static void test_encode_exo_text(void) {
-  wchar_t const *input = L"hello world";
-  char const *expected = "680065006c006c006f00200077006f0072006c0064000000";
+  static wchar_t const input[] = L"hello world";
+  static char const expected[] = "680065006c006c006f00200077006f0072006c0064000000";
   struct str got = {0};
   error err = encode_exo_text(&wstr_unmanaged_const(input), &got);
   if (!TEST_SUCCEEDED_F(err)) {
@@ -377,7 +377,7 @@ static void test_decode_exo_text(void) {
     error err = scat(&input, "0000");
     efree(&err);
   }
-  wchar_t const *expected = L"hello world";
+  static wchar_t const expected[] = L"hello world";
   struct wstr got = {0};
   error err = decode_exo_text(&input, &got);
   if (!TEST_SUCCEEDED_F(err)) {
@@ -391,8 +391,8 @@ cleanup:
 }
 
 static void test_encode_lua_string(void) {
-  char const *input = "hello\r\nworld";
-  char const *expected = "\"hello\\r\\nworld\"";
+  static char const input[] = "hello\r\nworld";
+  static char const expected[] = "\"hello\\r\\nworld\"";
   struct str got = {0};
   error err = encode_lua_string(&str_unmanaged_const(input), &got);
   if (!TEST_SUCCEEDED_F(err)) {

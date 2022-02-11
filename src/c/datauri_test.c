@@ -110,7 +110,7 @@ static void test_base64_decode(void) {
 }
 
 static void test_base64_error(void) {
-  wchar_t const *input = L"YWJjZA==";
+  static wchar_t const input[] = L"YWJjZA==";
   size_t input_len = wcslen(input);
   TEST_EISG_F(base64_decoded_len(NULL, 0, NULL), err_invalid_arugment);
   TEST_EISG_F(base64_decoded_len(NULL, input_len, NULL), err_invalid_arugment);
@@ -215,7 +215,7 @@ static void test_percent_decode(void) {
 }
 
 static void test_percent_error(void) {
-  wchar_t const *input = L"a%20bc";
+  static wchar_t const input[] = L"a%20bc";
   size_t input_len = wcslen(input);
   TEST_EISG_F(percent_decoded_len(NULL, 0, NULL), err_invalid_arugment);
   TEST_EISG_F(percent_decoded_len(NULL, input_len, NULL), err_invalid_arugment);

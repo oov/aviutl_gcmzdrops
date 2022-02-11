@@ -297,7 +297,7 @@ static int api_thread(void *const userdata) {
   struct api *const api = userdata;
   error err = eok();
   {
-    static wchar_t const *const window_class_name = L"GCMZDropsAPI";
+    static wchar_t const window_class_name[] = L"GCMZDropsAPI";
     HINSTANCE hinst = get_hinstance();
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
@@ -401,7 +401,7 @@ error api_init(struct api **const api) {
   error err = eok();
   HANDLE mutex = 0, fmo = 0;
 
-  static wchar_t const *const mutex_name = L"GCMZDropsMutex";
+  static wchar_t const mutex_name[] = L"GCMZDropsMutex";
   mutex = CreateMutexW(NULL, FALSE, mutex_name);
   // Do not judge whether mutex is NULL.
   // Because if the error is ERROR_ALREADY_EXISTS, the existing handle will be returned.
@@ -411,7 +411,7 @@ error api_init(struct api **const api) {
     goto failed;
   }
 
-  static wchar_t const *const file_mapping_object_name = L"GCMZDrops";
+  static wchar_t const file_mapping_object_name[] = L"GCMZDrops";
   fmo = CreateFileMappingW(
       INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(struct gcmzdrops_fmo), file_mapping_object_name);
   // Do not judge whether fmo is NULL.

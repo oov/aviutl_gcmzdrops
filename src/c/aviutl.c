@@ -52,8 +52,8 @@ cleanup:
 }
 
 NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, bool *const is_enpatched) {
-  static TCHAR const *const exedit_name_mbcs = "\x8a\x67\x92\xa3\x95\xd2\x8f\x57"; // "拡張編集"
-  static TCHAR const *const enpatched_exedit_name_mbcs = "Advanced Editing";
+  static TCHAR const exedit_name_mbcs[] = "\x8a\x67\x92\xa3\x95\xd2\x8f\x57"; // "拡張編集"
+  static TCHAR const enpatched_exedit_name_mbcs[] = "Advanced Editing";
 
   *exedit_fp = NULL;
   SYS_INFO si = {0};
@@ -83,10 +83,10 @@ NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, bool *
 }
 
 NODISCARD static error find_blocked_filter(void) {
-  static TCHAR const *const extext_name_mbcs = "\x8e\x9a\x96\x8b\x83\x41\x83\x56\x83\x58\x83\x67"; // "字幕アシスト"
-  static TCHAR const *const gcmzdrops_name_mbcs =
+  static TCHAR const extext_name_mbcs[] = "\x8e\x9a\x96\x8b\x83\x41\x83\x56\x83\x58\x83\x67"; // "字幕アシスト"
+  static TCHAR const gcmzdrops_name_mbcs[] =
       "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"; // "ごちゃまぜドロップス"
-  static wchar_t const *const gcmzdrops_old_dll_name = L"oledd.auf";
+  static wchar_t const gcmzdrops_old_dll_name[] = L"oledd.auf";
   SYS_INFO si = {0};
   struct wstr s = {0};
   error err = aviutl_get_sys_info(&si);
@@ -153,7 +153,7 @@ static size_t atou32(TCHAR const *s, uint32_t *const ret) {
 }
 
 NODISCARD static error verify_exedit_version(FILTER const *const exedit_fp) {
-  static TCHAR const *const version_token = " version ";
+  static TCHAR const version_token[] = " version ";
   TCHAR const *verstr = strstr(exedit_fp->information, version_token);
   if (!verstr) {
     goto failed;
@@ -215,7 +215,7 @@ cleanup:
 NODISCARD static error apply_window_capture_problem_workaround(FILTER const *const exedit_fp) {
   bool found_auls_transparence = false;
   {
-    static TCHAR const *const auls_transparence_name_mbcs =
+    static TCHAR const auls_transparence_name_mbcs[] =
         "\x8a\x67\x92\xa3\x95\xd2\x8f\x57\x82\xf0\x94\xbc\x93\xa7\x96\xbe\x89\xbb"; // 拡張編集を半透明化
     SYS_INFO si = {0};
     error err = aviutl_get_sys_info(&si);

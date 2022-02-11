@@ -90,7 +90,7 @@ error gcmz_get_save_dir(struct wstr *const dest) {
     return errg(err_null_pointer);
   }
 
-  static wchar_t const *const placeholder = L"%PROJECTDIR%";
+  static wchar_t const placeholder[] = L"%PROJECTDIR%";
   struct wstr dir = {0};
   struct wstr proj = {0};
   error err = gui_get_save_dir(&dir);
@@ -870,7 +870,7 @@ cleanup:
   return err;
 }
 
-static wchar_t const *const input_dialog_prop = L"input_dialog";
+static wchar_t const input_dialog_prop[] = L"input_dialog";
 struct input_dialog {
   struct wstr const *caption;
   struct wstr *value;

@@ -20,7 +20,7 @@ static HWND g_restore_default = NULL;
 static HWND g_save_as_default = NULL;
 
 static int const g_initial_save_mode = 0;
-static wchar_t const *const g_initial_save_dir = L"%PROJECTDIR%";
+static wchar_t const g_initial_save_dir[] = L"%PROJECTDIR%";
 
 static int g_default_save_mode = 0;
 static struct wstr g_default_save_dir = {0};
