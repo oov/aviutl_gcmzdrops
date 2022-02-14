@@ -2,6 +2,7 @@
 
 #include <jansson.h>
 
+#include "ovnum.h"
 #include "ovthreads.h"
 #include "ovutil/str.h"
 #include "ovutil/win32.h"
@@ -53,17 +54,15 @@ parse_api0_found_token(struct wstr const *const ws, struct api_request_params *c
   int64_t v = 0;
   switch (*found) {
   case 0:
-    err = atoi64(ws, &v);
-    if (efailed(err)) {
-      err = ethru(err);
+    if (!ovbase_atoi_wchar(ws->ptr, &v, false)) {
+      err = errg(err_fail);
       goto cleanup;
     }
     params->layer = (int)v;
     break;
   case 1:
-    err = atoi64(ws, &v);
-    if (efailed(err)) {
-      err = ethru(err);
+    if (!ovbase_atoi_wchar(ws->ptr, &v, false)) {
+      err = errg(err_fail);
       goto cleanup;
     }
     params->frame_advance = (int)v;

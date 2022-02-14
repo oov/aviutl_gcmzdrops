@@ -5,6 +5,7 @@
 #include <shellapi.h>
 
 #include "ovbase.h"
+#include "ovnum.h"
 #include "ovutil/str.h"
 #include "ovutil/win32.h"
 
@@ -203,9 +204,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
   }
   if (pos != -1 && len > 0) {
     uint64_t v = 0;
-    err = atou64(&((struct wstr){.ptr = tmp.ptr + pos, .len = len}), &v);
-    if (efailed(err)) {
-      efree(&err);
+    if (!ovbase_atou_wchar(tmp.ptr + pos, &v, false)) {
       ereport(gui_set_save_mode_to_default());
     } else {
       ereport(gui_set_save_mode((int)v));
@@ -240,7 +239,7 @@ cleanup:
 static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const data, int *const size) {
   struct str u8buf = {0};
   struct wstr tmp = {0};
-  struct wstr modestr = {0};
+  wchar_t modebuf[32];
   struct wstr savepathstr = {0};
   aviutl_set_pointers(fp, editp);
 
@@ -250,17 +249,13 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
     err = ethru(err);
     goto cleanup;
   }
-  err = utoa64((uint64_t)mode, &modestr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
+  wchar_t *modestr = ovbase_utoa_wchar((uint64_t)mode, modebuf);
   err = gui_get_save_dir(&savepathstr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  err = scpym(&tmp, L"mode=", modestr.ptr, L"\r\nsavepath=", savepathstr.ptr, L"\r\n");
+  err = scpym(&tmp, L"mode=", modestr, L"\r\nsavepath=", savepathstr.ptr, L"\r\n");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -281,7 +276,6 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
 
 cleanup:
   ereport(sfree(&savepathstr));
-  ereport(sfree(&modestr));
   ereport(sfree(&tmp));
   ereport(sfree(&u8buf));
   aviutl_set_pointers(NULL, NULL);
