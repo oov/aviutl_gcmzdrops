@@ -1118,7 +1118,7 @@ static int luafn_encodeluastring(lua_State *const L) {
 
   err = encode_lua_string(
       &(struct str const){
-          .ptr = ovbase_deconster_(s),
+          .ptr = ov_deconster_(s),
           .len = slen,
       },
       &tmp);
@@ -1271,7 +1271,7 @@ NODISCARD static error luafn_convertencoding_core(
   // mbcs to mbcs
   if (src_cp != 1200 && src_cp != 1201 && dest_cp != 1200 && dest_cp != 1201) {
     struct wstr tmp = {0};
-    err = from_cp(src_cp, &(struct str const){.ptr = ovbase_deconster_(src), .len = srclen}, &tmp);
+    err = from_cp(src_cp, &(struct str const){.ptr = ov_deconster_(src), .len = srclen}, &tmp);
     if (efailed(err)) {
       err = ethru(err);
       return err;
@@ -1291,7 +1291,7 @@ NODISCARD static error luafn_convertencoding_core(
     struct wstr tmp = {0};
     if (src_cp == 1200) {
       tmp = (struct wstr){
-          .ptr = ovbase_deconster_(src),
+          .ptr = ov_deconster_(src),
           .len = srclen / 2,
           .cap = 0,
       };
@@ -1317,7 +1317,7 @@ NODISCARD static error luafn_convertencoding_core(
 
   // mbcs to utf-16
   struct wstr tmp = {0};
-  err = from_cp(src_cp, &(struct str const){.ptr = ovbase_deconster_(src), .len = srclen}, &tmp);
+  err = from_cp(src_cp, &(struct str const){.ptr = ov_deconster_(src), .len = srclen}, &tmp);
   if (efailed(err)) {
     err = ethru(err);
     return err;

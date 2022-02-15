@@ -12,7 +12,7 @@
 
 static mtx_t g_reporter_mtx = {0};
 
-static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct ovbase_filepos const *const filepos) {
+static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struct ov_filepos const *const filepos) {
   mtx_lock(&g_reporter_mtx);
 
   HANDLE h = INVALID_HANDLE_VALUE;
@@ -108,7 +108,7 @@ cleanup:
 }
 
 static BOOL main_init(HINSTANCE const inst) {
-  if (!ovbase_init(generic_error_message_mapper_jp)) {
+  if (!ov_init(generic_error_message_mapper_jp)) {
     return FALSE;
   }
   mtx_init(&g_reporter_mtx, mtx_plain);
@@ -120,7 +120,7 @@ static BOOL main_init(HINSTANCE const inst) {
 
 static BOOL main_exit(void) {
   files_cleanup(false);
-  ovbase_exit();
+  ov_exit();
   mtx_destroy(&g_reporter_mtx);
   return TRUE;
 }

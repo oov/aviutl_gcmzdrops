@@ -64,15 +64,15 @@ set_target_properties(gcmzdrops_auf PROPERTIES
 add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_importlib copy_related_files)
 list(APPEND targets gcmzdrops_auf)
 
-add_executable(test_datauri error_gcmz.c sniffer.c datauri_test.c)
-list(APPEND targets test_datauri)
-add_executable(test_gcmzfuncs error_gcmz.c task.c gcmzfuncs_test.c)
-list(APPEND targets test_gcmzfuncs)
-add_executable(test_luafuncs error_gcmz.c files.c luafuncs_test.c)
-list(APPEND targets test_luafuncs)
+add_executable(datauri_test error_gcmz.c sniffer.c datauri_test.c)
+list(APPEND targets datauri_test)
+add_executable(gcmzfuncs_test error_gcmz.c task.c gcmzfuncs_test.c)
+list(APPEND targets gcmzfuncs_test)
+add_executable(luafuncs_test error_gcmz.c files.c luafuncs_test.c)
+list(APPEND targets luafuncs_test)
 
 foreach(target ${targets})
-  if(target MATCHES "^test_")
+  if(target MATCHES "_test$")
     add_test(NAME ${target} COMMAND ${target})
     target_compile_definitions(${target} PRIVATE
       TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test

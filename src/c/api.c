@@ -54,14 +54,14 @@ parse_api0_found_token(struct wstr const *const ws, struct api_request_params *c
   int64_t v = 0;
   switch (*found) {
   case 0:
-    if (!ovbase_atoi_wchar(ws->ptr, &v, false)) {
+    if (!ov_atoi(ws->ptr, &v, false)) {
       err = errg(err_fail);
       goto cleanup;
     }
     params->layer = (int)v;
     break;
   case 1:
-    if (!ovbase_atoi_wchar(ws->ptr, &v, false)) {
+    if (!ov_atoi(ws->ptr, &v, false)) {
       err = errg(err_fail);
       goto cleanup;
     }
@@ -105,8 +105,8 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
       err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("無効なフォーマットです。")));
       goto cleanup;
     }
-    err = parse_api0_found_token(
-        &(struct wstr const){.ptr = ovbase_deconster_(p + i - token), .len = token}, params, &found);
+    err =
+        parse_api0_found_token(&(struct wstr const){.ptr = ov_deconster_(p + i - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -115,7 +115,7 @@ NODISCARD static error parse_api0(struct wstr *const ws, struct api_request_para
   }
   if (token) {
     err = parse_api0_found_token(
-        &(struct wstr const){.ptr = ovbase_deconster_(p + len - token), .len = token}, params, &found);
+        &(struct wstr const){.ptr = ov_deconster_(p + len - token), .len = token}, params, &found);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;

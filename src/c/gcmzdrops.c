@@ -204,7 +204,7 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
   }
   if (pos != -1 && len > 0) {
     uint64_t v = 0;
-    if (!ovbase_atou_wchar(tmp.ptr + pos, &v, false)) {
+    if (!ov_atou(tmp.ptr + pos, &v, false)) {
       ereport(gui_set_save_mode_to_default());
     } else {
       ereport(gui_set_save_mode((int)v));
@@ -249,7 +249,7 @@ static BOOL filter_project_save(FILTER *const fp, void *const editp, void *const
     err = ethru(err);
     goto cleanup;
   }
-  wchar_t *modestr = ovbase_utoa_wchar((uint64_t)mode, modebuf);
+  wchar_t *modestr = ov_utoa((uint64_t)mode, modebuf);
   err = gui_get_save_dir(&savepathstr);
   if (efailed(err)) {
     err = ethru(err);
