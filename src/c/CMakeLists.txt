@@ -85,7 +85,7 @@ foreach(target ${targets})
     "${CMAKE_CURRENT_BINARY_DIR}" # for liblua51_delayed.a
   )
   target_compile_definitions(${target} PRIVATE
-    _WIN32_WINNT=0x0502
+    _WIN32_WINNT=0x0501
     _WINDOWS
     $<$<CONFIG:Release>:NDEBUG>
   )
