@@ -1,4 +1,5 @@
-﻿# ごちゃまぜドロップス
+﻿ごちゃまぜドロップス
+====================
 
 ごちゃまぜドロップス（ GCMZDrops.auf ）は拡張編集ウィンドウへファイルやテキストをドラッグ＆ドロップした時の挙動を拡張するための AviUtl プラグインです。
 
@@ -27,24 +28,28 @@
 
 ごちゃまぜドロップスの動作には AviUtl version 1.00 以降と拡張編集 version 0.92 以降が必要です。
 
-## 注意事項
+注意事項
+--------
 
 ごちゃまぜドロップスは無保証で提供されます。  
 ごちゃまぜドロップスを使用したこと及び使用しなかったことによるいかなる損害について、開発者は責任を負いません。
 
 これに同意できない場合、あなたはごちゃまぜドロップスを使用することができません。
 
-## ダウンロード
+ダウンロード
+------------
 
 https://github.com/oov/aviutl_gcmzdrops/releases
 
-## インストール／アンインストール
+インストール／アンインストール
+------------------------------
 
 GCMZDrops.auf と GCMZDrops フォルダーを **exedit.auf と同じ場所** に置いてください。
 
 削除時もそれらを削除するだけで OK です。
 
-## 設定
+設定
+----
 
 AviUtl の `表示` メニューから `ごちゃまぜドロップスの表示` を選ぶと、設定用のウィンドウが開きます。  
 この設定は AviUtl のプロジェクトファイル(*.aup) に保存されるため、プロジェクトごとに固有の設定ができます。
@@ -105,7 +110,8 @@ AviUtl の `表示` メニューから `ごちゃまぜドロップスの表示`
 
 例えばデータ保存先を `%PROJECTDIR%\gcmz` などのデフォルト値にすると、プロジェクトファイルの場所が変わるのに合わせて保存先を変えるような使い方ができます。
 
-## スクリプトの書き方
+スクリプトの書き方
+------------------
 
 `GCMZDrops` フォルダーの中に `*.lua` ファイルを入れることで、ドロップされたファイルに対して独自の振る舞いを追加することができます。
 
@@ -115,7 +121,8 @@ Lua スクリプト内で使えるごちゃまぜドロップス専用の関数�
 また、`dropper` フォルダの中にスクリプトファイルを配置することで、拡張編集ウィンドウ上で `Shift + Ctrl + 右クリック` または `中クリック（ホイールクリック）` をした時にメニューを表示し、ファイルを投げ込むためのスクリプトを記述することが可能です。  
 ごちゃまぜドロップスでは通常の場合「拡張編集ウィンドウにファイルなどをドラッグで持ち込んだ時」というのが Lua スクリプトの動作の起点になりますが、この仕組みを使うとファイルを持ち込まなくても動作の起点にすることができます。
 
-## 外部連携用 API について
+外部連携用 API について
+-----------------------
 
 外部のアプリケーションから拡張編集の現在のカーソル位置へのファイルドロップを実現するために、実験的な外部連携用 API を提供しています。  
 ここで紹介する API は ごちゃまぜドロップス v0.3.12 以降で使用可能です。
@@ -263,7 +270,8 @@ CloseFMO:
 - **多重起動について**  
 API が使えるのは最初に起動したインスタンスのみで、AviUtl を多重起動しても２つ目以降では API は無効状態になり、その旨を伝えるエラーダイアログが表示されます。
 
-## FAQ
+FAQ
+---
 
 - Q. テキストをドロップで投げ込めないソフトがある
   - A. 対応していないソフトもある
@@ -279,12 +287,14 @@ API が使えるのは最初に起動したインスタンスのみで、AviUtl 
   - A. 拡張編集の UI の色を変えるようなプラグインとは競合する可能性があります  
        もし変えている場合は戻してみてください
 
-## バイナリのビルドについて
+バイナリのビルドについて
+------------------------
 
 ごちゃまぜドロップスは [MSYS2](https://www.msys2.org/) + MINGW32 上で開発しています。  
 ビルド方法や必要になるパッケージなどは [GitHub Actions の設定ファイル](https://github.com/oov/aviutl_gcmzdrops/blob/main/.github/workflows/releaser.yml) を参考にしてください。
 
-## Credits
+Credits
+-------
 
 ごちゃまぜドロップス is made possible by the following open source softwares.
 
@@ -397,7 +407,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## hashmap.c
+### hashmap.c
 
 https://github.com/tidwall/hashmap.c
 
@@ -425,7 +435,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Jansson
+### Jansson
 
 https://github.com/akheron/jansson
 
