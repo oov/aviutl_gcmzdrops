@@ -37,11 +37,11 @@ jobs:
         run: |
           mkdir build
           cd build
-          rm -rf CMakeCache.txt && cmake -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DLEAK_DETECTOR=OFF -DALLOCATE_LOGGER=OFF -DCMAKE_BUILD_TYPE=Release .. && ninja -v && ctest --output-on-failure
+          rm -rf CMakeCache.txt && cmake -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DLEAK_DETECTOR=OFF -DALLOCATE_LOGGER=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build . && ctest --output-on-failure
       - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.msystem }}-bin
+          name: bin
           path: |
             build/bin/**/*
   create-release:
@@ -55,7 +55,7 @@ jobs:
         uses: actions/download-artifact@v2
       - name: Zip
         run: |
-          cd MINGW32-bin && zip -r gcmzdrops_${{ steps.get_version.outputs.tag }}.zip * && cd ..
+          cd bin && zip -r ../package.zip * && cd ..
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -87,6 +87,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./MINGW32-bin/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip
+          asset_path: package.zip
           asset_name: gcmzdrops_${{ steps.get_version.outputs.tag }}.zip
           asset_content_type: application/zip
