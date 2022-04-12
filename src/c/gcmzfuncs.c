@@ -697,7 +697,7 @@ static bool can_use_print_window(void) {
   if (!h) {
     return false;
   }
-  if (!GetProcAddress(h, "wine_get_version")) {
+  if (GetProcAddress(h, "wine_get_version")) {
     return false; // WINE
   }
   typedef INT(WINAPI * RtlGetVersionFunc)(OSVERSIONINFOEXW *);
