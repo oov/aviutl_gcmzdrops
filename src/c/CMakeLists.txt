@@ -99,6 +99,7 @@ foreach(target ${targets})
     -Wshadow
     -Werror=return-type
     -pedantic-errors
+    -Wno-declaration-after-statement
     -ffunction-sections
     -fdata-sections
     $<$<CONFIG:Debug>:-O0>
