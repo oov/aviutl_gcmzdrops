@@ -81,7 +81,7 @@ NODISCARD static error build_error_message(error e, wchar_t const *const main_me
     err = ethru(err);
     goto cleanup;
   }
-  err = scpym(&msg, main_message, L"\r\n\r\n", tmp.ptr, msg.ptr);
+  err = scpym(dest, main_message, L"\r\n\r\n", tmp.ptr, msg.ptr);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
