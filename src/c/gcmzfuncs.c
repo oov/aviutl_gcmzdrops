@@ -517,26 +517,30 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
   };
 
   {
-    enum {
-      zoom_left = 5,
-      zoom_top = 32,
-      zoom_max = 26,
-      zoom_active_r24 = 96,
-      zoom_active_r16 = 99,
-      zoom_deactive_r24 = 32,
-      zoom_deactive_r16 = 33,
-    };
-    uint8_t const *pp = image + zoom_top * line_bytes + zoom_left * 3 + 2;
-    for (size_t i = 0; i < zoom_max; ++i) {
-      uint8_t r = *pp;
-      if (r == zoom_active_r24 || r == zoom_active_r16) {
-        ++tmp.zoom_level;
-        pp += 2 * 3;
-        continue;
-      } else if (r == zoom_deactive_r24 || r == zoom_deactive_r16) {
-        break;
+    tmp.zoom_level = aviutl_get_exedit_zoom_level();
+    if (tmp.zoom_level == -1) {
+      enum {
+        zoom_left = 5,
+        zoom_top = 32,
+        zoom_max = 26,
+        zoom_active_r24 = 96,
+        zoom_active_r16 = 99,
+        zoom_deactive_r24 = 32,
+        zoom_deactive_r16 = 33,
+      };
+      tmp.zoom_level = 0;
+      uint8_t const *pp = image + zoom_top * line_bytes + zoom_left * 3 + 2;
+      for (size_t i = 0; i < zoom_max; ++i) {
+        uint8_t r = *pp;
+        if (r == zoom_active_r24 || r == zoom_active_r16) {
+          ++tmp.zoom_level;
+          pp += 2 * 3;
+          continue;
+        } else if (r == zoom_deactive_r24 || r == zoom_deactive_r16) {
+          break;
+        }
+        return err(err_type_gcmz, err_gcmz_failed_to_detect_zoom_level);
       }
-      return err(err_type_gcmz, err_gcmz_failed_to_detect_zoom_level);
     }
   }
 

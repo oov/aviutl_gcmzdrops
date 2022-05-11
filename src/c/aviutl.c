@@ -8,6 +8,7 @@
 static FILTER const *g_fp = NULL;
 static void *g_editp = NULL;
 static HMODULE g_lua51 = NULL;
+static bool g_exedit_is_092 = false;
 
 static FILTER const *g_exedit_fp = NULL;
 static int g_aviutl_patched = aviutl_patched_default;
@@ -177,6 +178,7 @@ NODISCARD static error verify_exedit_version(FILTER const *const exedit_fp) {
   if (major == 0 && minor < 92) {
     goto failed;
   }
+  g_exedit_is_092 = major == 0 && minor == 92;
   return eok();
 
 failed:
@@ -313,6 +315,7 @@ error aviutl_exit(void) {
   }
   g_exedit_fp = NULL;
   g_aviutl_patched = aviutl_patched_default;
+  g_exedit_is_092 = false;
   return eok();
 }
 
@@ -367,6 +370,13 @@ HWND aviutl_get_my_window_must(void) {
     h = GetDesktopWindow();
   }
   return h;
+}
+
+NODISCARD int aviutl_get_exedit_zoom_level(void) {
+  if (g_exedit_is_092 && g_exedit_fp) {
+    return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3fc4);
+  }
+  return -1;
 }
 
 error aviutl_get_sys_info(SYS_INFO *const si) {
