@@ -547,13 +547,26 @@ cleanup:
 }
 
 static int luafn_englishpatched(lua_State *const L) {
-  bool enpatched = false;
-  error err = aviutl_exedit_is_enpatched(&enpatched);
+  int patch = aviutl_patched_default;
+  error err = aviutl_get_patch(&patch);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  lua_pushboolean(L, enpatched);
+  lua_pushboolean(L, patch == aviutl_patched_en);
+
+cleanup:
+  return efailed(err) ? luafn_err(L, err) : 1;
+}
+
+static int luafn_getpatchid(lua_State *const L) {
+  int patch = aviutl_patched_default;
+  error err = aviutl_get_patch(&patch);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  lua_pushinteger(L, patch);
 
 cleanup:
   return efailed(err) ? luafn_err(L, err) : 1;
@@ -1208,6 +1221,9 @@ NODISCARD static error to_codepage(lua_State *const L, int const idx, UINT *cons
     } else if (strcmp(s, "utf16be") == 0) {
       *cp = 1201;
       return eok();
+    } else if (strcmp(s, "ansi") == 0) {
+      *cp = GetACP();
+      return eok();
     }
   }
   return errg(err_fail);
@@ -1657,6 +1673,8 @@ void luafn_register_funcs(lua_State *const L) {
   lua_setfield(L, -2, "findallfile");
   lua_pushcfunction(L, luafn_englishpatched);
   lua_setfield(L, -2, "englishpatched");
+  lua_pushcfunction(L, luafn_getpatchid);
+  lua_setfield(L, -2, "getpatchid");
   lua_pushcfunction(L, luafn_needcopy);
   lua_setfield(L, -2, "needcopy");
   lua_pushcfunction(L, luafn_calchash);

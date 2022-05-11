@@ -10,7 +10,7 @@ static void *g_editp = NULL;
 static HMODULE g_lua51 = NULL;
 
 static FILTER const *g_exedit_fp = NULL;
-static bool g_is_enpatched = false;
+static int g_aviutl_patched = aviutl_patched_default;
 
 NODISCARD static error verify_installation(void) {
   struct wstr path = {0};
@@ -51,9 +51,10 @@ cleanup:
   return err;
 }
 
-NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, bool *const is_enpatched) {
-  static TCHAR const exedit_name_mbcs[] = "\x8a\x67\x92\xa3\x95\xd2\x8f\x57"; // "拡張編集"
-  static TCHAR const enpatched_exedit_name_mbcs[] = "Advanced Editing";
+NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, int *const patched) {
+  static TCHAR const exedit_name_mbcs[] = "\x8a\x67\x92\xa3\x95\xd2\x8f\x57";              // "拡張編集"
+  static TCHAR const zhcn_patched_exedit_name_mbcs[] = "\xc0\xa9\xd5\xb9\xb1\xe0\xbc\xad"; // "扩展编辑"
+  static TCHAR const en_patched_exedit_name_mbcs[] = "Advanced Editing";
 
   *exedit_fp = NULL;
   SYS_INFO si = {0};
@@ -69,16 +70,20 @@ NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, bool *
     }
     if (strcmp(p->name, exedit_name_mbcs) == 0) {
       *exedit_fp = p;
-      *is_enpatched = false;
+      *patched = aviutl_patched_default;
       return eok();
-    } else if (strcmp(p->name, enpatched_exedit_name_mbcs) == 0) {
+    } else if (strcmp(p->name, zhcn_patched_exedit_name_mbcs) == 0) {
       *exedit_fp = p;
-      *is_enpatched = true;
+      *patched = aviutl_patched_zh_cn;
+      return eok();
+    } else if (strcmp(p->name, en_patched_exedit_name_mbcs) == 0) {
+      *exedit_fp = p;
+      *patched = aviutl_patched_en;
       return eok();
     }
   }
   *exedit_fp = NULL;
-  *is_enpatched = false;
+  *patched = aviutl_patched_default;
   return err(err_type_gcmz, err_gcmz_exedit_not_found);
 }
 
@@ -245,7 +250,7 @@ void aviutl_set_pointers(FILTER const *fp, void *editp) {
 
 error aviutl_init(void) {
   FILTER const *exedit_fp = NULL;
-  bool is_enpatched = false;
+  int patched = aviutl_patched_default;
   HMODULE lua51 = NULL;
   error err = verify_installation();
   if (efailed(err)) {
@@ -257,7 +262,7 @@ error aviutl_init(void) {
     err = ethru(err);
     goto cleanup;
   }
-  err = find_exedit_filter(&exedit_fp, &is_enpatched);
+  err = find_exedit_filter(&exedit_fp, &patched);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -287,7 +292,7 @@ error aviutl_init(void) {
     goto cleanup;
   }
   g_exedit_fp = exedit_fp;
-  g_is_enpatched = is_enpatched;
+  g_aviutl_patched = patched;
   g_lua51 = lua51;
   lua51 = NULL;
 
@@ -307,18 +312,18 @@ error aviutl_exit(void) {
     g_lua51 = NULL;
   }
   g_exedit_fp = NULL;
-  g_is_enpatched = false;
+  g_aviutl_patched = aviutl_patched_default;
   return eok();
 }
 
-error aviutl_exedit_is_enpatched(bool *const enpatched) {
-  if (!enpatched) {
+NODISCARD error aviutl_get_patch(int *const patched) {
+  if (!patched) {
     return errg(err_null_pointer);
   }
   if (!aviutl_initalized()) {
     return errg(err_unexpected);
   }
-  *enpatched = g_is_enpatched;
+  *patched = g_aviutl_patched;
   return eok();
 }
 

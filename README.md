@@ -201,6 +201,10 @@ int main(){
       // 英語化パッチが当たっている拡張編集だった
       printf("  English Patched\n");
     }
+    if (p->Flags & 2) {
+      // 中国語簡体字パッチが当たっている拡張編集だった
+      printf("  Simplified Chinese Patched\n");
+    }
   }
 
   // GCMZAPIVer が 0 のときは対応しない　※API 仕様が異なります

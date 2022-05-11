@@ -271,7 +271,10 @@ NODISCARD static error files_add_text_file(struct files *const files, struct wst
     err = ethru(err);
     goto cleanup;
   }
-  wchar_t const *const mime = GetACP() == 932 ? L"text/plain; charset=Shift_JIS" : L"text/plain";
+  // I want to make it clear that it is encoded in the active code page,
+  // but I don't have a good way to do it, so I do it in my own notation.
+  // In Japanese, return the same notation as before for backward compatibility.
+  wchar_t const *const mime = GetACP() == 932 ? L"text/plain; charset=Shift_JIS" : L"text/plain; x-gcmz-charset=ACP";
   err = files_add_temp_file(files, L"temp", L".txt", mime, s.ptr, s.len);
   if (efailed(err)) {
     err = ethru(err);

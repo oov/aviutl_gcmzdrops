@@ -625,8 +625,8 @@ error gcmz_confirm(struct wstr const *const caption, bool *const result) {
   return errg(err_not_implemented_yet);
 }
 
-error aviutl_exedit_is_enpatched(bool *const enpatched) {
-  *enpatched = false;
+error aviutl_get_patch(int *const patch) {
+  *patch = aviutl_patched_default;
   return eok();
 }
 

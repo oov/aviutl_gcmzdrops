@@ -9,9 +9,13 @@ P.name = "テキストファイルを Shift_JIS に自動変換"
 P.priority = 99999
 
 function P.ondragenter(files, state)
+  if GCMZDrops.getpatchid() ~= 0 then
+    -- 翻訳パッチが適用されている環境では適用しないようにする
+    return false
+  end
   for i, v in ipairs(files) do
-    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS") then
-      -- ファイルの拡張子が txt で mediatype で Shift_JIS だという事が明示されていなければ調査する必要があるので true
+    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
+      -- ファイルの拡張子が txt で mediatype で Shift_JIS またはアクティブなコードページだという事が明示されていなければ調査する必要があるので true
       return true
     end
   end
@@ -28,8 +32,7 @@ end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
-      -- ファイルの拡張子が txt で mediatype で Shift_JIS だという事が明示されていなければ調査する必要があるので true
-    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS") then
+    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
       -- ファイルを全部読み込む
       local f, err = io.open(v.filepath, "rb")
       if f == nil then

@@ -514,14 +514,19 @@ error api_update_mapped_data(struct api *const api) {
 
   {
     uint32_t flags = 0;
-    bool enpatched = false;
-    err = aviutl_exedit_is_enpatched(&enpatched);
+    int patch = false;
+    err = aviutl_get_patch(&patch);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
     }
-    if (enpatched) {
+    switch (patch) {
+    case aviutl_patched_en:
       flags |= 1;
+      break;
+    case aviutl_patched_zh_cn:
+      flags |= 2;
+      break;
     }
     d.flags = flags;
   }
