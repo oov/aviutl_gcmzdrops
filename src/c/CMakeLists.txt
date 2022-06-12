@@ -100,6 +100,7 @@ foreach(target ${targets})
     -Werror=return-type
     -pedantic-errors
     -Wno-declaration-after-statement
+    -Wno-padded
     -ffunction-sections
     -fdata-sections
     $<$<CONFIG:Debug>:-O0>
