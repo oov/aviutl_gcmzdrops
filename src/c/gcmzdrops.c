@@ -288,7 +288,7 @@ cleanup:
 
 static void wndproc_drag_enter(struct files *const f, struct drag_drop_info *const ddi) {
   wchar_t const *msg = NULL;
-  error err = lua_init(&g_lua);
+  error err = lua_init(&g_lua, true);
   if (efailed(err)) {
     msg = L"Lua スクリプトの初期化中にエラーが発生しました。";
     err = ethru(err);
@@ -431,7 +431,7 @@ static void drop_callback(struct files *const f, struct drag_drop_info *const dd
 static LRESULT popup_callback(struct scpopup *const p, POINT pt) {
   struct lua lua = {0};
   struct scpopup_menu m = {0};
-  error err = lua_init(&lua);
+  error err = lua_init(&lua, true);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -627,7 +627,7 @@ NODISCARD static error process_api(struct api_request_params const *const params
     pt.y += (params->layer - 1 - pos) * ai.layer_height;
   }
 
-  err = lua_init(&lua);
+  err = lua_init(&lua, true);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;

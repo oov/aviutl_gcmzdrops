@@ -187,7 +187,7 @@ cleanup:
   return err;
 }
 
-error lua_init(struct lua *const l) {
+error lua_init(struct lua *const l, bool const call_entrypoint) {
   if (!l) {
     return errg(err_invalid_arugment);
   }
@@ -217,13 +217,13 @@ error lua_init(struct lua *const l) {
     err = ethru(err);
     goto cleanup;
   }
-
-  err = execute_entrypoint(l, &dir);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
+  if (call_entrypoint) {
+    err = execute_entrypoint(l, &dir);
+    if (efailed(err)) {
+      err = ethru(err);
+      goto cleanup;
+    }
   }
-
 cleanup:
   ereport(sfree(&dir));
   if (efailed(err) && l->L) {
