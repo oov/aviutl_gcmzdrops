@@ -806,7 +806,11 @@ static BOOL wndproc_init(HWND const window) {
 
   err = exoloadhook_create();
   if (efailed(err)) {
-    ereport(err);
+    if (eis(err, err_type_gcmz, err_gcmz_unsupported_exedit_version)) {
+      efree(&err);
+    } else {
+      ereport(err);
+    }
   }
 
   struct drop_target *dt = NULL;

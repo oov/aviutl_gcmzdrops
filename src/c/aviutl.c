@@ -438,7 +438,10 @@ cleanup:
 }
 
 NODISCARD error aviutl_set_exo_load_hook(aviutl_on_exo_load fn, void *userdata) {
-  if (!g_exedit_is_092 || !g_exedit_fp) {
+  if (!g_exedit_fp) {
+    return errg(err_unexpected);
+  }
+  if (!g_exedit_is_092) {
     return err(err_type_gcmz, err_gcmz_unsupported_exedit_version);
   }
   size_t const base_address = (size_t)g_exedit_fp->dll_hinst;
