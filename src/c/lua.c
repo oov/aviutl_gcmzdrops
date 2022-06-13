@@ -103,8 +103,7 @@ NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern
     goto cleanup;
   }
   do {
-    if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0 ||
-        wcscmp(fd.cFileName, L"_entrypoint.lua") == 0 ||
+    if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0 || fd.cFileName[0] == L'_' ||
         (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
       continue;
     }
