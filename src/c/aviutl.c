@@ -379,6 +379,103 @@ NODISCARD int aviutl_get_exedit_zoom_level(void) {
   return -1;
 }
 
+static size_t *g_ptr_1a6b78 = NULL;
+static aviutl_on_exo_load g_on_exo_load_handler = NULL;
+static void *g_on_exo_load_handler_userdata = NULL;
+
+static HANDLE open_file_hook(char const *const filename, bool const is_exa) {
+  struct str dest_filename = {0};
+  error err = eok();
+  if (g_on_exo_load_handler) {
+    err = g_on_exo_load_handler(filename, &dest_filename, is_exa, g_on_exo_load_handler_userdata);
+    if (efailed(err)) {
+      err = ethru(err);
+      goto cleanup;
+    }
+  }
+cleanup:
+  *g_ptr_1a6b78 = 0x1000;
+  HANDLE h = CreateFileA(dest_filename.ptr ? dest_filename.ptr : filename,
+                         GENERIC_READ,
+                         0,
+                         NULL,
+                         OPEN_EXISTING,
+                         FILE_ATTRIBUTE_NORMAL,
+                         NULL);
+  ereport(sfree(&dest_filename));
+  ereport(err);
+  return h;
+}
+
+static HANDLE open_file_hook_exo(char const *const filename) { return open_file_hook(filename, false); }
+
+static HANDLE open_file_hook_exa(char const *const filename) { return open_file_hook(filename, true); }
+
+static NODISCARD error overwrite_call(void *addr, size_t const addr_old, size_t const addr_new) {
+  error err = eok();
+  DWORD old_protect = 0;
+  if (!VirtualProtect(addr, 5, PAGE_EXECUTE_READWRITE, &old_protect)) {
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
+    return err;
+  }
+  uint8_t *code = addr;
+  if (*code != 0xe8) {
+    err = errg(err_unexpected);
+    goto cleanup;
+  }
+  size_t *call_addr = (void *)(code + 1);
+  if (*call_addr != addr_old) {
+    err = errg(err_unexpected);
+    goto cleanup;
+  }
+  *call_addr = addr_new;
+cleanup:
+  VirtualProtect(addr, 5, old_protect, &old_protect);
+  if (esucceeded(err)) {
+    FlushInstructionCache(GetCurrentProcess(), addr, 5);
+  }
+  return err;
+}
+
+NODISCARD error aviutl_set_exo_load_hook(aviutl_on_exo_load fn, void *userdata) {
+  if (!g_exedit_is_092 || !g_exedit_fp) {
+    return err(err_type_gcmz, err_gcmz_unsupported_exedit_version);
+  }
+  size_t const base_address = (size_t)g_exedit_fp->dll_hinst;
+  size_t const exo_offset = 0x29225;
+  size_t const exa_offset = 0x29de0;
+  size_t const address_old = 0x4df70;
+  g_ptr_1a6b78 = (size_t *)(base_address + 0x1a6b78);
+  g_on_exo_load_handler = fn;
+  g_on_exo_load_handler_userdata = userdata;
+  error err = overwrite_call((void *)(base_address + exo_offset),
+                             address_old - exo_offset - 5,
+                             (size_t)(open_file_hook_exo)-base_address - exo_offset - 5);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  err = overwrite_call((void *)(base_address + exa_offset),
+                       address_old - exa_offset - 5,
+                       (size_t)(open_file_hook_exa)-base_address - exa_offset - 5);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+cleanup:
+  if (efailed(err)) {
+    error err2 = overwrite_call((void *)(base_address + exa_offset),
+                                (size_t)(open_file_hook_exa)-base_address - exa_offset - 5,
+                                address_old - exa_offset - 5);
+    efree(&err2);
+    err2 = overwrite_call((void *)(base_address + exo_offset),
+                          (size_t)(open_file_hook_exo)-base_address - exo_offset - 5,
+                          address_old - exo_offset - 5);
+    efree(&err2);
+  }
+  return err;
+}
+
 error aviutl_get_sys_info(SYS_INFO *const si) {
   if (!si) {
     return errg(err_null_pointer);

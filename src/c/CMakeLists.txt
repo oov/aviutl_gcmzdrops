@@ -43,6 +43,7 @@ add_library(gcmzdrops_auf SHARED
   datauri.c
   droptarget.c
   error_gcmz.c
+  exoloadhook.c
   files.c
   gcmz.rc
   gcmzdrops.c

@@ -12,6 +12,7 @@
 #include "api.h"
 #include "droptarget.h"
 #include "error_gcmz.h"
+#include "exoloadhook.h"
 #include "gcmzfuncs.h"
 #include "gui.h"
 #include "lua.h"
@@ -803,6 +804,11 @@ static BOOL wndproc_init(HWND const window) {
     return FALSE;
   }
 
+  err = exoloadhook_create();
+  if (efailed(err)) {
+    ereport(err);
+  }
+
   struct drop_target *dt = NULL;
   err = drop_target_new(&dt);
   if (efailed(err)) {
@@ -901,6 +907,7 @@ static BOOL wndproc_exit(void) {
       ereportmsg(errhr(hr), &native_unmanaged(NSTR("ドラッグ＆ドロップハンドラーの登録解除に失敗しました。")));
     }
   }
+  ereport(exoloadhook_destroy());
   ereport(aviutl_exit());
   gui_exit();
   return FALSE;

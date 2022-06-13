@@ -27,6 +27,12 @@ NODISCARD error aviutl_get_my_window(HWND *const h);
 NODISCARD HWND aviutl_get_my_window_must(void);
 NODISCARD int aviutl_get_exedit_zoom_level(void);
 
+typedef NODISCARD error (*aviutl_on_exo_load)(char const *const src_filepath,
+                                              struct str *const dest_filepath,
+                                              bool const is_exa,
+                                              void *userdata);
+NODISCARD error aviutl_set_exo_load_hook(aviutl_on_exo_load fn, void *userdata);
+
 NODISCARD error aviutl_get_sys_info(SYS_INFO *const si);
 NODISCARD error aviutl_get_editing_file_info(FILE_INFO *const fi);
 NODISCARD error aviutl_get_file_info(struct wstr const *const path, FILE_INFO *const fi, int *const samples);
