@@ -29,6 +29,9 @@ on_exo_load(char const *const src_filepath, struct str *const dest_filepath, boo
     err = ethru(err);
     goto cleanup;
   }
+  if (lua_isnil(L, -1)) {
+    goto cleanup;
+  }
   if (!lua_isstring(L, -1)) {
     err = errg(err_unexpected);
     goto cleanup;

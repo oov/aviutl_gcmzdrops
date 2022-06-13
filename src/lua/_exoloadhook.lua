@@ -3,7 +3,14 @@ local P = {}
 local map = require("_transmap").new()
 local iniobj = require("_iniobj")
 
+-- *.exo ファイルや *.exa ファイルの読み込み処理に介入し、
+-- 本家の拡張編集で作成した *.exo/*.exa を翻訳版で読み込めるようにしたり、
+-- 翻訳版で作成した *.exo/*.exa を本家の拡張編集で読み込めるようにする
 function P.on_load(filename, is_exa)
+  if GCMZDrops.getpatchid() == 0 then
+    -- 本家版を使用しているほとんどのユーザーにはこの処理は必要ないので無効化しておく
+    return nil
+  end
   local ini = iniobj.newfile(filename)
   local oini = iniobj.new("")
   for i, sect in ipairs(ini:sections()) do
