@@ -1,9 +1,9 @@
 local P = {}
 
-P.name = "クリップボードから貼\り付け"
+P.name = [=[クリップボードから貼り付け]=]
 
 function P.oninitmenu()
-  return "クリップボードから貼\り付け"
+  return P.name
 end
 
 function P.onselect(index, state)
