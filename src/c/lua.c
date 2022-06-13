@@ -131,21 +131,48 @@ cleanup:
   return err;
 }
 
+NODISCARD error lua_call_function(struct lua *const l, int const num_params, int const num_returns) {
+  if (!l) {
+    return errg(err_invalid_arugment);
+  }
+  lua_State *const L = l->L;
+  error err = pcall(L, num_params, num_returns);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+cleanup:
+  return err;
+}
+
+NODISCARD error lua_require(struct lua *const l, const char *const name) {
+  if (!l || !name) {
+    return errg(err_invalid_arugment);
+  }
+  lua_State *const L = l->L;
+  lua_getglobal(L, "require");
+  lua_pushstring(L, name);
+  error err = pcall(L, 1, 1);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+cleanup:
+  return err;
+}
+
 NODISCARD static error execute_entrypoint(struct lua *const l, struct wstr *const dir) {
   if (!l || !dir) {
     return errg(err_invalid_arugment);
   }
 
   struct wstr pattern = {0};
-  lua_State *const L = l->L;
-
-  lua_getglobal(L, "require");
-  lua_pushstring(L, "_entrypoint");
-  error err = pcall(L, 1, 1);
+  error err = lua_require(l, "_entrypoint");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
+  lua_State *const L = l->L;
   if (!lua_istable(L, -1)) {
     err = errg(err_unexpected);
     goto cleanup;
