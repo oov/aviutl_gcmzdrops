@@ -1,4 +1,5 @@
 -- this file is written in UTF-8 / CRLF.
+-- patchid: 1 - English patched environment
 return {
 
   ["標準描画"] = {

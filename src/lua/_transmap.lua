@@ -6,9 +6,9 @@ P.code_page_table = {
 }
 
 P.translation_table = {
-  -- English patched environment
+  -- patchid: 1 - English patched environment
   [ 1 ] = require("_transmap1"),
-  -- Simplified Chinese patched environment
+  -- patchid: 2 - Simplified Chinese patched environment
   [ 2 ] = require("_transmap2"),
 }
 
