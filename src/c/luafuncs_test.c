@@ -1,4 +1,5 @@
 #include "luafuncs.c"
+#include "luafuncs_convertencoding.c"
 
 #include <combaseapi.h>
 

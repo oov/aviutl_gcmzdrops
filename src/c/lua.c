@@ -8,85 +8,7 @@
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
 #include "luafuncs.h"
-
-static void *lua_alloc(void *const ud, void *ptr, size_t const osize, size_t const nsize) {
-  (void)ud;
-  (void)osize;
-  if (nsize) {
-    if (!ereport(mem(&ptr, nsize, 1))) {
-      return NULL;
-    }
-    return ptr;
-  }
-  ereport(mem_free(&ptr));
-  return NULL;
-}
-
-NODISCARD static error pcall_(lua_State *const L, int const nargs, int const nresults ERR_FILEPOS_PARAMS) {
-  if (lua_pcall(L, nargs, nresults, 0) == 0) {
-    return eok();
-  }
-  struct wstr trace = {0};
-  error err = luafn_towstr(L, -1, &trace);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  return error_add_(NULL, err_type_gcmz, err_gcmz_lua, &trace ERR_FILEPOS_VALUES_PASSTHRU);
-
-failed:
-  ereport(sfree(&trace));
-  efree(&err);
-  return emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("エラーメッセージの組み立てに失敗しました。")));
-}
-#define pcall(L, nargs, nresults) (pcall_((L), (nargs), (nresults)ERR_FILEPOS_VALUES))
-
-NODISCARD static error add_include_path(lua_State *const L, struct wstr *const dir) {
-  if (!L || !dir) {
-    return errg(err_invalid_arugment);
-  }
-  struct wstr tmp = {0};
-  lua_getglobal(L, "package");
-  error err = scpy(&tmp, dir->ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = include_trailing_path_delimiter(&tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scat(&tmp, L"?.lua;");
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = luafn_push_wstr(L, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  lua_getfield(L, -2, "path");
-  lua_concat(L, 2);
-  lua_setfield(L, -2, "path");
-  tmp.ptr[tmp.len - 4] = L'd';
-  tmp.ptr[tmp.len - 3] = L'l';
-  tmp.ptr[tmp.len - 2] = L'l';
-  err = luafn_push_wstr(L, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  lua_getfield(L, -2, "cpath");
-  lua_concat(L, 2);
-  lua_setfield(L, -2, "cpath");
-  lua_pop(L, 1);
-
-cleanup:
-  ereport(sfree(&tmp));
-  return err;
-}
+#include "luautil.h"
 
 NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern) {
   if (!L || !pattern) {
@@ -116,7 +38,7 @@ NODISCARD static error push_files(lua_State *const L, struct wstr *const pattern
     }
     ws.len = extpos;
     ws.ptr[extpos] = L'\0';
-    err = luafn_push_wstr(L, &ws);
+    err = luautil_push_wstr(L, &ws);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -131,48 +53,18 @@ cleanup:
   return err;
 }
 
-NODISCARD error lua_call_function(struct lua *const l, int const num_params, int const num_returns) {
-  if (!l) {
-    return errg(err_invalid_arugment);
-  }
-  lua_State *const L = l->L;
-  error err = pcall(L, num_params, num_returns);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-cleanup:
-  return err;
-}
-
-NODISCARD error lua_require(struct lua *const l, const char *const name) {
-  if (!l || !name) {
-    return errg(err_invalid_arugment);
-  }
-  lua_State *const L = l->L;
-  lua_getglobal(L, "require");
-  lua_pushstring(L, name);
-  error err = pcall(L, 1, 1);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-cleanup:
-  return err;
-}
-
 NODISCARD static error execute_entrypoint(struct lua *const l, struct wstr *const dir) {
   if (!l || !dir) {
     return errg(err_invalid_arugment);
   }
 
   struct wstr pattern = {0};
-  error err = lua_require(l, "_entrypoint");
+  lua_State *const L = l->L;
+  error err = luautil_require(L, "_entrypoint");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
   }
-  lua_State *const L = l->L;
   if (!lua_istable(L, -1)) {
     err = errg(err_unexpected);
     goto cleanup;
@@ -202,7 +94,7 @@ NODISCARD static error execute_entrypoint(struct lua *const l, struct wstr *cons
     goto cleanup;
   }
 
-  err = pcall(L, 1, 0);
+  err = luautil_pcall(L, 1, 0);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -223,7 +115,7 @@ error lua_init(struct lua *const l, bool const call_entrypoint) {
 
   struct wstr dir = {0};
   error err = eok();
-  l->L = lua_newstate(lua_alloc, NULL);
+  l->L = lua_newstate(luautil_alloc, NULL);
   if (!l->L) {
     err = errg(err_out_of_memory);
     goto cleanup;
@@ -238,7 +130,7 @@ error lua_init(struct lua *const l, bool const call_entrypoint) {
     goto cleanup;
   }
 
-  err = add_include_path(l->L, &dir);
+  err = luautil_add_include_path(l->L, &dir);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -292,7 +184,7 @@ error lua_dropper_init(struct lua *const l) {
     err = ethru(err);
     goto cleanup;
   }
-  err = add_include_path(L, &dir);
+  err = luautil_add_include_path(L, &dir);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -316,7 +208,7 @@ error lua_dropper_init(struct lua *const l) {
     err = ethru(err);
     goto cleanup;
   }
-  err = pcall(L, 1, 0);
+  err = luautil_pcall(L, 1, 0);
   if (efailed(err)) {
     lua_pop(L, 1);
     err = ethru(err);
@@ -337,7 +229,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
 
   lua_State *const L = l->L;
   lua_getfield(L, 1, "getdroppermenuitems");
-  error err = pcall(L, 0, 1);
+  error err = luautil_pcall(L, 0, 1);
   struct wstr ws = {0};
   if (efailed(err)) {
     err = ethru(err);
@@ -352,7 +244,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
       continue;
     }
     if (lua_isstring(L, -1)) {
-      err = luafn_towstr(L, -1, &ws);
+      err = luautil_towstr(L, -1, &ws);
       if (efailed(err)) {
         err = ethru(err);
         goto cleanup;
@@ -377,7 +269,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
         continue;
       }
       lua_getfield(L, -1, "name");
-      err = luafn_towstr(L, -1, &ws);
+      err = luautil_towstr(L, -1, &ws);
       if (efailed(err)) {
         err = ethru(err);
         goto cleanup;
@@ -396,7 +288,7 @@ error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const men
       ws = (struct wstr){0};
       for (int j = 1; j <= m; ++j) {
         lua_rawgeti(L, -1, j);
-        err = luafn_towstr(L, -1, &ws);
+        err = luautil_towstr(L, -1, &ws);
         if (efailed(err)) {
           err = ethru(err);
           goto cleanup;
@@ -449,7 +341,7 @@ error lua_dropper_select(struct lua *const l, HWND const window, POINT const pt,
   lua_setfield(L, -2, "y");
   lua_pushinteger(L, (lua_Integer)window);
   lua_setfield(L, -2, "parent");
-  error err = pcall(L, 3, 2);
+  error err = luautil_pcall(L, 3, 2);
   if (efailed(err)) {
     return err;
   }
@@ -478,7 +370,7 @@ error lua_call_on_drag_enter(struct lua *const l,
     err = ethru(err);
     return err;
   }
-  err = pcall(L, 2, 1);
+  err = luautil_pcall(L, 2, 1);
   if (efailed(err)) {
     err = ethru(err);
     return err;
@@ -513,7 +405,7 @@ error lua_call_on_drag_over(struct lua *const l,
     err = ethru(err);
     return err;
   }
-  err = pcall(L, 2, 1);
+  err = luautil_pcall(L, 2, 1);
   if (efailed(err)) {
     err = ethru(err);
     return err;
@@ -533,7 +425,7 @@ error lua_call_on_drag_leave(struct lua *const l) {
 
   lua_State *const L = l->L;
   lua_getfield(L, 1, "ondragleave");
-  error err = pcall(L, 0, 0);
+  error err = luautil_pcall(L, 0, 0);
   if (efailed(err)) {
     err = ethru(err);
     return err;
@@ -566,7 +458,7 @@ error lua_call_on_drop(struct lua *const l,
   }
   lua_pushinteger(L, frame_advance);
   lua_setfield(L, -2, "frameadvance");
-  err = pcall(L, 2, 1);
+  err = luautil_pcall(L, 2, 1);
   if (efailed(err)) {
     err = ethru(err);
     return err;
@@ -604,7 +496,7 @@ error lua_call_on_drop_simulated(struct lua *const l,
   }
   lua_pushinteger(L, frame_advance);
   lua_setfield(L, -2, "frameadvance");
-  err = pcall(L, 2, 1);
+  err = luautil_pcall(L, 2, 1);
   if (efailed(err)) {
     err = ethru(err);
     return err;

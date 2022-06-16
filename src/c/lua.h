@@ -16,8 +16,6 @@ struct lua {
 
 NODISCARD error lua_init(struct lua *const l, bool const call_entrypoint);
 NODISCARD error lua_exit(struct lua *const l);
-NODISCARD error lua_call_function(struct lua *const l, int const num_params, int const num_results);
-NODISCARD error lua_require(struct lua *const l, const char *const name);
 NODISCARD error lua_dropper_init(struct lua *const l);
 NODISCARD error lua_dropper_build_menu(struct lua *const l, struct scpopup_menu *const m);
 NODISCARD error lua_dropper_select(struct lua *const l, HWND const window, POINT const pt, UINT_PTR const selected);

@@ -37,6 +37,29 @@ list(APPEND targets crc64)
 add_library(detect STATIC 3rd/detect/detect.c)
 list(APPEND targets detect)
 
+add_executable(gentransmap error_gcmz.c luafuncs_convertencoding.c luautil.c util/gentransmap.c)
+set_target_properties(gentransmap PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
+)
+list(APPEND targets gentransmap)
+add_custom_target(generate_transmap
+  COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/src/lua/_iniobj.lua" "_iniobj.lua"
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/gentransmap.lua" "gentransmap.lua"
+  # Pending until the Simplified Chinese version of the exo file is ready.
+  # COMMAND
+  #   "gentransmap.exe"
+  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
+  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/1.exo" 932
+  #   "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap1.lua"
+  # COMMAND
+  #   "gentransmap.exe"
+  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
+  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/2.exo" 936
+  #   "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap2.lua"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
+)
+add_dependencies(generate_transmap gentransmap copy_related_files)
+
 add_library(gcmzdrops_auf SHARED
   api.c
   aviutl.c
@@ -51,6 +74,8 @@ add_library(gcmzdrops_auf SHARED
   gui.c
   lua.c
   luafuncs.c
+  luafuncs_convertencoding.c
+  luautil.c
   main.c
   scpopup.c
   sniffer.c
@@ -62,14 +87,17 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_importlib copy_related_files)
+add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_importlib copy_related_files generate_transmap)
 list(APPEND targets gcmzdrops_auf)
+target_link_options(gcmzdrops_auf PRIVATE
+  -Wl,-delayload,lua51.dll
+)
 
 add_executable(datauri_test error_gcmz.c sniffer.c datauri_test.c)
 list(APPEND targets datauri_test)
 add_executable(gcmzfuncs_test error_gcmz.c task.c gcmzfuncs_test.c)
 list(APPEND targets gcmzfuncs_test)
-add_executable(luafuncs_test error_gcmz.c files.c luafuncs_test.c)
+add_executable(luafuncs_test error_gcmz.c files.c luautil.c luafuncs_test.c)
 list(APPEND targets luafuncs_test)
 
 foreach(target ${targets})
@@ -110,7 +138,6 @@ foreach(target ${targets})
   )
   target_link_options(${target} PRIVATE
     -fuse-ld=lld
-    -Wl,-delayload,lua51.dll
     -Wl,--gc-sections
     # -Wl,--print-gc-sections
     --rtlib=compiler-rt

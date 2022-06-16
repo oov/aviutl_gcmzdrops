@@ -3,6 +3,7 @@
 #include "aviutl.h"
 #include "files.h"
 #include "lua.h"
+#include "luautil.h"
 #include "task.h"
 
 static struct lua g_lua = {0};
@@ -24,7 +25,7 @@ on_exo_load(char const *const src_filepath, struct str *const dest_filepath, boo
   }
   lua_pushstring(L, src_filepath);
   lua_pushboolean(L, is_exa ? 1 : 0);
-  err = lua_call_function(&g_lua, 2, 1);
+  err = luautil_call_function(L, 2, 1);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -53,7 +54,7 @@ NODISCARD error exoloadhook_create(void) {
     err = ethru(err);
     goto cleanup;
   }
-  err = lua_require(&g_lua, "_exoloadhook");
+  err = luautil_require(g_lua.L, "_exoloadhook");
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
