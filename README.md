@@ -297,6 +297,11 @@ FAQ
 ごちゃまぜドロップスは [MSYS2](https://www.msys2.org/) + MINGW32 上で開発しています。  
 ビルド方法や必要になるパッケージなどは [GitHub Actions の設定ファイル](https://github.com/oov/aviutl_gcmzdrops/blob/main/.github/workflows/releaser.yml) を参考にしてください。
 
+Contributors
+------------
+
+- Nsyw
+
 Credits
 -------
 
