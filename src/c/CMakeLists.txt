@@ -42,6 +42,7 @@ set_target_properties(gentransmap PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
 )
 list(APPEND targets gentransmap)
+add_dependencies(gentransmap generate_version_h)
 add_custom_target(generate_transmap
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/src/lua/_iniobj.lua" "_iniobj.lua"
   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/gentransmap.lua" "gentransmap.lua"
