@@ -45,17 +45,16 @@ list(APPEND targets gentransmap)
 add_custom_target(generate_transmap
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/src/lua/_iniobj.lua" "_iniobj.lua"
   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/gentransmap.lua" "gentransmap.lua"
-  # Pending until the Simplified Chinese version of the exo file is ready.
-  # COMMAND
-  #   "gentransmap.exe"
-  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
-  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/1.exo" 932
-  #   "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap1.lua"
-  # COMMAND
-  #   "gentransmap.exe"
-  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
-  #   "${CMAKE_CURRENT_SOURCE_DIR}/util/2.exo" 936
-  #   "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap2.lua"
+  COMMAND
+    "gentransmap"
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/1.exo" 932
+    "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap1.lua"
+  COMMAND
+    "gentransmap"
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/2.exo" 936
+    "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap2.lua"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
 )
 add_dependencies(generate_transmap gentransmap copy_related_files)
