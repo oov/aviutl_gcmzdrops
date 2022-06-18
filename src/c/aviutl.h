@@ -26,6 +26,7 @@ NODISCARD HWND aviutl_get_exedit_window_must(void);
 NODISCARD error aviutl_get_my_window(HWND *const h);
 NODISCARD HWND aviutl_get_my_window_must(void);
 NODISCARD int aviutl_get_exedit_zoom_level(void);
+NODISCARD int aviutl_get_exedit_layer_height(void);
 
 typedef NODISCARD error (*aviutl_on_exo_load)(char const *const src_filepath,
                                               struct str *const dest_filepath,

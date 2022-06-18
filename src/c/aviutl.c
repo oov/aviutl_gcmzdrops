@@ -379,6 +379,13 @@ NODISCARD int aviutl_get_exedit_zoom_level(void) {
   return -1;
 }
 
+NODISCARD int aviutl_get_exedit_layer_height(void) {
+  if (g_exedit_is_092 && g_exedit_fp) {
+    return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3e20);
+  }
+  return -1;
+}
+
 static size_t *g_ptr_1a6b78 = NULL;
 static aviutl_on_exo_load g_on_exo_load_handler = NULL;
 static void *g_on_exo_load_handler_userdata = NULL;

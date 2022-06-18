@@ -545,28 +545,31 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
   }
 
   {
-    enum {
-      layer_left = 0,
-      layer_top = 42,
-    };
-    uint8_t const *pp = image + layer_top * line_bytes + layer_left * 3;
-    uint8_t const tb = pp[0], tg = pp[1], tr = pp[2];
-    {
-      uint8_t const *bp = pp - line_bytes;
-      if (bp[0] == tb && bp[1] == tg && bp[2] == tr) {
+    tmp.layer_height = aviutl_get_exedit_layer_height();
+    if (tmp.layer_height == -1) {
+      enum {
+        layer_left = 0,
+        layer_top = 42,
+      };
+      uint8_t const *pp = image + layer_top * line_bytes + layer_left * 3;
+      uint8_t const tb = pp[0], tg = pp[1], tr = pp[2];
+      {
+        uint8_t const *bp = pp - line_bytes;
+        if (bp[0] == tb && bp[1] == tg && bp[2] == tr) {
+          return err(err_type_gcmz, err_gcmz_failed_to_detect_layer_height);
+        }
+      }
+      size_t i = 0;
+      while (i < height - layer_top && pp[0] == tb && pp[1] == tg && pp[2] == tr) {
+        ++i;
+        pp += line_bytes;
+      }
+      if (i >= height - layer_top) {
+        // Failed because it may have overflowed the screen.
         return err(err_type_gcmz, err_gcmz_failed_to_detect_layer_height);
       }
+      tmp.layer_height = (int)i + 1;
     }
-    size_t i = 0;
-    while (i < height - layer_top && pp[0] == tb && pp[1] == tg && pp[2] == tr) {
-      ++i;
-      pp += line_bytes;
-    }
-    if (i >= height - layer_top) {
-      // Failed because it may have overflowed the screen.
-      return err(err_type_gcmz, err_gcmz_failed_to_detect_layer_height);
-    }
-    tmp.layer_height = (int)i + 1;
   }
 
   {
