@@ -373,17 +373,35 @@ HWND aviutl_get_my_window_must(void) {
 }
 
 NODISCARD int aviutl_get_exedit_zoom_level(void) {
-  if (g_exedit_is_092 && g_exedit_fp) {
-    return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3fc4);
+  if (!g_exedit_fp || !g_exedit_is_092) {
+    return -1;
   }
-  return -1;
+  return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3fc4);
 }
 
 NODISCARD int aviutl_get_exedit_layer_height(void) {
-  if (g_exedit_is_092 && g_exedit_fp) {
-    return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3e20);
+  if (!g_exedit_fp || !g_exedit_is_092) {
+    return -1;
   }
-  return -1;
+  return *(int *)((size_t)(g_exedit_fp->dll_hinst) + 0xa3e20);
+}
+
+NODISCARD int aviutl_get_exedit_edit_cursor_position(POINT *const pt) {
+  if (!g_exedit_fp || !g_exedit_is_092) {
+    return -1;
+  }
+  uint8_t const *const caption_width = (uint8_t *)((size_t)(g_exedit_fp->dll_hinst) + 0x32b74);
+  uint8_t const *const ruler_height = (uint8_t *)((size_t)(g_exedit_fp->dll_hinst) + 0x32c14);
+  if (caption_width[0] != 0x83 || caption_width[1] != 0xc0 || ruler_height[0] != 0x83 || ruler_height[1] != 0xc0) {
+    return -1;
+  }
+  double const *const scale = (double *)((size_t)(g_exedit_fp->dll_hinst) + 0x09a548);
+  int const *const rate = (int *)((size_t)(g_exedit_fp->dll_hinst) + 0x0a3fc8);
+  int const *const scroll_offset = (int *)((size_t)(g_exedit_fp->dll_hinst) + 0x1a52f0);
+  int const *const cursor_frame = (int *)((size_t)(g_exedit_fp->dll_hinst) + 0x1a5304);
+  pt->x = (int)((*cursor_frame - *scroll_offset) * *rate / *scale) + 0x100 - caption_width[2];
+  pt->y = 0x100 - ruler_height[2] + 8;
+  return 0;
 }
 
 static size_t *g_ptr_1a6b78 = NULL;

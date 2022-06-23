@@ -25,9 +25,15 @@ NODISCARD static error get_message(int const code, struct NATIVE_STR *const mess
     return scpy(message, GCMZDROPS_NAME_WIDE L"の古いバージョンである oledd.auf とは共存できません。");
 
   case err_gcmz_failed_to_detect_zoom_level:
-    return scpy(message, NSTR("拡張編集タイムラインの拡大率検出に失敗しました。\r\n見た目をカスタマイズするようなプラグインを導入している場合、それが原因でこのエラーが発生することがあります。"));
+    return scpy(message,
+                NSTR("拡張編集タイムラインの拡大率検出に失敗しました。\r\n"
+                     "見た目をカスタマイズするようなプラグインを導入している場合、"
+                     "それが原因でこのエラーが発生することがあります。"));
   case err_gcmz_failed_to_detect_layer_height:
-    return scpy(message, NSTR("拡張編集ウィンドウのレイヤーの高さ検出に失敗しました。\r\n見た目をカスタマイズするようなプラグインを導入している場合、それが原因でこのエラーが発生することがあります。"));
+    return scpy(message,
+                NSTR("拡張編集ウィンドウのレイヤーの高さ検出に失敗しました。\r\n"
+                     "見た目をカスタマイズするようなプラグインを導入している場合、"
+                     "それが原因でこのエラーが発生することがあります。"));
   case err_gcmz_exists_different_hash_value_file:
     return scpy(message,
                 NSTR("保存先フォルダーに内容の異なるファイルが既に存在しているためファイルを保存できません。"));

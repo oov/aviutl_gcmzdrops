@@ -573,29 +573,31 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
   }
 
   {
-    enum {
-      timeline_left = 64,
-      timeline_header_top = 13,
-      timeline_top = 48,
-      // consider the case where timeline end line(#a0a0a0) and cursor overlap.
-      eb24 = 255 - 160,
-      eg24 = 255 - 160,
-      er24 = 160,
-      eb16 = 255 - 165,
-      eg16 = 255 - 162,
-      er16 = 165,
-    };
-    uint8_t const *pp = image + timeline_header_top * line_bytes + timeline_left * 3;
-    uint8_t const tb = 255 - pp[-3], tg = 255 - pp[-2], tr = pp[-1];
-    size_t const w = width - timeline_left;
-    for (size_t i = 0; i < w; ++i) {
-      uint8_t const b = pp[0], g = pp[1], r = pp[2];
-      if ((b == tb && g == tg && r == tr) || (b == eb24 && g == eg24 && r == er24) ||
-          (b == eb16 && g == eg16 && r == er16)) {
-        tmp.edit_cursor = (POINT){(LONG)(timeline_left + i), timeline_top};
-        break;
+    if (aviutl_get_exedit_edit_cursor_position(&tmp.edit_cursor) == -1) {
+      enum {
+        timeline_left = 64,
+        timeline_header_top = 13,
+        timeline_top = 48,
+        // consider the case where timeline end line(#a0a0a0) and cursor overlap.
+        eb24 = 255 - 160,
+        eg24 = 255 - 160,
+        er24 = 160,
+        eb16 = 255 - 165,
+        eg16 = 255 - 162,
+        er16 = 165,
+      };
+      uint8_t const *pp = image + timeline_header_top * line_bytes + timeline_left * 3;
+      uint8_t const tb = 255 - pp[-3], tg = 255 - pp[-2], tr = pp[-1];
+      size_t const w = width - timeline_left;
+      for (size_t i = 0; i < w; ++i) {
+        uint8_t const b = pp[0], g = pp[1], r = pp[2];
+        if ((b == tb && g == tg && r == tr) || (b == eb24 && g == eg24 && r == er24) ||
+            (b == eb16 && g == eg16 && r == er16)) {
+          tmp.edit_cursor = (POINT){(LONG)(timeline_left + i), timeline_top};
+          break;
+        }
+        pp += 3;
       }
-      pp += 3;
     }
   }
 

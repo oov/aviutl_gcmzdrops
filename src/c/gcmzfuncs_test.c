@@ -509,6 +509,10 @@ error aviutl_get_exedit_window(HWND *h) {
 
 NODISCARD int aviutl_get_exedit_zoom_level(void) { return -1; }
 NODISCARD int aviutl_get_exedit_layer_height(void) { return -1; }
+NODISCARD int aviutl_get_exedit_edit_cursor_position(POINT *const pt) {
+  (void)pt;
+  return -1;
+}
 
 error aviutl_get_frame(int *f) {
   (void)f;
