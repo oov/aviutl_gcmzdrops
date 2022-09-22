@@ -369,7 +369,7 @@ error gcmz_advance_frame(int const n) {
   }
 
   frame += n;
-  if (frame > frame_n) {
+  if (frame >= frame_n) {
     int new_frame_n = frame + 1;
     err = aviutl_set_frame_n(&new_frame_n);
     if (efailed(err)) {
