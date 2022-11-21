@@ -418,11 +418,9 @@ create_drop_data(HWND const window, POINT const pt, struct wstr const *const *co
   DROPFILES *df = NULL;
   error err = eok();
   size_t filepath_bytes = sizeof(wchar_t);
-  DWORD files = 0;
   for (size_t i = 0; filepath[i] != NULL; ++i) {
     struct wstr const *const f = filepath[i];
     filepath_bytes += (f->len + 1) * sizeof(wchar_t);
-    ++files;
   }
   h = GlobalAlloc(GMEM_ZEROINIT, sizeof(DROPFILES) + filepath_bytes);
   if (!h) {
