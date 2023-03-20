@@ -89,6 +89,8 @@ NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, int *c
 }
 
 NODISCARD static error find_blocked_filter(void) {
+  // "Subtitle Assist" and the very old version of "GCMZDrops" are unlikely to be used in the translation patched
+  // AviUtl, so this block processing does not support them.
   static TCHAR const extext_name_mbcs[] = "\x8e\x9a\x96\x8b\x83\x41\x83\x56\x83\x58\x83\x67"; // "字幕アシスト"
   static TCHAR const gcmzdrops_name_mbcs[] =
       "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"; // "ごちゃまぜドロップス"
