@@ -1,3 +1,4 @@
+option(USE_COMPILER_RT "use compiler-rt runtime" OFF)
 add_compile_options(-flto)
 add_link_options(-fuse-ld=lld)
 
@@ -100,6 +101,8 @@ list(APPEND targets gcmzfuncs_test)
 add_executable(luafuncs_test error_gcmz.c files.c luautil.c luafuncs_test.c)
 list(APPEND targets luafuncs_test)
 
+set(is_clang "$<C_COMPILER_ID:Clang>")
+set(v16_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>")
 foreach(target ${targets})
   if(target MATCHES "_test$")
     add_test(NAME ${target} COMMAND ${target})
@@ -119,7 +122,7 @@ foreach(target ${targets})
     $<$<CONFIG:Release>:NDEBUG>
   )
   target_compile_options(${target} PRIVATE
-    --rtlib=compiler-rt
+  $<$<AND:$<BOOL:${WIN32}>,$<BOOL:${USE_COMPILER_RT}>>:--rtlib=compiler-rt>
     -mstackrealign
     -Wall
     -Wextra
@@ -130,6 +133,7 @@ foreach(target ${targets})
     -pedantic-errors
     -Wno-declaration-after-statement
     -Wno-padded
+    $<$<AND:${is_clang},${v16_or_later}>:-Wno-unsafe-buffer-usage>
     -ffunction-sections
     -fdata-sections
     $<$<CONFIG:Debug>:-O0>
