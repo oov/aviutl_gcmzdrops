@@ -4,6 +4,7 @@
 #include "ovutil/win32.h"
 
 #include "error_gcmz.h"
+#include "i18n.h"
 
 static FILTER const *g_fp = NULL;
 static void *g_editp = NULL;
@@ -89,8 +90,8 @@ NODISCARD static error find_exedit_filter(FILTER const **const exedit_fp, int *c
 }
 
 NODISCARD static error find_blocked_filter(void) {
-  // "Subtitle Assist" and the very old version of "GCMZDrops" are unlikely to be used in the translation patched
-  // AviUtl, so this block processing does not support them.
+  // extext.auf and the oledd.auf are unlikely to be used in the translation patched AviUtl,
+  // so this block processing does not support them.
   static TCHAR const extext_name_mbcs[] = "\x8e\x9a\x96\x8b\x83\x41\x83\x56\x83\x58\x83\x67"; // "字幕アシスト"
   static TCHAR const gcmzdrops_name_mbcs[] =
       "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"; // "ごちゃまぜドロップス"
@@ -347,7 +348,7 @@ HWND aviutl_get_exedit_window_must(void) {
   HWND h = NULL;
   error err = aviutl_get_exedit_window(&h);
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("拡張編集のウィンドウハンドルが取得できませんでした。")));
+    ereportmsg_i18n(err, gettext("Failed to obtain the window handle for Advanced Editing."));
     h = GetDesktopWindow();
   }
   return h;
@@ -368,7 +369,7 @@ HWND aviutl_get_my_window_must(void) {
   HWND h = NULL;
   error err = aviutl_get_my_window(&h);
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("フィルターのウィンドウハンドルが取得できませんでした。")));
+    ereportmsg_i18n(err, gettext("Failed to obtain my filter window handle."));
     h = GetDesktopWindow();
   }
   return h;

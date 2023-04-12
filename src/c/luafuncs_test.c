@@ -2,6 +2,8 @@
 #include "luafuncs_convertencoding.c"
 
 #include <combaseapi.h>
+#include <lua5.1/lauxlib.h>
+#include <lua5.1/lualib.h>
 
 NODISCARD static error get_test_dir(struct wstr *dest) {
   struct wstr tmp = {0};
@@ -562,6 +564,54 @@ static void test_convertencoding(void) {
   ereport(sfree(&tmp));
 }
 
+static void test_get_preferred_language(void) {
+  lua_State *L = luaL_newstate();
+  luaL_openlibs(L);
+  lua_register(L, "get_preferred_language", luafn_get_preferred_language);
+  if (!TEST_CHECK(!luaL_dostring(L, "ret = get_preferred_language()"))) {
+    TEST_MSG("%s", lua_tostring(L, -1));
+    return;
+  }
+  lua_getglobal(L, "ret");
+  TEST_CHECK(lua_type(L, -1) == LUA_TTABLE);
+  TEST_CHECK(lua_objlen(L, -1) > 0);
+  lua_close(L);
+}
+
+static void test_choose_language(void) {
+  static const struct test_data {
+    char const *script;
+    int ret;
+  } test_data[] = {
+      {
+          .script = "ret = choose_language({'ja_JP', 'en_US'}, {'zh_CN', 'en_US'})",
+          .ret = 2,
+      },
+      {
+          .script = "ret = choose_language({'ja_JP', 'en_US'}, {'zh_CN', 'zh_TW'})",
+          .ret = 1,
+      },
+  };
+  lua_State *L = luaL_newstate();
+  luaL_openlibs(L);
+  lua_register(L, "choose_language", luafn_choose_language);
+  size_t n = sizeof(test_data) / sizeof(test_data[0]);
+  for (size_t i = 0; i < n; ++i) {
+    struct test_data const *const td = test_data + i;
+    TEST_CASE_("test #%d", i);
+    int r = luaL_dostring(L, td->script);
+    if (!TEST_CHECK((td->ret == 0 && r != 0) || (td->ret != 0 && r == 0))) {
+      continue;
+    }
+    lua_getglobal(L, "ret");
+    TEST_CHECK(lua_type(L, -1) == LUA_TNUMBER);
+    TEST_CHECK(lua_tointeger(L, -1) == td->ret);
+    TEST_MSG("want %d, got %d", td->ret, lua_tointeger(L, -1));
+    lua_pop(L, 1);
+  }
+  lua_close(L);
+}
+
 TEST_LIST = {
     {"test_createfile", test_createfile},
     {"test_createfile_failed", test_createfile_failed},
@@ -573,6 +623,8 @@ TEST_LIST = {
     {"test_decode_exo_text", test_decode_exo_text},
     {"test_encode_lua_string", test_encode_lua_string},
     {"test_convertencoding", test_convertencoding},
+    {"test_get_preferred_language", test_get_preferred_language},
+    {"test_choose_language", test_choose_language},
     {NULL, NULL},
 };
 

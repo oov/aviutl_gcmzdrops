@@ -1,21 +1,24 @@
 local P = {}
 
-P.name = [=[Šù‘¶ƒtƒ@ƒCƒ‹‚ÌÄ—˜—p]=]
+P.name = i18n({
+  ja_JP = [=[æ—¢å­˜ãƒ•ã‚¡ã‚¤ãƒ«ã®å†åˆ©ç”¨]=],
+  en_US = [=[Reuse existing files]=],
+})
 
--- ‘¼‚ÌƒXƒNƒŠƒvƒg‚ªˆ—‚µ‚½Œã‚Éƒtƒ@ƒCƒ‹‚ğ·‚µ‘Ö‚¦‚é‚Æ•s“s‡‚ª‚ ‚é‚Ì‚Å
--- ‚±‚ÌƒXƒNƒŠƒvƒg‚Í—Dæ“I‚ÉÀs‚³‚¹‚é
--- ‚È‚¨A‚±‚ÌƒXƒNƒŠƒvƒg‚ªƒtƒ@ƒCƒ‹‚Ì·‚µ‘Ö‚¦‚ğs‚Á‚½ê‡A
--- Œ³‚Ì filepath ‚Í orgfilepath ‚Æ‚µ‚Ä•Û‘¶‚³‚ê‚Ü‚·
+-- ä»–ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒå‡¦ç†ã—ãŸå¾Œã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å·®ã—æ›¿ãˆã‚‹ã¨ä¸éƒ½åˆãŒã‚ã‚‹ã®ã§
+-- ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯å„ªå…ˆçš„ã«å®Ÿè¡Œã•ã›ã‚‹
+-- ãªãŠã€ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒãƒ•ã‚¡ã‚¤ãƒ«ã®å·®ã—æ›¿ãˆã‚’è¡Œã£ãŸå ´åˆã€
+-- å…ƒã® filepath ã¯ orgfilepath ã¨ã—ã¦ä¿å­˜ã•ã‚Œã¾ã™
 P.priority = 100000
 
--- ƒtƒ@ƒCƒ‹–¼“ü—Íƒ_ƒCƒAƒƒO‚ğ•\¦‚·‚é‚È‚ç trueA‚µ‚È‚¢‚È‚ç false
--- ‚²‚¿‚á‚Ü‚ºƒhƒƒbƒvƒX v0.1.x ‚Å‚Ì‹““®‚É‹ß‚Ã‚¯‚é‚È‚ç true
+-- ãƒ•ã‚¡ã‚¤ãƒ«åå…¥åŠ›ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤ºã™ã‚‹ãªã‚‰ trueã€ã—ãªã„ãªã‚‰ false
+-- ã”ã¡ã‚ƒã¾ãœãƒ‰ãƒ­ãƒƒãƒ—ã‚¹ v0.1.x ã§ã®æŒ™å‹•ã«è¿‘ã¥ã‘ã‚‹ãªã‚‰ true
 P.renamable = false
 
 function P.ondragenter(files, state)
   for i, v in ipairs(files) do
     if GCMZDrops.needcopy(v.filepath) then
-      -- needcopy ‚ª true ‚ğ•Ô‚·ƒtƒ@ƒCƒ‹‚Í’²¸‚·‚é•K—v‚ª‚ ‚é‚Ì‚Å true
+      -- needcopy ãŒ true ã‚’è¿”ã™ãƒ•ã‚¡ã‚¤ãƒ«ã¯èª¿æŸ»ã™ã‚‹å¿…è¦ãŒã‚ã‚‹ã®ã§ true
       return true
     end
   end
@@ -23,7 +26,7 @@ function P.ondragenter(files, state)
 end
 
 function P.ondragover(files, state)
-  -- ondragenter ‚Åˆ—‚Å‚«‚»‚¤‚È‚à‚Ì‚Í ondragover ‚Å‚àˆ—‚Å‚«‚»‚¤‚È‚Ì‚Å’²‚×‚¸ true
+  -- ondragenter ã§å‡¦ç†ã§ããã†ãªã‚‚ã®ã¯ ondragover ã§ã‚‚å‡¦ç†ã§ããã†ãªã®ã§èª¿ã¹ãš true
   return true
 end
 
@@ -32,75 +35,84 @@ end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
-    -- ƒRƒs[‚ª•K—v‚Èƒtƒ@ƒCƒ‹‚¾‚Á‚½‚ç
+    -- ã‚³ãƒ”ãƒ¼ãŒå¿…è¦ãªãƒ•ã‚¡ã‚¤ãƒ«ã ã£ãŸã‚‰
     if GCMZDrops.needcopy(v.filepath) then
       local filepath, created = P.getfile(v.filepath)
       if created then
-        debug_print("["..P.name.."] ‚ª " .. v.filepath .. " ‚ğƒnƒbƒVƒ…’l•t‚«‚Ìƒtƒ@ƒCƒ‹–¼‚É·‚µ‘Ö‚¦‚Ü‚µ‚½BŒ³‚Ìƒtƒ@ƒCƒ‹‚Í orgfilepath ‚Åæ“¾‚Å‚«‚Ü‚·B")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: %s ã‚’ãƒãƒƒã‚·ãƒ¥å€¤ä»˜ãã®ãƒ•ã‚¡ã‚¤ãƒ«åã«å·®ã—æ›¿ãˆã¾ã—ãŸã€‚]=],
+          en_US = [=[%s: Renamed %s to filename with hash value.]=],
+        }), P.name, v.filepath))
       else
         if filepath ~= '' then
-          debug_print("["..P.name.."] ‚ª " .. v.filepath .. " ‚ğ“à—e‚ª“¯‚¶Šù‘¶‚Ìƒtƒ@ƒCƒ‹‚Å·‚µ‘Ö‚¦‚Ü‚µ‚½BŒ³‚Ìƒtƒ@ƒCƒ‹‚Í orgfilepath ‚Åæ“¾‚Å‚«‚Ü‚·B")
+          debug_print(string.format(i18n({
+            ja_JP = [=[%s: %s ã¨åŒã˜ãƒ•ã‚¡ã‚¤ãƒ«ãŒæ—¢ã«ã‚ã‚‹ã®ã§æ—¢å­˜ã®ãƒ•ã‚¡ã‚¤ãƒ«ã«å·®ã—æ›¿ãˆã¾ã—ãŸã€‚]=],
+            en_US = [=[%s: %s already exists, so it has been replaced with the existing file.]=],
+          }), P.name, v.filepath))
         else
-          -- ƒ†[ƒU[‚ªƒLƒƒƒ“ƒZƒ‹‚µ‚½‚Ì‚Å‚»‚Ì‚Ü‚Ü‘S‘Ì‚ğƒLƒƒƒ“ƒZƒ‹
+          -- ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã—ãŸã®ã§ãã®ã¾ã¾å…¨ä½“ã‚’ã‚­ãƒ£ãƒ³ã‚»ãƒ«
           return nil
         end
       end
       files[i] = {filepath=filepath, orgfilepath=v.filepath}
     end
   end
-  -- ‘¼‚ÌƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[‚É‚àˆ—‚ğ‚³‚¹‚½‚¢‚Ì‚Å‚±‚±‚Íí‚É false
+  -- ä»–ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ©ãƒ¼ã«ã‚‚å‡¦ç†ã‚’ã•ã›ãŸã„ã®ã§ã“ã“ã¯å¸¸ã« false
   return false
 end
 
 -- f, created = P.getfile(filepath)
 --
---   ‚²‚¿‚á‚Ü‚ºƒhƒƒbƒvƒX‚Ì•Û‘¶—pƒtƒHƒ‹ƒ_[‚É“¯‚¶ƒtƒ@ƒCƒ‹‚ª‚È‚¢‚©ŒŸõ‚µA
---   ‚ ‚éê‡‚ÍŠù‘¶ƒtƒ@ƒCƒ‹‚Ö‚ÌƒpƒX‚ğA
---   ‚È‚¢ê‡‚Í•Û‘¶—pƒtƒHƒ‹ƒ_[‚Éƒtƒ@ƒCƒ‹‚ğƒRƒs[‚µAƒRƒs[‚µ‚½ƒtƒ@ƒCƒ‹‚Ö‚ÌƒpƒX‚ğ•Ô‚µ‚Ü‚·B
+--   ã”ã¡ã‚ƒã¾ãœãƒ‰ãƒ­ãƒƒãƒ—ã‚¹ã®ä¿å­˜ç”¨ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã«åŒã˜ãƒ•ã‚¡ã‚¤ãƒ«ãŒãªã„ã‹æ¤œç´¢ã—ã€
+--   ã‚ã‚‹å ´åˆã¯æ—¢å­˜ãƒ•ã‚¡ã‚¤ãƒ«ã¸ã®ãƒ‘ã‚¹ã‚’ã€
+--   ãªã„å ´åˆã¯ä¿å­˜ç”¨ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚³ãƒ”ãƒ¼ã—ã€ã‚³ãƒ”ãƒ¼ã—ãŸãƒ•ã‚¡ã‚¤ãƒ«ã¸ã®ãƒ‘ã‚¹ã‚’è¿”ã—ã¾ã™ã€‚
 --
---   [ˆø”]
---     filepath ‚É‚Í’T‚µ‚½‚¢ƒtƒ@ƒCƒ‹‚Ö‚ÌƒpƒX‚ğ•¶š—ñ‚Å“n‚µ‚Ü‚·B
+--   [å¼•æ•°]
+--     filepath ã«ã¯æ¢ã—ãŸã„ãƒ•ã‚¡ã‚¤ãƒ«ã¸ã®ãƒ‘ã‚¹ã‚’æ–‡å­—åˆ—ã§æ¸¡ã—ã¾ã™ã€‚
 --
---   [–ß‚è’l]
---     f ‚É‚Íƒtƒ@ƒCƒ‹‚Ö‚ÌƒpƒX‚ª•¶š—ñ‚Å•Ô‚è‚Ü‚·‚ªA
---     ƒ†[ƒU[‚É‚æ‚èˆ—‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚½ê‡‚Í‹ó•¶š—ñ‚ª•Ô‚è‚Ü‚·B
---     created ‚É‚ÍV‚µ‚­ƒtƒ@ƒCƒ‹‚ğì¬‚µ‚½‚©‚Ç‚¤‚©‚ğ boolean ‚Å•Ô‚µ‚Ü‚·B
+--   [æˆ»ã‚Šå€¤]
+--     f ã«ã¯ãƒ•ã‚¡ã‚¤ãƒ«ã¸ã®ãƒ‘ã‚¹ãŒæ–‡å­—åˆ—ã§è¿”ã‚Šã¾ã™ãŒã€
+--     ãƒ¦ãƒ¼ã‚¶ãƒ¼ã«ã‚ˆã‚Šå‡¦ç†ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚ŒãŸå ´åˆã¯ç©ºæ–‡å­—åˆ—ãŒè¿”ã‚Šã¾ã™ã€‚
+--     created ã«ã¯æ–°ã—ããƒ•ã‚¡ã‚¤ãƒ«ã‚’ä½œæˆã—ãŸã‹ã©ã†ã‹ã‚’ boolean ã§è¿”ã—ã¾ã™ã€‚
 --
 function P.getfile(filepath)
-  -- ƒtƒ@ƒCƒ‹‚ÌƒnƒbƒVƒ…’l‚ğŒvZ‚µ‚ÄƒeƒLƒXƒg•\Œ»‚É•ÏŒ`
+  -- ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒãƒƒã‚·ãƒ¥å€¤ã‚’è¨ˆç®—ã—ã¦ãƒ†ã‚­ã‚¹ãƒˆè¡¨ç¾ã«å¤‰å½¢
   local hash = GCMZDrops.hashtostring(GCMZDrops.calcfilehash(filepath))
-  -- ƒtƒ@ƒCƒ‹ƒpƒX‚ğƒfƒBƒŒƒNƒgƒŠAƒtƒ@ƒCƒ‹–¼AŠg’£q‚É•ª‰ğ
+  -- ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã‚’ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã€ãƒ•ã‚¡ã‚¤ãƒ«åã€æ‹¡å¼µå­ã«åˆ†è§£
   local ext = filepath:match("[^.]+$")
   local name = filepath:match("[^/\\]+$")
   local dir = filepath:sub(1, #filepath-#name)
   name = name:sub(1, #name - #ext - 1)
 
-  -- Šù‚É“¯‚¶ƒnƒbƒVƒ…’l‚ÆŠg’£q‚ğ‚Á‚½ƒtƒ@ƒCƒ‹‚ª‚È‚¢‚©’T‚·
+  -- æ—¢ã«åŒã˜ãƒãƒƒã‚·ãƒ¥å€¤ã¨æ‹¡å¼µå­ã‚’æŒã£ãŸãƒ•ã‚¡ã‚¤ãƒ«ãŒãªã„ã‹æ¢ã™
   local exists = GCMZDrops.findallfile("*."..hash.."."..ext)
   if #exists > 0 then
     return exists[1], false
   end
 
   if P.renamable then
-    local ok, newname = GCMZDrops.prompt(name .. "." .. ext.. " ‚ÉV‚µ‚¢ƒtƒ@ƒCƒ‹–¼‚ğ‚Â‚¯‚Ä‚­‚¾‚³‚¢", name)
+    local ok, newname = GCMZDrops.prompt(string.format(i18n({
+      ja_JP = [=[ãƒ•ã‚¡ã‚¤ãƒ«åã‚’å…¥åŠ›ã—ã¦ãã ã•ã„]=],
+      en_US = [=[Please enter a file name]=],
+    })), name)
     if not ok then
-      -- ƒ†[ƒU[‚ªƒLƒƒƒ“ƒZƒ‹‚µ‚½
+      -- ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã—ãŸ
       return '', false
     end
-    -- ƒtƒ@ƒCƒ‹–¼‚Ég‚¦‚È‚¢•¶š‚ğƒtƒBƒ‹ƒ^ƒŠƒ“ƒO‚·‚é
-    name = GCMZDrops.convertencoding(newname, "sjis", "utf8")
+    -- ãƒ•ã‚¡ã‚¤ãƒ«åã«ä½¿ãˆãªã„æ–‡å­—ã‚’ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°ã™ã‚‹
+    name = GCMZDrops.convertencoding(newname, "ansi", "utf8")
     name = name:gsub("[\1-\31\34\42\47\58\60\62\63\92\124\127]", "-")
-    name = GCMZDrops.convertencoding(name, "utf8", "sjis")
+    name = GCMZDrops.convertencoding(name, "utf8", "ansi")
   end
 
-  -- ƒtƒ@ƒCƒ‹‚ğƒRƒs[‚·‚é‚½‚ß‚É“Ç‚İo‚·
+  -- ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚³ãƒ”ãƒ¼ã™ã‚‹ãŸã‚ã«èª­ã¿å‡ºã™
   local f, err = io.open(filepath, "rb")
   if f == nil then
     error(err)
   end
   local data = f:read("*all")
   f:close()
-  -- •Û‘¶æ‚Éƒtƒ@ƒCƒ‹‚ğì¬‚µ‚Ä‘‚«‚Ş
+  -- ä¿å­˜å…ˆã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ä½œæˆã—ã¦æ›¸ãè¾¼ã‚€
   filepath = GCMZDrops.createfile(name, "."..hash.."."..ext)
   f, err = io.open(filepath, "wb")
   if f == nil then

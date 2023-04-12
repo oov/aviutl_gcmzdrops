@@ -20,17 +20,11 @@ int main(int argc, char const *argv[]) {
     fputs("gentransmap exo_from_original original_code_page exo_from_patched_env patched_env_code_page\n", stderr);
     return 1;
   }
-  if (!ov_init(generic_error_message_mapper_en)) {
-    fputs("internal error.\n", stderr);
-    return 1;
-  }
+  ov_init();
+  error_set_message_mapper(gcmz_error_message);
 
   lua_State *L = NULL;
-  error err = error_gcmz_init();
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
+  error err = eok();
 
   char const*const fn1 = argv[1];
   int cp1 = 0;

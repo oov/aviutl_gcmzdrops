@@ -26,7 +26,10 @@
 
 なお、ごちゃまぜドロップスと[字幕アシスト](http://aoytsk.blog.jp/aviutl/1412254.html)は実装上の都合により同時には使用できません。
 
-ごちゃまぜドロップスの動作には AviUtl version 1.00 以降と拡張編集 version 0.92 以降が必要です。
+ごちゃまぜドロップスの動作には AviUtl version 1.00 以降と拡張編集 version 0.92 以降が必要です。  
+また、Windows 10 より前の OS では以下のランタイムをインストールしなければ動作しない場合があります。
+
+https://aka.ms/vs/17/release/vc_redist.x86.exe
 
 注意事項
 --------
@@ -44,7 +47,8 @@ https://github.com/oov/aviutl_gcmzdrops/releases
 インストール／アンインストール
 ------------------------------
 
-GCMZDrops.auf と GCMZDrops フォルダーを **exedit.auf と同じ場所** に置いてください。
+GCMZDrops.auf と GCMZDrops フォルダーを **exedit.auf と同じ場所** に置いてください。  
+（この1行しか書いてないのに、これを読まずに「動かない」と SNS に助けを求める人が結構居て、こんなにも読まれてないんだなあ……って思いますね）
 
 削除時もそれらを削除するだけで OK です。
 
@@ -294,7 +298,7 @@ FAQ
 バイナリのビルドについて
 ------------------------
 
-ごちゃまぜドロップスは [MSYS2](https://www.msys2.org/) + MINGW32 上で開発しています。  
+ごちゃまぜドロップスは [MSYS2](https://www.msys2.org/) + CLANG32 上で開発しています。  
 ビルド方法や必要になるパッケージなどは [GitHub Actions の設定ファイル](https://github.com/oov/aviutl_gcmzdrops/blob/main/.github/workflows/releaser.yml) を参考にしてください。
 
 Contributors

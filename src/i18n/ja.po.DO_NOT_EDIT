@@ -1,0 +1,322 @@
+# Japanese translations for GCMZDrops X.X.X ( 7eeee53 ) package.
+# Copyright (C) 2023 GCMZDrops Developers
+# This file is distributed under the same license as the GCMZDrops package.
+# Automatically generated, 2023.
+#
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#, c-format
+msgid "\"%1$s\" is not a string."
+msgstr "\"%1$s\" は文字列ではありません。"
+
+#, c-format
+msgid "\"%1$s\" is too long."
+msgstr "\"%1$s\" は長すぎます。"
+
+msgid "Aborted."
+msgstr "中断されました。"
+
+msgid "Advanced Editing plug-in cannot be found."
+msgstr "拡張編集プラグインが見つかりません。"
+
+msgid "Advanced Editing plug-in exedit.auf cannot be found in the same folder as GCMZDrops.auf."
+msgstr "拡張編集プラグイン exedit.auf がごちゃまぜドロップス GCMZDrops.auf と同じフォルダー内に見つかりません。"
+
+msgid "Advanced Editing plug-in exedit.auf cannot be found."
+msgstr "拡張編集プラグイン exedit.auf が見つかりません。"
+
+msgid "Advanced Editing version 0.92 or later is required."
+msgstr "拡張編集 version 0.92 以降が必要です。"
+
+msgid "An error occurred during initialization."
+msgstr "初期化中にエラーが発生しました。"
+
+msgid "An error occurred during processing of the external integration API."
+msgstr "外部連携 API の処理中にエラーが発生しました。"
+
+msgid ""
+"An error occurred during the initialization of the external integration API.\n"
+"The external integration API is not available."
+msgstr ""
+"外部連携 API の初期化中にエラーが発生しました。\n"
+"外部連携 API は利用できません。"
+
+#, c-format
+msgid "An error occurred in %1$s."
+msgstr "%1$s でエラーが発生しました。"
+
+msgid "An error occurred in the API thread."
+msgstr "API 用スレッドでエラーが発生しました。"
+
+msgid "An error occurred while executing a Lua script."
+msgstr "スクリプトの実行中にエラーが発生しました。"
+
+msgid "An error occurred while initializing the Lua environment."
+msgstr "Lua スクリプトの環境を初期化中にエラーが発生しました。"
+
+msgid "An error occurred while loading the settings."
+msgstr "データの読み込み中にエラーが発生しました。"
+
+msgid "An error occurred while saving the settings."
+msgstr "データの保存中にエラーが発生しました。"
+
+msgid "Auto detect"
+msgstr "自動判定"
+
+msgid "AviUtl project file (*.aup) has not yet been opened."
+msgstr "AviUtlのプロジェクトファイル(*.aup)が開かれていません。"
+
+msgid "AviUtl project file (*.aup) has not yet been saved."
+msgstr "AviUtlのプロジェクトファイル(*.aup)がまだ保存されていません。"
+
+msgid "AviUtl version 1.00 or later is required."
+msgstr "AviUtl version 1.00 以降が必要です。"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Choose Save Directory"
+msgstr "データ保存先を選択"
+
+msgid "Copy"
+msgstr "コピーを作成"
+
+msgid "Could not detect scrollbars in the Advanced Editing window."
+msgstr "拡張編集ウィンドウ内のスクロールバーを検出できませんでした。"
+
+msgid "Direct read"
+msgstr "直接読み込み"
+
+msgid "Error"
+msgstr "エラー"
+
+msgid "Failed to allocate memory for task."
+msgstr "タスク用のメモリ確保に失敗しました。"
+
+msgid "Failed to build error message."
+msgstr "エラーメッセージの組み立てに失敗しました。"
+
+msgid "Failed to call _entrypoint.ondragenter."
+msgstr "_entrypoint.ondragenter の呼び出しに失敗しました。"
+
+msgid "Failed to call _entrypoint.ondragleave."
+msgstr "_entrypoint.ondragleave の呼び出しに失敗しました。"
+
+msgid "Failed to call _entrypoint.ondragover."
+msgstr "_entrypoint.ondragover の呼び出しに失敗しました。"
+
+msgid "Failed to call _entrypoint.ondrop."
+msgstr "_entrypoint.ondrop の呼び出しに失敗しました。"
+
+msgid "Failed to clean up used files."
+msgstr "使用済みファイルの整理に失敗しました。"
+
+msgid "Failed to create IDropTarget."
+msgstr "IDropTarget の作成に失敗しました。"
+
+msgid "Failed to create the font."
+msgstr "フォントの作成に失敗しました。"
+
+msgid "Failed to detect the current edit cursor position."
+msgstr "現在の編集カーソル位置の検出に失敗しました。"
+
+msgid "Failed to detect the layer height."
+msgstr "レイヤーの高さ検出に失敗しました。"
+
+msgid "Failed to detect the zoom rate of the timeline."
+msgstr "タイムラインの拡大率検出に失敗しました。"
+
+msgid "Failed to display error dialog."
+msgstr "エラーダイアログの表示に失敗しました。"
+
+msgid "Failed to display extended pop-up menu."
+msgstr "拡張ポップアップメニューの表示に失敗しました。"
+
+msgid "Failed to initialize the GUI."
+msgstr "GUI の初期化に失敗しました。"
+
+msgid "Failed to load lua51.dll."
+msgstr "lua51.dll の読み込みに失敗しました。"
+
+msgid "Failed to obtain my filter window handle."
+msgstr "フィルターのウィンドウハンドルが取得できませんでした。"
+
+msgid "Failed to obtain the window handle for Advanced Editing."
+msgstr "拡張編集のウィンドウハンドルが取得できませんでした。"
+
+msgid "Failed to output the error content to the log file."
+msgstr "エラー内容をログファイルに出力できませんでした。"
+
+msgid ""
+"Failed to register context menu handler.\n"
+"Extended pop-up menus are not available."
+msgstr ""
+"コンテキストメニューハンドラーの登録に失敗しました。\n"
+"拡張ポップアップメニューは使用できません。"
+
+msgid ""
+"Failed to register the drag & drop handler.\n"
+"There may be a conflict with other plugins that affect drag & drop processing.\n"
+"Please review your installed plugins."
+msgstr ""
+"ドラッグ＆ドロップハンドラーの登録に失敗しました。\n"
+"ドラッグ＆ドロップ処理に影響を与える他のプラグインと競合している可能性があります。\n"
+"導入済みプラグインを見直してください。"
+
+msgid "Failed to terminate external integration API."
+msgstr "外部連携 API の終了に失敗しました。"
+
+msgid "Failed to terminate the API thread."
+msgstr "API スレッドの終了に失敗しました。"
+
+msgid "Failed to unregister the context menu handler."
+msgstr "コンテキストメニューハンドラーの登録解除に失敗しました。"
+
+msgid "Failed to update the FileMappingObject of the external integration API."
+msgstr "外部連携 API の FileMappingObject 更新に失敗しました。"
+
+msgid "Failed."
+msgstr "処理に失敗しました。"
+
+msgid "File cannot be saved because a file with different contents already exists in the destination folder."
+msgstr "保存先フォルダーに内容の異なるファイルが既に存在しているためファイルを保存できません。"
+
+msgid "If you have installed a plugin that customizes the look and feel of GUI, that may be the cause of this error."
+msgstr "見た目をカスタマイズするようなプラグインを導入している場合、それが原因でこのエラーが発生することがあります。"
+
+msgid "Invalid API format."
+msgstr "無効な API フォーマットです。"
+
+msgid "Invalid JSON."
+msgstr "不正な JSON です。"
+
+msgid "Invalid argument."
+msgstr "引数が間違っています。"
+
+msgid "Invalid filename."
+msgstr "ファイル名が不正です。"
+
+msgid "Invalid files value."
+msgstr "files の指定が不正です。"
+
+msgid "Invalid layer value."
+msgstr "layer の指定が不正です。"
+
+#, c-format
+msgid "More than %zu elements in the language name table."
+msgstr "言語名テーブルに %zu 個以上の要素があります。"
+
+msgid "NULL pointer."
+msgstr "ポインターが割り当てられていません。"
+
+msgid "Not found."
+msgstr "対象が見つかりませんでした。"
+
+msgid "Not implemented yet."
+msgstr "実装されていません。"
+
+msgid "Not sufficient buffer."
+msgstr "バッファが小さすぎます。"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Out of memory."
+msgstr "メモリーが確保できません。"
+
+msgid "Process aborted because there were no files to drop."
+msgstr "ドロップ対象のファイルが存在しないため、処理を中断しました。"
+
+msgid "Processing mode:"
+msgstr "処理モード:"
+
+msgid "Revert to default"
+msgstr "デフォルト設定に戻す"
+
+msgid "Revert to initial"
+msgstr "初期設定に戻す"
+
+msgid "Save as default"
+msgstr "現在の設定をデフォルトにする"
+
+msgid "Save to:"
+msgstr "データ保存先:"
+
+msgid "The currently running version of AviUtl is not supported."
+msgstr "現在実行中の AviUtl のバージョンはサポートされていません。"
+
+msgid "The currently using version of exedit.auf is not supported."
+msgstr "現在使用中の拡張編集のバージョンはサポートされていません。"
+
+msgid "The display area of the Advanced Editing window is too small."
+msgstr "拡張編集ウィンドウの表示エリアが小さすぎます。"
+
+msgid "The filename contains characters that cannot be used in AviUtl."
+msgstr "AviUtl で使用できない文字がファイル名に含まれています。"
+
+#, c-format
+msgid ""
+"The following temporary file could not be deleted:\n"
+"\n"
+"%1$ls"
+msgstr ""
+"以下の一時ファイルを削除できませんでした:\n"
+"\n"
+"%1$ls"
+
+#, c-format
+msgid ""
+"The following temporary file could not be registered as a deletion candidate:\n"
+"The file will not be automatically deleted.\n"
+"\n"
+"%1$ls"
+msgstr ""
+"以下の一時ファイルを削除候補として登録できませんでした:\n"
+"ファイルは自動的に削除されません。\n"
+"\n"
+"%1$ls"
+
+msgid ""
+"The plug-in is not properly installed.\n"
+"Please check the installation instructions in the included documentation."
+msgstr ""
+"プラグインが正しくインストールされていません。\n"
+"付属のドキュメントでインストール手順を確認してください。"
+
+msgid ""
+"This error mainly occurs when multiple instances of AviUtl are running.\n"
+"Please close all instances of AviUtl and launch only one."
+msgstr ""
+"このエラーは主に AviUtl を多重起動した場合に発生します。\n"
+"一度すべての AviUtl を閉じて、ひとつだけを起動してください。"
+
+msgid "This plug-in is not compatible with extext.auf."
+msgstr "字幕アシストプラグイン extext.auf とは互換性がありません。"
+
+msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
+msgstr "ごちゃまぜドロップスの古いバージョンである oledd.auf とは互換性がありません。"
+
+msgid "Unexpected API version."
+msgstr "未知の API バージョンです。"
+
+msgid "Unexpected."
+msgstr "予期しないエラーです。"
+
+msgid "Unknown error code."
+msgstr "未知のエラーコードです。"
+
+msgid "Unregistration of context menu handler failed."
+msgstr "コンテキストメニューハンドラーの登録解除に失敗しました。"
+
+#. trans: This dagger helps UTF-8 detection. You don't need to translate this.
+msgid "†"
+msgstr "†"

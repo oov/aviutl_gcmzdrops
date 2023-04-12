@@ -2,6 +2,8 @@
 
 #include "ovutil/win32.h"
 
+#include "i18n.h"
+
 enum tempfile_mode {
   tempfile_mode_delete_always = 0,
   tempfile_mode_delete_on_failure = 1,
@@ -17,26 +19,6 @@ static struct tempfilelist {
   size_t len;
   size_t cap;
 } g_tempfilelist = {0};
-
-static void
-friendly_report(error e, NATIVE_CHAR const *const s1, NATIVE_CHAR const *const s2, NATIVE_CHAR const *const s3) {
-  if (esucceeded(e)) {
-    return;
-  }
-  struct NATIVE_STR s = {0};
-  error err = scpym(&s, s1, s2, s3);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  ereportmsg(e, &s);
-  return;
-
-failed:
-  ereport(sfree(&s));
-  efree(&err);
-  ereportmsg(e, &native_unmanaged(NSTR("エラーが発生しました。")));
-}
 
 static void tempfilelist_add(struct wstr const *const path, int const mode) {
   struct wstr p = {0};
@@ -58,10 +40,11 @@ static void tempfilelist_add(struct wstr const *const path, int const mode) {
 
 failed:
   ereport(sfree(&p));
-  friendly_report(err,
-                  NSTR("一時ファイル \""),
-                  path->ptr,
-                  NSTR("\" を削除候補に登録できませんでした。ファイルは自動で削除されません。"));
+  ereportmsg_i18nf(err,
+                   NSTR("%1$ls"),
+                   gettext("The following temporary file could not be registered as a deletion candidate:\n"
+                           "The file will not be automatically deleted.\n\n%1$ls"),
+                   path->ptr);
 }
 
 static void tempfilelist_cleanup(bool const failed) {
@@ -70,7 +53,8 @@ static void tempfilelist_cleanup(bool const failed) {
     if (file->mode == tempfile_mode_delete_always || (file->mode == tempfile_mode_delete_on_failure && failed)) {
       error err = delete_file(&file->path);
       if (efailed(err)) {
-        friendly_report(err, NSTR("一時ファイル \""), file->path.ptr, NSTR("\" の削除に失敗しました。"));
+        ereportmsg_i18nf(
+            err, NSTR("%1$ls"), gettext("The following temporary file could not be deleted:\n\n%1$ls"), file->path.ptr);
       }
     }
     ereport(sfree(&file->path));

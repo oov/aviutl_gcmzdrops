@@ -2,6 +2,9 @@
 
 #include "ovbase.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 enum {
   err_type_gcmz = 100,
 };
@@ -26,4 +29,17 @@ enum err_gcmz {
   err_gcmz_invalid_char = 301,
 };
 
-NODISCARD error error_gcmz_init(void);
+NODISCARD error gcmz_error_message(int const type, int const code, struct NATIVE_STR *const dest);
+
+NODISCARD error gcmz_error_to_string(error e, struct wstr *const dest);
+NODISCARD error gcmz_error_vformat(
+    error e, struct wstr *const dest, wchar_t const *const reference, char const *const format, va_list valist);
+NODISCARD error
+gcmz_error_format(error e, struct wstr *const dest, wchar_t const *const reference, char const *const format, ...);
+void gcmz_error_message_box(error e,
+                            HWND const window,
+                            bool const deferred,
+                            char const *const title,
+                            wchar_t const *const reference,
+                            char const *const format,
+                            ...);

@@ -8,6 +8,7 @@
 #include "aviutl.h"
 #include "gcmzdrops.h"
 #include "gcmzfuncs.h"
+#include "i18n.h"
 
 static HWND g_save_mode_label = NULL;
 static HWND g_save_mode = NULL;
@@ -110,9 +111,13 @@ error gui_init(HWND const window) {
   HFONT font = NULL;
   HINSTANCE const hinst = get_hinstance();
   int font_height = 0;
+  enum {
+    buf_size = 1024,
+  };
+  wchar_t buf[buf_size];
   error err = create_font(window, &font, &font_height);
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("フォントの作成に失敗しました。")));
+    ereportmsg_i18n(err, gettext("Failed to create the font."));
     font_height = 18;
   }
 
@@ -127,9 +132,10 @@ error gui_init(HWND const window) {
 
   int save_mode_height = padding;
   {
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Processing mode:"));
     HWND h = CreateWindowExW(0,
                              L"STATIC",
-                             L"処理モード:",
+                             buf,
                              WS_CHILD | WS_VISIBLE | ES_LEFT,
                              padding,
                              save_mode_height,
@@ -155,9 +161,12 @@ error gui_init(HWND const window) {
                         (HMENU)1,
                         hinst,
                         NULL);
-    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)L"自動判定");
-    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)L"コピーを作成");
-    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)L"直接読み込み");
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Auto detect"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Copy"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Direct read"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     save_mode_height += control_height;
     g_save_mode = h;
@@ -166,9 +175,10 @@ error gui_init(HWND const window) {
   int save_dir_height = padding;
   {
     int const button_width = font_height * 2;
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save to:"));
     HWND h = CreateWindowExW(0,
                              L"STATIC",
-                             L"データ保存先:",
+                             buf,
                              WS_CHILD | WS_VISIBLE | ES_LEFT,
                              padding + save_mode_width + padding,
                              save_dir_height,
@@ -218,9 +228,10 @@ error gui_init(HWND const window) {
     enum {
       button_width = 128,
     };
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to initial"));
     HWND h = CreateWindowExW(0,
                              L"BUTTON",
-                             L"初期設定に戻す",
+                             buf,
                              WS_CHILD | WS_TABSTOP | WS_VISIBLE | BS_CENTER | BS_VCENTER,
                              padding,
                              y,
@@ -232,9 +243,10 @@ error gui_init(HWND const window) {
                              NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     g_restore_initial = h;
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to default"));
     h = CreateWindowExW(0,
                         L"BUTTON",
-                        L"デフォルトに戻す",
+                        buf,
                         WS_CHILD | WS_TABSTOP | WS_VISIBLE | BS_CENTER | BS_VCENTER,
                         padding + button_width,
                         y,
@@ -246,9 +258,10 @@ error gui_init(HWND const window) {
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     g_restore_default = h;
+    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save as default"));
     h = CreateWindowExW(0,
                         L"BUTTON",
-                        L"現在の設定をデフォルトにする",
+                        buf,
                         WS_CHILD | WS_TABSTOP | WS_VISIBLE | BS_CENTER | BS_VCENTER,
                         padding + button_width + button_width,
                         y,
@@ -376,7 +389,12 @@ NODISCARD static error click_select_folder_button(HWND const window) {
     }
   }
   bool ret = false;
-  err = select_directory(window, &wstr_unmanaged(L"データ保存先の選択"), &dir, &ret);
+  enum {
+    buf_size = 1024,
+  };
+  wchar_t buf[buf_size];
+  mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Choose Save Directory"));
+  err = select_directory(window, &wstr_unmanaged(buf), &dir, &ret);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;

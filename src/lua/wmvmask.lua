@@ -1,6 +1,9 @@
 local P = {}
 
-P.name = [=[*_mask.wmv ‚ª‚ ‚é‚È‚çƒ}ƒXƒN‚ğ’Ç‰Á]=]
+P.name = i18n({
+  ja_JP = [=[*_mask.wmv ãŒã‚ã‚‹ãªã‚‰ãƒã‚¹ã‚¯ã‚’è¿½åŠ ]=],
+  en_US = [=[add a mask if there is a *_mask.wmv]=],
+})
 
 P.priority = 0
 
@@ -18,7 +21,7 @@ function P.ondragenter(files, state)
     local ext = v.filepath:match(".[^.]+$")
     local maskfile = v.filepath:sub(1, #v.filepath - #ext) .. "_mask" .. ext
     if ext:lower() == ".wmv" and fileexists(maskfile) then
-      -- ƒtƒ@ƒCƒ‹‚ÌŠg’£q‚ª .wmv ‚Ìƒtƒ@ƒCƒ‹‚ª‚ ‚Á‚ÄA‚©‚Â *_mask.wmv ‚ª‚ ‚é‚È‚ç true
+      -- ãƒ•ã‚¡ã‚¤ãƒ«ã®æ‹¡å¼µå­ãŒ .wmv ã®ãƒ•ã‚¡ã‚¤ãƒ«ãŒã‚ã£ã¦ã€ã‹ã¤ *_mask.wmv ãŒã‚ã‚‹ãªã‚‰ true
       return true
     end
   end
@@ -26,7 +29,7 @@ function P.ondragenter(files, state)
 end
 
 function P.ondragover(files, state)
-  -- ondragenter ‚Åˆ—‚Å‚«‚»‚¤‚È‚à‚Ì‚Í ondragover ‚Å‚àˆ—‚Å‚«‚»‚¤‚È‚Ì‚Å’²‚×‚¸ true
+  -- ondragenter ã§å‡¦ç†ã§ããã†ãªã‚‚ã®ã¯ ondragover ã§ã‚‚å‡¦ç†ã§ããã†ãªã®ã§èª¿ã¹ãš true
   return true
 end
 
@@ -35,20 +38,23 @@ end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
-    -- ƒtƒ@ƒCƒ‹‚ÌŠg’£q‚ª .wmv ‚Ìƒtƒ@ƒCƒ‹‚ª‚ ‚Á‚ÄA‚©‚Â *_mask.wmv ‚ª‚ ‚é‚È‚ç
+    -- ãƒ•ã‚¡ã‚¤ãƒ«ã®æ‹¡å¼µå­ãŒ .wmv ã®ãƒ•ã‚¡ã‚¤ãƒ«ãŒã‚ã£ã¦ã€ã‹ã¤ *_mask.wmv ãŒã‚ã‚‹ãªã‚‰
     local ext = v.filepath:match(".[^.]+$")
     local maskfile = v.filepath:sub(1, #v.filepath - #ext) .. "_mask" .. ext
     if ext:lower() == ".wmv" and fileexists(maskfile) then
-      -- ƒvƒƒWƒFƒNƒg‚Æƒtƒ@ƒCƒ‹‚Ìî•ñ‚ğæ“¾‚·‚é
+      -- ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ãƒˆã¨ãƒ•ã‚¡ã‚¤ãƒ«ã®æƒ…å ±ã‚’å–å¾—ã™ã‚‹
       local proj = GCMZDrops.getexeditfileinfo()
       local ok, fi = pcall(GCMZDrops.getfileinfo, v.filepath)
       if not ok then
-        debug_print("“®‰æ‚Ì“Ç‚İ‚İ‚É¸”s‚µ‚Ü‚µ‚½: " .. fi)
+        debug_print(string.format(i18n({
+          ja_JP = [=[å‹•ç”» %s ã®èª­ã¿è¾¼ã¿ã«å¤±æ•—ã—ã¾ã—ãŸ]=],
+          en_US = [=[Failed to load video %s]=],
+        }), fi))
         return nil
       end
 
-      -- “®‰æ‚ªŒ»İ‚ÌƒvƒƒWƒFƒNƒg‚Å‰½ƒtƒŒ[ƒ€•ª‚ ‚é‚Ì‚©‚ğŒvZ‚·‚é
-      -- Šg’£•ÒW‚Å‚ÌŒvZ•û–@‚Æˆê’v‚·‚éZo•û–@‚ª‚í‚©‚Á‚Ä‚È‚¢‚Ì‚ÅA‚à‚µ‚©‚µ‚½‚ç‚PƒtƒŒ[ƒ€’PˆÊ‚Å‘OŒã‚·‚é‚©‚àcc
+      -- å‹•ç”»ãŒç¾åœ¨ã®ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ãƒˆã§ä½•ãƒ•ãƒ¬ãƒ¼ãƒ åˆ†ã‚ã‚‹ã®ã‹ã‚’è¨ˆç®—ã™ã‚‹
+      -- æ‹¡å¼µç·¨é›†ã§ã®è¨ˆç®—æ–¹æ³•ã¨ä¸€è‡´ã™ã‚‹ç®—å‡ºæ–¹æ³•ãŒã‚ã‹ã£ã¦ãªã„ã®ã§ã€ã‚‚ã—ã‹ã—ãŸã‚‰ï¼‘ãƒ•ãƒ¬ãƒ¼ãƒ å˜ä½ã§å‰å¾Œã™ã‚‹ã‹ã‚‚â€¦â€¦
       local len = math.floor((fi.length * fi.scale * proj.rate) / (fi.rate * proj.scale) + 0.5)
 
       local oini = GCMZDrops.inistring("")
@@ -66,32 +72,32 @@ function P.ondrop(files, state)
       oini:set("0", "overlay", 1)
       oini:set("0", "camera", 0)
 
-      oini:set("0.0", [=[_name]=], [=[“®‰æƒtƒ@ƒCƒ‹]=])
-      oini:set("0.0", [=[Ä¶ˆÊ’u]=], 1)
-      oini:set("0.0", [=[Ä¶‘¬“x]=], "100.0")
-      oini:set("0.0", [=[ƒ‹[ƒvÄ¶]=], 0)
-      oini:set("0.0", [=[ƒAƒ‹ƒtƒ@ƒ`ƒƒƒ“ƒlƒ‹‚ğ“Ç‚İ‚Ş]=], 0)
+      oini:set("0.0", [=[_name]=], [=[å‹•ç”»ãƒ•ã‚¡ã‚¤ãƒ«]=])
+      oini:set("0.0", [=[å†ç”Ÿä½ç½®]=], 1)
+      oini:set("0.0", [=[å†ç”Ÿé€Ÿåº¦]=], "100.0")
+      oini:set("0.0", [=[ãƒ«ãƒ¼ãƒ—å†ç”Ÿ]=], 0)
+      oini:set("0.0", [=[ã‚¢ãƒ«ãƒ•ã‚¡ãƒãƒ£ãƒ³ãƒãƒ«ã‚’èª­ã¿è¾¼ã‚€]=], 0)
       oini:set("0.0", [=[file]=], v.filepath)
 
-      oini:set("0.1", [=[_name]=], [=[“®‰æƒtƒ@ƒCƒ‹‡¬]=])
-      oini:set("0.1", [=[Ä¶ˆÊ’u]=], 0)
-      oini:set("0.1", [=[Ä¶‘¬“x]=], "100.0")
+      oini:set("0.1", [=[_name]=], [=[å‹•ç”»ãƒ•ã‚¡ã‚¤ãƒ«åˆæˆ]=])
+      oini:set("0.1", [=[å†ç”Ÿä½ç½®]=], 0)
+      oini:set("0.1", [=[å†ç”Ÿé€Ÿåº¦]=], "100.0")
       oini:set("0.1", [=[X]=], 0)
       oini:set("0.1", [=[Y]=], 0)
-      oini:set("0.1", [=[Šg‘å—¦]=], "100.0")
-      oini:set("0.1", [=[ƒ‹[ƒvÄ¶]=], 0)
-      oini:set("0.1", [=[“®‰æƒtƒ@ƒCƒ‹‚Ì“¯Šú]=], 1)
-      oini:set("0.1", [=[ƒ‹[ƒv‰æ‘œ]=], 0)
+      oini:set("0.1", [=[æ‹¡å¤§ç‡]=], "100.0")
+      oini:set("0.1", [=[ãƒ«ãƒ¼ãƒ—å†ç”Ÿ]=], 0)
+      oini:set("0.1", [=[å‹•ç”»ãƒ•ã‚¡ã‚¤ãƒ«ã®åŒæœŸ]=], 1)
+      oini:set("0.1", [=[ãƒ«ãƒ¼ãƒ—ç”»åƒ]=], 0)
       oini:set("0.1", [=[file]=], maskfile)
       oini:set("0.1", [=[mode]=], 1)
 
-      oini:set("0.2", [=[_name]=], [=[•W€•`‰æ]=])
+      oini:set("0.2", [=[_name]=], [=[æ¨™æº–æç”»]=])
       oini:set("0.2", [=[X]=], "0.0")
       oini:set("0.2", [=[Y]=], "0.0")
       oini:set("0.2", [=[Z]=], "0.0")
-      oini:set("0.2", [=[Šg‘å—¦]=], "100.0")
-      oini:set("0.2", [=[“§–¾“x]=], 0)
-      oini:set("0.2", [=[‰ñ“]]=], "0.00")
+      oini:set("0.2", [=[æ‹¡å¤§ç‡]=], "100.0")
+      oini:set("0.2", [=[é€æ˜åº¦]=], 0)
+      oini:set("0.2", [=[å›è»¢]=], "0.00")
       oini:set("0.2", [=[blend]=], 0)
 
       local filepath = GCMZDrops.createtempfile("wmv", ".exo")
@@ -99,13 +105,16 @@ function P.ondrop(files, state)
       if f == nil then
         error(err)
       end
-      f:write(tostring(oini))
+      f:write(GCMZDrops.convertencoding(tostring(oini), 'utf8', 'sjis'))
       f:close()
-      debug_print("["..P.name.."] ‚ª " .. v.filepath .. " ‚ğ exo ƒtƒ@ƒCƒ‹‚É·‚µ‘Ö‚¦‚Ü‚µ‚½BŒ³‚Ìƒtƒ@ƒCƒ‹‚Í orgfilepath ‚Åæ“¾‚Å‚«‚Ü‚·B")
+      debug_print(string.format(i18n({
+        ja_JP = [=[%s: %s ã‚’ exo ãƒ•ã‚¡ã‚¤ãƒ«ã«å·®ã—æ›¿ãˆã¾ã—ãŸã€‚]=],
+        en_US = [=[%s: Replaced %s with exo file.]=],
+      }), P.name, v.filepath))
       files[i] = {filepath=filepath, orgfilepath=v.filepath}
     end
   end
-  -- ‘¼‚ÌƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[‚É‚àˆ—‚ğ‚³‚¹‚½‚¢‚Ì‚Å‚±‚±‚Íí‚É false
+  -- ä»–ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ©ãƒ¼ã«ã‚‚å‡¦ç†ã‚’ã•ã›ãŸã„ã®ã§ã“ã“ã¯å¸¸ã« false
   return false
 end
 

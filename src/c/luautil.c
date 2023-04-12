@@ -1,6 +1,8 @@
 #include "luautil.h"
 
 #include "error_gcmz.h"
+#include "i18n.h"
+
 #include "ovutil/str.h"
 #include "ovutil/win32.h"
 
@@ -115,7 +117,7 @@ NODISCARD error luautil_pcall_(lua_State *const L, int const nargs, int const nr
 failed:
   ereport(sfree(&trace));
   efree(&err);
-  return emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("エラーメッセージの組み立てに失敗しました。")));
+  return emsg_i18n(err_type_generic, err_fail, gettext("Failed to build error message."));
 }
 
 NODISCARD error luautil_call_function(lua_State *const L, int const num_params, int const num_returns) {

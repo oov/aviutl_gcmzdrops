@@ -8,7 +8,7 @@ error sniff(void *const data, size_t const len, wchar_t const **const mime, wcha
     return errg(err_null_pointer);
   }
   if (len < 16) {
-    return emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("入力データが短すぎます。")));
+    return errg(err_fail);
   }
 
   wchar_t const *ext_ = NULL;

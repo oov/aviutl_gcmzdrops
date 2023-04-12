@@ -1,5 +1,4 @@
--- ‚±‚ê‚Í‚²‚¿‚á‚Ü‚ºƒhƒƒbƒvƒX‚ÌƒGƒ“ƒgƒŠ[ƒ|ƒCƒ“ƒg‚Å‚·B
--- ’Êí‚Ì—p“r‚Å‚Í‚±‚Ìƒtƒ@ƒCƒ‹‚ð‘‚«Š·‚¦‚é•K—v‚Í‚ ‚è‚Ü‚¹‚ñB
+-- There is no need to rewrite this file for normal use.
 local P = {}
 
 P.handlers = {}
@@ -28,7 +27,10 @@ function P.ondragenter(files, state)
       if h.ondragenter(files, state) then
         r = true
       else
-        debug_print("ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[ ["..h.name.."] ‚ª ondragenter ‚Å false ‚ð•Ô‚µ‚Ü‚µ‚½")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: ondragenter ã§ false ã‚’è¿”ã—ã¾ã—ãŸ]=],
+          en_US = [=[%s: false returned on ondragenter]=],
+        }), h.name))
         P.handlers[i] = false
       end
     end
@@ -43,7 +45,10 @@ function P.ondragover(files, state)
       if h.ondragover(files, state) then
         r = true
       else
-        debug_print("ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[ ["..h.name.."] ‚ª ondragover ‚Å false ‚ð•Ô‚µ‚Ü‚µ‚½")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: ondragover ã§ false ã‚’è¿”ã—ã¾ã—ãŸ]=],
+          en_US = [=[%s: false returned on ondragover]=],
+        }), h.name))
         P.handlers[i] = false
       end
     end
@@ -65,17 +70,26 @@ function P.ondrop(files, state)
     if h ~= false then
       local f, s = h.ondrop(files, state)
       if f == nil then
-        debug_print("ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[ ["..h.name.."] ‚Åˆ—‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: å‡¦ç†ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ]=],
+          en_US = [=[%s: The process has been canceled]=],
+        }), h.name))
         return false
       elseif f ~= false then
         for i2, f2 in ipairs(f) do
-          debug_print("[" .. i2 .. "] " .. f2.filepath)
+          debug_print(string.format("[%d] %s", i2, f2.filepath))
         end
         GCMZDrops.drop(f, s)
-        debug_print("ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[ ["..h.name.."] ‚Åˆ—‚ªŠ®—¹‚µ‚Ü‚µ‚½")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: å‡¦ç†ãŒå®Œäº†ã—ã¾ã—ãŸã€‚]=],
+          en_US = [=[%s: The process has been completed.]=],
+        }), h.name))
         return true
       else
-        debug_print("ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[ ["..h.name.."] ‚Å‚ÍŠ®—¹‚µ‚È‚©‚Á‚½‚½‚ßŽŸ‚ÖˆÚs")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: å‡¦ç†ã‚’ç¶šè¡Œã—ã¾ã™ã€‚]=],
+          en_US = [=[%s: Continue processing.]=],
+        }), h.name))
       end
     end
   end
@@ -149,5 +163,17 @@ end
 local iniobj = require("_iniobj")
 GCMZDrops.inistring = iniobj.new
 GCMZDrops.inifile = iniobj.newfile
+
+local preferred_languages = GCMZDrops.get_preferred_language()
+function _G.i18n(utf8string_map)
+  local langs = {}
+  for key, _ in pairs(utf8string_map) do
+    if type(key) == "string" then
+      table.insert(langs, key)
+    end
+  end
+  local idx = GCMZDrops.choose_language(preferred_languages, langs)
+  return GCMZDrops.convertencoding(utf8string_map[langs[idx]], 'utf8', 'ansi')
+end
 
 return P

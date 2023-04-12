@@ -1,21 +1,25 @@
 local P = {}
 
-P.name = [=[ƒeƒLƒXƒgƒtƒ@ƒCƒ‹‚ğ Shift_JIS ‚É©“®•ÏŠ·]=]
+-- NOTE: This script is not used in non-Japanese environments.
+P.name = i18n({
+  ja_JP = [=[ãƒ†ã‚­ã‚¹ãƒˆãƒ•ã‚¡ã‚¤ãƒ«ã‚’ Shift_JIS ã«è‡ªå‹•å¤‰æ›]=],
+  en_US = [=[Automatically convert text file encoding to Shift_JIS]=],
+})
 
--- ‘¼‚ÌƒXƒNƒŠƒvƒg‚ªˆ—‚µ‚½Œã‚Éƒtƒ@ƒCƒ‹‚ğ·‚µ‘Ö‚¦‚é‚Æ•s“s‡‚ª‚ ‚é‚Ì‚Å
--- ‚±‚ÌƒXƒNƒŠƒvƒg‚Í—Dæ“I‚ÉÀs‚³‚¹‚é
--- ‚È‚¨A‚±‚ÌƒXƒNƒŠƒvƒg‚ªƒtƒ@ƒCƒ‹‚Ì·‚µ‘Ö‚¦‚ğs‚Á‚½ê‡A
--- Œ³‚Ì filepath ‚Í orgfilepath ‚Æ‚µ‚Ä•Û‘¶‚³‚ê‚Ü‚·
+-- ä»–ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒå‡¦ç†ã—ãŸå¾Œã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å·®ã—æ›¿ãˆã‚‹ã¨ä¸éƒ½åˆãŒã‚ã‚‹ã®ã§
+-- ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯å„ªå…ˆçš„ã«å®Ÿè¡Œã•ã›ã‚‹
+-- ãªãŠã€ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒãƒ•ã‚¡ã‚¤ãƒ«ã®å·®ã—æ›¿ãˆã‚’è¡Œã£ãŸå ´åˆã€
+-- å…ƒã® filepath ã¯ orgfilepath ã¨ã—ã¦ä¿å­˜ã•ã‚Œã¾ã™
 P.priority = 99999
 
 function P.ondragenter(files, state)
   if GCMZDrops.getpatchid() ~= 0 then
-    -- –|–óƒpƒbƒ`‚ª“K—p‚³‚ê‚Ä‚¢‚éŠÂ‹«‚Å‚Í“K—p‚µ‚È‚¢‚æ‚¤‚É‚·‚é
+    -- ç¿»è¨³ãƒ‘ãƒƒãƒãŒé©ç”¨ã•ã‚Œã¦ã„ã‚‹ç’°å¢ƒã§ã¯é©ç”¨ã—ãªã„ã‚ˆã†ã«ã™ã‚‹
     return false
   end
   for i, v in ipairs(files) do
     if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
-      -- ƒtƒ@ƒCƒ‹‚ÌŠg’£q‚ª txt ‚Å mediatype ‚Å Shift_JIS ‚Ü‚½‚ÍƒAƒNƒeƒBƒu‚ÈƒR[ƒhƒy[ƒW‚¾‚Æ‚¢‚¤–‚ª–¾¦‚³‚ê‚Ä‚¢‚È‚¯‚ê‚Î’²¸‚·‚é•K—v‚ª‚ ‚é‚Ì‚Å true
+      -- ãƒ•ã‚¡ã‚¤ãƒ«ã®æ‹¡å¼µå­ãŒ txt ã§ mediatype ã§ Shift_JIS ã¾ãŸã¯ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªã‚³ãƒ¼ãƒ‰ãƒšãƒ¼ã‚¸ã ã¨ã„ã†äº‹ãŒæ˜ç¤ºã•ã‚Œã¦ã„ãªã‘ã‚Œã°èª¿æŸ»ã™ã‚‹å¿…è¦ãŒã‚ã‚‹ã®ã§ true
       return true
     end
   end
@@ -23,7 +27,7 @@ function P.ondragenter(files, state)
 end
 
 function P.ondragover(files, state)
-  -- ondragenter ‚Åˆ—‚Å‚«‚»‚¤‚È‚à‚Ì‚Í ondragover ‚Å‚àˆ—‚Å‚«‚»‚¤‚È‚Ì‚Å’²‚×‚¸ true
+  -- ondragenter ã§å‡¦ç†ã§ããã†ãªã‚‚ã®ã¯ ondragover ã§ã‚‚å‡¦ç†ã§ããã†ãªã®ã§èª¿ã¹ãš true
   return true
 end
 
@@ -33,14 +37,14 @@ end
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
     if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
-      -- ƒtƒ@ƒCƒ‹‚ğ‘S•”“Ç‚İ‚Ş
+      -- ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å…¨éƒ¨èª­ã¿è¾¼ã‚€
       local f, err = io.open(v.filepath, "rb")
       if f == nil then
         error(err)
       end
       local text = f:read("*all")
       f:close()
-      -- •¶šƒGƒ“ƒR[ƒfƒBƒ“ƒO‚ª Shift_JIS ˆÈŠO‚Å•ÏŠ·‰Â”\‚È‚à‚Ì‚È‚ç·‚µ‘Ö‚¦
+      -- æ–‡å­—ã‚¨ãƒ³ã‚³ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ãŒ Shift_JIS ä»¥å¤–ã§å¤‰æ›å¯èƒ½ãªã‚‚ã®ãªã‚‰å·®ã—æ›¿ãˆ
       local enc = GCMZDrops.detectencoding(text)
       if (enc == "utf8")or(enc == "utf16le")or(enc == "utf16be")or(enc == "eucjp")or(enc == "iso2022jp") then
         local filepath = GCMZDrops.createtempfile("gcmztmp", ".txt")
@@ -50,12 +54,15 @@ function P.ondrop(files, state)
         end
         f:write(GCMZDrops.convertencoding(text, enc, "sjis"))
         f:close()
-        debug_print("["..P.name.."] ‚ª " .. v.filepath .. " ‚ğ Shift_JIS ‚É•ÏŠ·‚µ‚Ä·‚µ‘Ö‚¦‚Ü‚µ‚½BŒ³‚Ìƒtƒ@ƒCƒ‹‚Í orgfilepath ‚Åæ“¾‚Å‚«‚Ü‚·B")
+        debug_print(string.format(i18n({
+          ja_JP = [=[%s: %s ã‚’ Shift_JIS ã«å¤‰æ›ã—ã¦å·®ã—æ›¿ãˆã¾ã—ãŸã€‚]=],
+        }), P.name, v.filepath))
+        -- The original file is saved in the orgfilepath
         files[i] = {filepath=filepath, orgfilepath=v.filepath, mediatype="text/plain; charset=Shift_JIS"}
       end
     end
   end
-  -- ‘¼‚ÌƒCƒxƒ“ƒgƒnƒ“ƒhƒ‰[‚É‚àˆ—‚ğ‚³‚¹‚½‚¢‚Ì‚Å‚±‚±‚Íí‚É false
+  -- ä»–ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ©ãƒ¼ã«ã‚‚å‡¦ç†ã‚’ã•ã›ãŸã„ã®ã§ã“ã“ã¯å¸¸ã« false
   return false
 end
 

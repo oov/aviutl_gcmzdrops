@@ -1,13 +1,16 @@
 local P = {}
 
-P.name = [=[•W€ƒnƒ“ƒhƒ‰[]=]
+P.name = i18n({
+  ja_JP = [=[æ¨™æº–ãƒãƒ³ãƒ‰ãƒ©ãƒ¼]=],
+  en_US = [=[Generic handler]=],
+})
 
--- “Á•Ê‚Èˆ—‚ðs‚¤ƒXƒNƒŠƒvƒg‚ªŒ©‚Â‚©‚ç‚È‚¯‚ê‚Î
--- ÅI“I‚É‚±‚ÌƒXƒNƒŠƒvƒg‚ª‚»‚Ì‚Ü‚Üƒtƒ@ƒCƒ‹‚ðƒhƒƒbƒv‚·‚é
+-- ç‰¹åˆ¥ãªå‡¦ç†ã‚’è¡Œã†ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒè¦‹ã¤ã‹ã‚‰ãªã‘ã‚Œã°
+-- æœ€çµ‚çš„ã«ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆãŒãã®ã¾ã¾ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ãƒ‰ãƒ­ãƒƒãƒ—ã™ã‚‹
 P.priority = -100000
 
 function P.ondragenter(files, state)
-  -- TODO: exedit.ini ‚ÌÝ’è“à—e‚ðl—¶‚µ‚Ä“®‚­‚æ‚¤‚É‚·‚éH
+  -- TODO: exedit.ini ã®è¨­å®šå†…å®¹ã‚’è€ƒæ…®ã—ã¦å‹•ãã‚ˆã†ã«ã™ã‚‹ï¼Ÿ
   return true
 end
 

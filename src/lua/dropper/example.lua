@@ -1,64 +1,67 @@
--- ������܂��h���b�v�X�p�h���b�p�[�X�N���v�g�̋L�q�T���v��
--- �����R�[�h�� Shift_JIS �ŋL�q���Ă�������
--- �i���������A������u�_�������v�΍�͓��ɂ��Ă��܂���j
+-- ごちゃまぜドロップス用ドロッパースクリプトの記述サンプル
+-- 文字コードは UTF-8 で記述しますが、ごちゃまぜドロップスに Lua 内で記述した文字列をわたす場合はアクティブなコードページに変換してください
 local P = {}
 
--- ���̃h���b�p�[�̖��O���w�肵�܂��B
--- ���̖��O�̓��j���[�A�C�e�����Ƃ��ė��p����܂��B
-P.name = [=[�T���v���h���b�p�[]=]
+-- このドロッパーの名前を指定します。
+-- この名前はメニューアイテム名として利用されます。
+-- i18n を使うとUI言語に合わせて翻訳版が自動選択され、アクティブなコードページに変換されます。
+P.name = i18n({
+  ja_JP = [=[サンプルドロッパー]=],
+  en_US = [=[Example Dropper]=],
+})
 
--- oninitmenu �̓��j���[���ڂ��������邽�߂ɌĂ΂�܂��B
+-- oninitmenu はメニュー項目を準備するために呼ばれます。
 function P.oninitmenu()
-  -- ���j���[�Ƃ��ĕ\�����ׂ����ږ��𕶎��񂩁A������̔z��i�e�[�u���j�Ƃ��ĕԂ��Ă��������B
-  -- nil ��Ԃ����ꍇ�̓��j���[���ڂ͕\�����ꂸ�A�������Ăяo����邱�Ƃ�����܂���B
-  -- �������Ԃ����ꍇ�̓��j���[���ڂ͂P�݂̂ŁA���ꂪ�N���b�N�����ƌĂяo����܂��B
-  -- ������̔z��i�e�[�u���j��Ԃ����ꍇ�̓T�u���j���[�Ƃ��ēo�^����܂��B
-  -- ���̃C�x���g�̓|�b�v�A�b�v���j���[�\���̓x�ɌĂяo����邽�߁A���ׂ̍����������s���ׂ��ł͂���܂���B
+  -- メニューとして表示すべき項目名を文字列か、文字列の配列（テーブル）として返してください。
+  -- nil を返した場合はメニュー項目は表示されず、処理が呼び出されることもありません。
+  -- 文字列を返した場合はメニュー項目は１つのみで、それがクリックされると呼び出されます。
+  -- 文字列の配列（テーブル）を返した場合はサブメニューとして登録されます。
+  -- このイベントはポップアップメニュー表示の度に呼び出されるため、負荷の高い処理を行うべきではありません。
   return nil
 end
 
--- onselect �̓��j���[���ڂ��I�΂ꂽ���ɌĂ΂�܂��B
+-- onselect はメニュー項目が選ばれた時に呼ばれます。
 function P.onselect(index, state)
-  -- index �ɂ͑I�΂ꂽ���j���[���ڂ̈ʒu�������l�œn����܂��B
-  --   �T�u���j���[�������Ȃ����͏��0�A�T�u���j���[�����ꍇ��1����n�܂�C���f�b�N�X�ł��B
-  -- state �ɂ͈ȉ��̂悤�ȃe�[�u����n����܂��B
+  -- index には選ばれたメニュー項目の位置が整数値で渡されます。
+  --   サブメニューを持たない時は常に0、サブメニューを持つ場合は1から始まるインデックスです。
+  -- state には以下のようなテーブルを渡されます。
   --   state = {
-  --     -- �t�@�C�����h���b�v���ׂ��}�E�X�J�[�\���ʒu
+  --     -- ファイルをドロップすべきマウスカーソル位置
   --     x=120,
   --     y=235,
-  --     -- �e�ɂȂ�ׂ��E�B���h�E�̃n���h��
+  --     -- 親になるべきウィンドウのハンドル
   --     parent=123456
   --   }
 
-  -- �������s�������ʁA�h���b�v����t�@�C���������Ȃ��ꍇ�� nil ��Ԃ��Ă��������B
+  -- 処理を行った結果、ドロップするファイルが何もない場合は nil を返してください。
   return nil
 
-  -- �t�@�C�����h���b�v����ꍇ�̓t�@�C���ꗗ�ƃ}�E�X�Ȃǂ̓��͏�Ԃ�Ԃ��K�v������܂��B
-  -- �C�x���g�n���h���[�X�N���v�g�� ondragenter �ɓn����Ă���
-  -- files �� state �Ɠ������̂��X�N���v�g���ō쐬���A������Ԃ��Ă��������B
+  -- ファイルをドロップする場合はファイル一覧とマウスなどの入力状態を返す必要があります。
+  -- イベントハンドラースクリプトで ondragenter に渡されてくる
+  -- files と state と同じものをスクリプト内で作成し、両方を返してください。
   -- return files, state
   -- 
-  -- �ꎞ�I�ȃt�@�C�����쐬�������ꍇ�� GCMZDrops.createtempfile �ō쐬���邩�A
-  -- �ʂ̎�i�ō쐬�����t�@�C���� GCMZDrops.deleteonfinish �ō폜�\�񂵂Ă��������B
-  -- �܂��A�ꎞ�I�ȃt�@�C�����쐬����ꍇ�� Temp �t�H���_�[���g�p����̂������������܂��B
-  -- ����ȊO�̏ꏊ���ƃ��[�U�[�̐ݒ莟��ŃR�s�[����邩�ǂ����̐U�镑�����ς��܂��B
-  -- ����A�������ɍ쐬����ꎞ�I�ł͂Ȃ��t�@�C����
-  -- �S�ă��[�U�[���ݒ肵���t�H���_���ɂ����܂�悤�ɔz�u����̂��]�܂����ł��B
-  -- ����ȊO�̏ꏊ�ɉi���I�ȃt�@�C�����쐬����X�N���v�g���쐬����ꍇ��
-  -- ���[�U�[�ɃR���Z���T�X�𓾂���Łi���j�s���悤�ɂ��Ă��������B
-  -- ���h�L�������g�ȂǂɋL�ڂ���AGCMZDrops.confirm �Ŋm�F����A�Ȃ�
+  -- 一時的なファイルを作成したい場合は GCMZDrops.createtempfile で作成するか、
+  -- 別の手段で作成したファイルを GCMZDrops.deleteonfinish で削除予約してください。
+  -- また、一時的なファイルを作成する場合は Temp フォルダーを使用するのを強く推奨します。
+  -- それ以外の場所だとユーザーの設定次第でコピーされるかどうかの振る舞いが変わります。
+  -- 一方、処理中に作成する一時的ではないファイルは
+  -- 全てユーザーが設定したフォルダ内におさまるように配置するのが望ましいです。
+  -- それ以外の場所に永続的なファイルを作成するスクリプトを作成する場合は
+  -- ユーザーにコンセンサスを得た上で（※）行うようにしてください。
+  -- ※ドキュメントなどに記載する、GCMZDrops.confirm で確認する、など
   --
-  -- onselect �������̒��ӓ_
-  --   �X�N���v�g�̏����������Ԃɓn��ꍇ�A���̂܂ܑf���ɃX�N���v�g�����������
-  --   ���b�Z�[�W���[�v�����Ȃ��̂������� AviUtl �S�̂��t���[�Y���܂��B
-  --   Lua �X�N���v�g�ŉ񐔂̑������[�v�������s���Ă���̂������̏ꍇ��
-  --   GCMZDrops.doevents(0, 0) �����܂ɌĂԂ��Ƃŉ���\�ł����A
-  --   os.execute ���Ăяo�����ꍇ�Ȃǂ̂悤�ɏ����ɉ���ł��Ȃ��ꍇ��
-  --   Lua �X�N���v�g�����ł͖���������邱�Ƃ��ł��܂���B
-  --   ���̏ꍇ�� Lua �p�� DLL ��ʓr�쐬���邱�Ƃŉ���ł��܂��B
+  -- onselect 実装時の注意点
+  --   スクリプトの処理が長時間に渡る場合、そのまま素直にスクリプトを実装すると
+  --   メッセージループが回らないのが原因で AviUtl 全体がフリーズします。
+  --   Lua スクリプトで回数の多いループ処理を行っているのが原因の場合は
+  --   GCMZDrops.doevents(0, 0) をたまに呼ぶことで回避可能ですが、
+  --   os.execute を呼び出した場合などのように処理に介入できない場合は
+  --   Lua スクリプトだけでは問題を回避することができません。
+  --   この場合は Lua 用の DLL を別途作成することで回避できます。
 
-  -- -- ������
-  -- -- "Hello world!" �Ə����ꂽ�e�L�X�g�t�@�C�����쐬���A�g���ҏW�ɓ������ޗ�
+  -- -- 実装例
+  -- -- "Hello world!" と書かれたテキストファイルを作成し、拡張編集に投げ込む例
   -- local filepath = GCMZDrops.createtempfile("helloworld", ".txt")
   -- f, err = io.open(filepath, "wb")
   -- if f == nil then

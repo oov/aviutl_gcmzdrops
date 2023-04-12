@@ -1,3 +1,7 @@
 .vscode/
 aviutl/
 build/
+src/i18n/*.pot
+src/i18n/*.po
+src/i18n/*.mo
+src/i18n/.tool

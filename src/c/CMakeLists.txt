@@ -18,6 +18,37 @@ add_custom_target(generate_version_h COMMAND
   -P "${ovutil_SOURCE_DIR}/src/cmake/version.cmake"
 )
 
+# generate i18n.rc
+set(LANGCSV "${CMAKE_CURRENT_SOURCE_DIR}/../i18n/langs.csv")
+file(READ "${LANGCSV}" langs)
+string(STRIP ${langs} langs)
+string(REPLACE "\n" ";" langs "${langs}")
+foreach(line IN LISTS langs)
+  if (line MATCHES "^#.*$|^([^,]+),$")
+    continue()
+  endif()
+  if (line MATCHES "^([^,]+),([^,]+)$")
+    list(APPEND polist "${CMAKE_CURRENT_SOURCE_DIR}/../i18n/${CMAKE_MATCH_1}.po.DO_NOT_EDIT")
+  else()
+    message(FATAL_ERROR "invalid language difinition: ${line}")
+  endif()
+endforeach()
+add_custom_command(
+  OUTPUT
+    "${CMAKE_CURRENT_BINARY_DIR}/i18n.rc"
+  COMMAND
+    ${CMAKE_COMMAND}
+    -Doutput_dir="${CMAKE_CURRENT_BINARY_DIR}"
+    -Drctmpl="${CMAKE_CURRENT_SOURCE_DIR}/i18n.rc.tmpl"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/i18n_rc.cmake"
+  WORKING_DIRECTORY
+    "${CMAKE_CURRENT_SOURCE_DIR}/../i18n"
+  DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/i18n.rc.tmpl"
+    ${polist}
+)
+add_custom_target(generate_rc DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/i18n.rc")
+
 find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
 add_custom_target(generate_lua51_importlib COMMAND
   ${CMAKE_COMMAND}
@@ -38,7 +69,7 @@ list(APPEND targets crc64)
 add_library(detect STATIC 3rd/detect/detect.c)
 list(APPEND targets detect)
 
-add_executable(gentransmap error_gcmz.c luafuncs_convertencoding.c luautil.c util/gentransmap.c)
+add_executable(gentransmap error_gcmz.c task.c luafuncs_convertencoding.c luautil.c util/gentransmap.c)
 set_target_properties(gentransmap PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
 )
@@ -73,6 +104,7 @@ add_library(gcmzdrops_auf SHARED
   gcmzdrops.c
   gcmzfuncs.c
   gui.c
+  i18n.rc
   lua.c
   luafuncs.c
   luafuncs_convertencoding.c
@@ -88,17 +120,20 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_lua51_importlib copy_related_files generate_transmap)
+add_dependencies(gcmzdrops_auf generate_version_h generate_rc generate_lua51_importlib copy_related_files generate_transmap)
 list(APPEND targets gcmzdrops_auf)
 target_link_options(gcmzdrops_auf PRIVATE
   -Wl,-delayload,lua51.dll
 )
 
-add_executable(datauri_test error_gcmz.c sniffer.c datauri_test.c)
+add_executable(datauri_test error_gcmz.c task.c sniffer.c datauri_test.c)
+add_dependencies(datauri_test generate_version_h)
 list(APPEND targets datauri_test)
 add_executable(gcmzfuncs_test error_gcmz.c task.c gcmzfuncs_test.c)
+add_dependencies(gcmzfuncs_test generate_version_h)
 list(APPEND targets gcmzfuncs_test)
-add_executable(luafuncs_test error_gcmz.c files.c luautil.c luafuncs_test.c)
+add_executable(luafuncs_test error_gcmz.c task.c files.c luautil.c luafuncs_test.c)
+add_dependencies(luafuncs_test generate_version_h)
 list(APPEND targets luafuncs_test)
 
 set(is_clang "$<C_COMPILER_ID:Clang>")

@@ -10,7 +10,9 @@
 #include "error_gcmz.h"
 #include "gcmzdrops.h"
 #include "gui.h"
+#include "i18n.h"
 #include "task.h"
+#include "version.h"
 
 error gcmz_get_script_dir(struct wstr *const dest) {
   if (!dest) {
@@ -504,7 +506,8 @@ NODISCARD static error analyse_exedit_window_image(uint8_t const *const image,
     return errg(err_null_pointer);
   }
   if (width < gcmz_minimum_window_width || height < gcmz_minimum_window_height) {
-    return emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("拡張編集ウィンドウの表示エリアが小さすぎます。")));
+    return emsg_i18n(
+        err_type_generic, err_fail, gettext("The display area of the Advanced Editing window is too small."));
   }
 
   size_t const line_bytes = (width * 3 + 3) & ~3U;
@@ -708,7 +711,7 @@ static bool can_use_print_window(void) {
     return false; // WINE
   }
   typedef INT(WINAPI * RtlGetVersionFunc)(OSVERSIONINFOEXW *);
-  RtlGetVersionFunc fn = (RtlGetVersionFunc)GetProcAddress(h, "RtlGetVersion");
+  RtlGetVersionFunc fn = (RtlGetVersionFunc)(void *)GetProcAddress(h, "RtlGetVersion");
   if (!fn) {
     return false;
   }
@@ -904,7 +907,17 @@ static INT_PTR CALLBACK input_dialog_wndproc(HWND const dlg,
     SendMessageW(GetDlgItem(dlg, 1), WM_SETFONT, (WPARAM)si.hfont, 0);
     SendMessageW(GetDlgItem(dlg, 2), WM_SETFONT, (WPARAM)si.hfont, 0);
     SendMessageW(GetDlgItem(dlg, 3), WM_SETFONT, (WPARAM)si.hfont, 0);
-    SetWindowTextW(dlg, GCMZDROPS_NAME_VERSION_WIDE);
+    struct wstr ws = {0};
+    err = ssprintf(&ws, NULL, L"%1$s %2$s", "GCMZDrops", VERSION);
+    SetWindowTextW(dlg, efailed(err) ? L"GCMZDrops" : ws.ptr);
+    ereport(err);
+    err = ssprintf(&ws, NULL, L"%1$s", gettext("OK"));
+    SetWindowTextW(GetDlgItem(dlg, IDOK), efailed(err) ? L"OK" : ws.ptr);
+    ereport(err);
+    err = ssprintf(&ws, NULL, L"%1$s", gettext("Cancel"));
+    SetWindowTextW(GetDlgItem(dlg, IDCANCEL), efailed(err) ? L"Cancel" : ws.ptr);
+    ereport(err);
+    ereport(sfree(&ws));
     SetWindowTextW(GetDlgItem(dlg, 0), ib->value->ptr);
     SetWindowTextW(GetDlgItem(dlg, 3), ib->caption->ptr);
     return TRUE;
@@ -981,7 +994,12 @@ error gcmz_confirm(struct wstr const *const caption, bool *const result) {
     err = ethru(err);
     return err;
   }
-  int r = MessageBoxW(h, caption->ptr, GCMZDROPS_NAME_VERSION_WIDE, MB_ICONQUESTION | MB_OKCANCEL);
+  enum {
+    buf_size = 1024,
+  };
+  wchar_t buf[buf_size];
+  mo_sprintf_wchar(buf, buf_size, NULL, "%1$s %2  $s", "GCMZDrops", VERSION);
+  int r = MessageBoxW(h, caption->ptr, buf, MB_ICONQUESTION | MB_OKCANCEL);
   if (!r) {
     return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }

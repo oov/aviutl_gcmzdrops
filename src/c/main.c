@@ -9,6 +9,7 @@
 
 #include "error_gcmz.h"
 #include "files.h"
+#include "i18n.h"
 
 static mtx_t g_reporter_mtx = {0};
 
@@ -87,8 +88,16 @@ static void gcmz_reporter(error e, struct NATIVE_STR const *const message, struc
 
 cleanup:
   if (efailed(err)) {
-    OutputDebugStringW(L"エラー内容をログファイルに出力できませんでした。");
-    error err2 = error_to_string(err, &tmp);
+    struct wstr ws = {0};
+    error err2 = to_wstr(&str_unmanaged_const(gettext("Failed to output the error content to the log file.")), &ws);
+    if (efailed(err2)) {
+      OutputDebugStringW(L"Failed to output the error content to the log file.");
+      efree(&err2);
+    } else {
+      OutputDebugStringW(ws.ptr);
+      ereport(sfree(&ws));
+    }
+    err2 = error_to_string(err, &tmp);
     if (esucceeded(err2)) {
       OutputDebugStringW(tmp.ptr);
     } else {
@@ -108,25 +117,25 @@ cleanup:
 }
 
 static BOOL main_init(HINSTANCE const inst) {
-  if (!ov_init(generic_error_message_mapper_jp)) {
-    return FALSE;
-  }
+  ov_init();
+  error_set_message_mapper(gcmz_error_message);
   mtx_init(&g_reporter_mtx, mtx_plain);
-  error_register_reporter(gcmz_reporter);
-  ereportmsg(error_gcmz_init(), &native_unmanaged(NSTR("エラーメッセージマッパーの登録に失敗しました。")));
+  error_set_reporter(gcmz_reporter);
   set_hinstance(inst);
   return TRUE;
 }
 
 static BOOL main_exit(void) {
   files_cleanup(false);
-  ov_exit();
   mtx_destroy(&g_reporter_mtx);
+  ov_exit();
   return TRUE;
 }
 
 BOOL APIENTRY DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved);
 BOOL APIENTRY DllMain(HINSTANCE const inst, DWORD const reason, LPVOID const reserved) {
+  // trans: This dagger helps UTF-8 detection. You don't need to translate this.
+  (void)gettext_noop("†");
   (void)reserved;
   switch (reason) {
   case DLL_PROCESS_ATTACH:

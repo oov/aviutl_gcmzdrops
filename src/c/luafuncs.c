@@ -13,26 +13,9 @@
 #include "droptarget.h"
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"
+#include "i18n.h"
 #include "luafuncs_convertencoding.h"
 #include "luautil.h"
-
-static error build_invalid_char_error(struct NATIVE_STR const *const filename ERR_FILEPOS_PARAMS) {
-  struct NATIVE_STR s = {0};
-  error err =
-      scpym(&s, NSTR("ファイル名 \""), filename->ptr, NSTR("\" には AviUtl 上で使用できない文字が含まれています。"));
-  if (efailed(err)) {
-    err = ethru(err);
-    goto failed;
-  }
-  return error_add_(NULL, err_type_gcmz, err_gcmz_invalid_char, &s ERR_FILEPOS_VALUES_PASSTHRU);
-
-failed:
-  ereport(sfree(&s));
-  ereport(err);
-  return emsg(err_type_gcmz,
-              err_gcmz_invalid_char,
-              &native_unmanaged(NSTR("ファイル名に AviUtl 上で使用できない文字が含まれています。")));
-}
 
 NODISCARD static error verify_filename(struct wstr const *const ws) {
   struct str s = {0};
@@ -48,7 +31,7 @@ NODISCARD static error verify_filename(struct wstr const *const ws) {
     goto cleanup;
   }
   if (wcscmp(ws->ptr, v.ptr) != 0) {
-    err = build_invalid_char_error(ws ERR_FILEPOS_VALUES);
+    err = emsg_i18nf(err_type_gcmz, err_gcmz_invalid_char, NULL, "%1$ls", v.ptr);
   }
 
 cleanup:
@@ -1378,6 +1361,162 @@ static int luafn_doevents(lua_State *const L) {
   return 0;
 }
 
+static int luafn_get_preferred_language(lua_State *const L) {
+  struct wstr preferred_languages = {0};
+  error err = mo_get_preferred_ui_languages(&preferred_languages);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  lua_newtable(L);
+  int idx = 0;
+  for (wchar_t const *l = preferred_languages.ptr; *l != L'\0'; l += wcslen(l) + 1) {
+    err = luautil_push_wstr(L, &wstr_unmanaged_const(l));
+    if (efailed(err)) {
+      err = ethru(err);
+      goto cleanup;
+    }
+    lua_rawseti(L, -2, ++idx);
+  }
+cleanup:
+  ereport(sfree(&preferred_languages));
+  return efailed(err) ? luautil_throw(L, err) : 1;
+}
+
+static size_t
+choose_language(WORD const *const preferred, size_t const num_preferred, WORD const *const langs, size_t num_langs) {
+  size_t candidate = 0;
+  for (size_t i = 0; i < num_preferred; ++i) {
+    WORD const prefered_primary = PRIMARYLANGID(preferred[i]);
+    for (size_t j = 0; j < num_langs; ++j) {
+      if (langs[j] == preferred[i]) {
+        return j + 1;
+      }
+      if (!candidate && (prefered_primary == PRIMARYLANGID(langs[j]))) {
+        candidate = j + 1;
+      }
+    }
+  }
+  return candidate;
+}
+
+typedef LCID(WINAPI *LocaleNameToLCIDProc)(LPCWSTR lpName, DWORD dwFlags);
+
+static NODISCARD error table_to_languages(lua_State *const L,
+                                          WORD *const langs,
+                                          size_t *const num_langs,
+                                          LocaleNameToLCIDProc toLCID) {
+  if (!L || !langs || !num_langs || !*num_langs) {
+    return errg(err_invalid_arugment);
+  }
+  struct wstr ws = {0};
+  error err = eok();
+  size_t n = 0, len = *num_langs;
+  while (1) {
+    lua_rawgeti(L, -1, (int)(n + 1));
+    if (lua_isnil(L, -1)) {
+      lua_pop(L, 1);
+      break;
+    }
+    if (lua_type(L, -1) != LUA_TSTRING) {
+      err = emsg_i18nf(err_type_generic, err_fail, L"%1$s", gettext("\"%1$s\" is not a string."), lua_tostring(L, -1));
+      goto cleanup;
+    }
+    size_t slen = 0;
+    char const *s = lua_tolstring(L, -1, &slen);
+    if (slen >= 32) {
+      err = emsg_i18nf(err_type_generic, err_fail, L"%1$s", gettext("\"%1$s\" is too long."), s);
+      goto cleanup;
+    }
+    err = to_wstr(s, slen, &ws);
+    if (efailed(err)) {
+      err = ethru(err);
+      goto cleanup;
+    }
+    if (ws.len >= 3 && ws.ptr[2] == L'_') {
+      ws.ptr[2] = L'-';
+    }
+    if (n == len) {
+      err = emsg_i18nf(
+          err_type_generic, err_fail, L"%zu", gettext("More than %zu elements in the language name table."), len);
+      goto cleanup;
+    }
+    langs[n++] = LANGIDFROMLCID(toLCID(ws.ptr, 0));
+    lua_pop(L, 1);
+  }
+  *num_langs = n;
+cleanup:
+  ereport(sfree(&ws));
+  return err;
+}
+
+static int luafn_choose_language(lua_State *const L) {
+  HMODULE h = NULL;
+  struct wstr ws = {0};
+  error err = eok();
+  if (lua_type(L, 1) != LUA_TTABLE || lua_type(L, 2) != LUA_TTABLE) {
+    err = errg(err_invalid_arugment);
+    goto cleanup;
+  }
+  h = LoadLibraryW(L"kernel32.dll");
+  if (h == NULL) {
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
+    goto cleanup;
+  }
+  LocaleNameToLCIDProc toLCID = (LocaleNameToLCIDProc)(void *)GetProcAddress(h, "LocaleNameToLCID");
+  if (toLCID == NULL) {
+    err = errhr(HRESULT_FROM_WIN32(GetLastError()));
+    goto cleanup;
+  }
+  enum {
+    buf_size = 256,
+  };
+  WORD preferred[buf_size] = {0};
+  size_t num_preferred = buf_size;
+  lua_pushvalue(L, 1);
+  err = table_to_languages(L, preferred, &num_preferred, toLCID);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  lua_pop(L, 1);
+
+  WORD lang[buf_size] = {0};
+  size_t num_lang = buf_size;
+  lua_pushvalue(L, 2);
+  err = table_to_languages(L, lang, &num_lang, toLCID);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  lua_pop(L, 1);
+
+  size_t enUS = 0, first = 0;
+  for (size_t i = 0; i < num_lang && (!enUS || !first); ++i) {
+    if (!enUS && lang[i] == MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)) {
+      enUS = i + 1;
+    }
+    if (!first && lang[i]) {
+      first = i + 1;
+    }
+  }
+  size_t idx = choose_language(preferred, num_preferred, lang, num_lang);
+  if (!idx) {
+    idx = enUS;
+  }
+  if (!idx) {
+    idx = first;
+  }
+  lua_pushinteger(L, (int)idx);
+cleanup:
+  ereport(sfree(&ws));
+  if (h) {
+    FreeLibrary(h);
+    h = NULL;
+  }
+  return efailed(err) ? luautil_throw(L, err) : 1;
+}
+
 void luafn_register_funcs(lua_State *const L) {
   lua_pushcfunction(L, luafn_debug_print);
   lua_setglobal(L, "debug_print");
@@ -1433,6 +1572,10 @@ void luafn_register_funcs(lua_State *const L) {
   lua_setfield(L, -2, "deleteonabort");
   lua_pushcfunction(L, luafn_doevents);
   lua_setfield(L, -2, "doevents");
+  lua_pushcfunction(L, luafn_get_preferred_language);
+  lua_setfield(L, -2, "get_preferred_language");
+  lua_pushcfunction(L, luafn_choose_language);
+  lua_setfield(L, -2, "choose_language");
 
   lua_setglobal(L, "GCMZDrops");
 }

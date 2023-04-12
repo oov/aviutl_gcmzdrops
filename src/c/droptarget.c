@@ -6,6 +6,7 @@
 #include <shlobj.h>
 
 #include "datauri.h"
+#include "i18n.h"
 #include "sniffer.h"
 
 static IDropTargetVtbl g_drop_target_vtable;
@@ -258,7 +259,10 @@ NODISCARD static error files_add_temp_file(struct files *const files,
 
 cleanup:
   if (efailed(err) && created) {
-    ereportmsg(delete_file(&tmp), &native_unmanaged(NSTR("一時ファイルの削除に失敗しました。")));
+    ereportmsg_i18nf(delete_file(&tmp),
+                     NSTR("%1$ls"),
+                     gettext("The following temporary file could not be deleted:\n\n%1$ls"),
+                     tmp.ptr);
   }
   ereport(sfree(&tmp));
   return err;
@@ -672,8 +676,7 @@ DragEnter(IDropTarget *This, IDataObject *pDataObj, DWORD grfKeyState, POINTL pt
     goto cleanup;
   }
   if (!this->dragging_files.len) {
-    err = emsg(
-        err_type_generic, err_abort, &native_unmanaged(NSTR("ドロップすべきファイルがないため処理を中断しました。")));
+    err = emsg_i18n(err_type_generic, err_abort, gettext("Process aborted because there were no files to drop."));
     goto cleanup;
   }
 
@@ -682,7 +685,7 @@ DragEnter(IDropTarget *This, IDataObject *pDataObj, DWORD grfKeyState, POINTL pt
 
 cleanup:
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("IDropTarget::DragEnter でエラーが発生しました。")));
+    ereportmsg_i18nf(err, NSTR("%1$s"), gettext("An error occurred in %1$s."), "IDropTarget::DragEnter");
     *pdwEffect = DROPEFFECT_NONE;
   }
   if (*pdwEffect == DROPEFFECT_NONE) {
@@ -763,8 +766,7 @@ Drop(IDropTarget *This, IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWO
     goto cleanup;
   }
   if (!this->dragging_files.len) {
-    err = emsg(
-        err_type_generic, err_abort, &native_unmanaged(NSTR("ドロップすべきファイルがないため処理を中断しました。")));
+    err = emsg_i18n(err_type_generic, err_abort, gettext("Process aborted because there were no files to drop."));
     goto cleanup;
   }
 
@@ -774,7 +776,7 @@ Drop(IDropTarget *This, IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWO
 
 cleanup:
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("IDropTarget::Drop でエラーが発生しました。")));
+    ereportmsg_i18nf(err, NSTR("%1$s"), gettext("An error occurred in %1$s."), "IDropTarget::Drop");
   }
   ereport(files_free(&this->dragging_files, false));
   return S_OK;

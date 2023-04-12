@@ -1,6 +1,9 @@
 local P = {}
 
-P.name = [=[ƒNƒŠƒbƒvƒ{[ƒh‚©‚ç“\‚è•t‚¯]=]
+P.name = i18n({
+  ja_JP = [=[ã‚¯ãƒªãƒƒãƒ—ãƒœãƒ¼ãƒ‰ã‹ã‚‰è²¼ã‚Šä»˜ã‘]=],
+  en_US = [=[Paste from clipboard]=],
+})
 
 function P.oninitmenu()
   return P.name

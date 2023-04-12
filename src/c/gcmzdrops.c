@@ -15,9 +15,11 @@
 #include "exoloadhook.h"
 #include "gcmzfuncs.h"
 #include "gui.h"
+#include "i18n.h"
 #include "lua.h"
 #include "scpopup.h"
 #include "task.h"
+#include "version.h"
 
 enum {
   WM_DROP_TARGET_EVENT = WM_APP + 1,
@@ -26,10 +28,6 @@ enum {
   DROP_TARGET_LEAVE = 2,
   DROP_TARGET_DROP = 3,
 };
-
-#define ERRMSG_UNSUPPORTED_CHAR_IN_FILENAME                                                                            \
-  L"ファイル名に使用できない文字が含まれています。\r\n"                                         \
-  L"AviUtl では絵文字など一部の文字をファイル名に使用することができません。"
 
 static bool g_drop_target_registered = false;
 
@@ -42,7 +40,8 @@ static void update_mapped_data_task(void *const userdata) {
   if (!api_initialized(g_api)) {
     return;
   }
-  ereportmsg(api_update_mapped_data(g_api), &native_unmanaged(NSTR("外部連携API用データの更新に失敗しました。")));
+  ereportmsg_i18n(api_update_mapped_data(g_api),
+                  gettext("Failed to update the FileMappingObject of the external integration API."));
 }
 
 static void update_mapped_data(void) {
@@ -51,100 +50,17 @@ static void update_mapped_data(void) {
   task_add(update_mapped_data_task, NULL);
 }
 
-struct error_message_box_task_data {
-  HWND window;
-  struct wstr msg;
-  wchar_t const *title;
-};
-
-static void error_message_box_task(void *userdata) {
-  struct error_message_box_task_data *d = userdata;
-  message_box(d->window, d->msg.ptr, d->title, MB_ICONERROR);
-  ereport(sfree(&d->msg));
-  ereport(mem_free(&d));
-}
-
-NODISCARD static error build_error_message(error e, wchar_t const *const main_message, struct wstr *const dest) {
-  struct wstr tmp = {0};
-  struct wstr msg = {0};
-  error err = eok();
-  if (e == NULL) {
-    err = scpy(dest, main_message);
-    if (efailed(err)) {
-      err = ethru(err);
-      goto cleanup;
-    }
-    goto cleanup;
-  }
-  bool const nodetail = eis(e, err_type_gcmz, err_gcmz_lua);
-  err = nodetail ? error_to_string_short(e, &tmp) : error_to_string(e, &tmp);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  err = scpym(dest, main_message, L"\r\n\r\n", tmp.ptr, msg.ptr);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-
-cleanup:
-  ereport(sfree(&msg));
-  ereport(sfree(&tmp));
-  return err;
-}
-
-static void
-error_message_box(error e, HWND const window, wchar_t const *const msg, wchar_t const *const title, bool const later) {
-  struct wstr errmsg = {0};
-  error err = build_error_message(e, msg, &errmsg);
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-
-  struct error_message_box_task_data *d = NULL;
-  err = mem(&d, 1, sizeof(struct error_message_box_task_data));
-  if (efailed(err)) {
-    err = ethru(err);
-    goto cleanup;
-  }
-  d->window = window;
-  d->msg = errmsg;
-  d->title = title;
-  errmsg = (struct wstr){0};
-
-  if (later) {
-    // On Wine, touching GUI elements directly from the drag drop handlers seems to cause a freeze.
-    // Delay the process to avoid this problem.
-    task_add(error_message_box_task, d);
-  } else {
-    error_message_box_task(d);
-  }
-
-cleanup:
-  ereport(sfree(&errmsg));
-  if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("エラーダイアログの表示に失敗しました。")));
-  }
-  efree(&e);
-}
-
-static void generic_lua_error_handler(error e, wchar_t const *const default_msg) {
-  wchar_t const *msg = NULL;
-  bool aborted = false;
-  if (eis(e, err_type_gcmz, err_gcmz_invalid_char)) {
-    msg = ERRMSG_UNSUPPORTED_CHAR_IN_FILENAME;
+static void generic_lua_error_handler(error e, char const *const default_msg) {
+  char const *msg = NULL;
+  if (eisg(e, err_abort)) {
+    // Working as expected so no need reports.
     efree(&e);
-  } else if (eisg(e, err_abort)) {
-    // Working as expected so no need report details.
-    aborted = true;
-    efree(&e);
-  } else {
-    msg = default_msg;
+    goto cleanup;
   }
-  if (!aborted) {
-    error_message_box(e, aviutl_get_exedit_window_must(), msg, GCMZDROPS_NAME_VERSION_WIDE, true);
+  msg = default_msg;
+cleanup:
+  if (msg) {
+    gcmz_error_message_box(e, aviutl_get_exedit_window_must(), true, gettext("Error"), NULL, "%1$s", msg);
   }
   files_cleanup(true);
 }
@@ -231,7 +147,7 @@ cleanup:
   ereport(sfree(&tmp));
   aviutl_set_pointers(NULL, NULL);
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("データの読み込み中にエラーが発生しました。")));
+    ereportmsg_i18n(err, gettext("An error occurred while loading the settings."));
     return FALSE;
   }
   return TRUE;
@@ -281,25 +197,24 @@ cleanup:
   ereport(sfree(&u8buf));
   aviutl_set_pointers(NULL, NULL);
   if (efailed(err)) {
-    ereportmsg(err, &native_unmanaged(NSTR("データの保存中にエラーが発生しました。")));
+    ereportmsg_i18n(err, gettext("An error occurred while saving the settings."));
     return FALSE;
   }
   return TRUE;
 }
 
 static void wndproc_drag_enter(struct files *const f, struct drag_drop_info *const ddi) {
-  wchar_t const *msg = NULL;
+  char const *msg = NULL;
   error err = lua_init(&g_lua, true);
   if (efailed(err)) {
-    msg = L"Lua スクリプトの初期化中にエラーが発生しました。";
+    msg = gettext("An error occurred while initializing the Lua environment.");
     err = ethru(err);
     goto failed;
   }
 
   err = lua_call_on_drag_enter(&g_lua, f, ddi->point, ddi->key_state);
   if (efailed(err)) {
-    msg = eisg(err, err_abort) ? L"_entrypoint.ondragenter は中断されました。"
-                               : L"_entrypoint.ondragenter の呼び出しに失敗しました。";
+    msg = gettext("Failed to call _entrypoint.ondragenter.");
     err = ethru(err);
     goto failed;
   }
@@ -317,8 +232,10 @@ static void wndproc_drag_over(struct files *const f, struct drag_drop_info *cons
     ddi->effect = DROPEFFECT_NONE;
     return;
   }
+  char const *msg = NULL;
   error err = lua_call_on_drag_over(&g_lua, f, ddi->point, ddi->key_state);
   if (efailed(err)) {
+    msg = gettext("Failed to call _entrypoint.ondragover.");
     err = ethru(err);
     goto failed;
   }
@@ -328,17 +245,17 @@ static void wndproc_drag_over(struct files *const f, struct drag_drop_info *cons
 failed:
   ddi->effect = DROPEFFECT_NONE;
   ereport(lua_exit(&g_lua));
-  generic_lua_error_handler(err,
-                            eisg(err, err_abort) ? L"_entrypoint.ondragover は中断されました。"
-                                                 : L"_entrypoint.ondragover の呼び出しに失敗しました。");
+  generic_lua_error_handler(err, msg);
 }
 
 static void wndproc_drag_leave(void) {
   if (!g_lua.L) {
     return;
   }
+  char const *msg = NULL;
   error err = lua_call_on_drag_leave(&g_lua);
   if (efailed(err)) {
+    msg = gettext("Failed to call _entrypoint.ondragleave.");
     err = ethru(err);
     goto failed;
   }
@@ -347,7 +264,7 @@ static void wndproc_drag_leave(void) {
 
 failed:
   ereport(lua_exit(&g_lua));
-  generic_lua_error_handler(err, L"_entrypoint.ondragleave の呼び出しに失敗しました。");
+  generic_lua_error_handler(err, msg);
 }
 
 static void wndproc_drop(struct files *const f, struct drag_drop_info *const ddi) {
@@ -355,8 +272,10 @@ static void wndproc_drop(struct files *const f, struct drag_drop_info *const ddi
     ddi->effect = DROPEFFECT_NONE;
     return;
   }
+  char const *msg = NULL;
   error err = lua_call_on_drop(&g_lua, f, ddi->point, ddi->key_state, 0);
   if (efailed(err)) {
+    msg = gettext("Failed to call _entrypoint.ondrop.");
     err = ethru(err);
     goto failed;
   }
@@ -367,9 +286,7 @@ static void wndproc_drop(struct files *const f, struct drag_drop_info *const ddi
 failed:
   ddi->effect = DROPEFFECT_NONE;
   ereport(lua_exit(&g_lua));
-  generic_lua_error_handler(err,
-                            eisg(err, err_abort) ? L"_entrypoint.ondrop は中断されました。"
-                                                 : L"_entrypoint.ondrop の呼び出しに失敗しました。");
+  generic_lua_error_handler(err, msg);
 }
 
 struct drag_drop_handler_data {
@@ -403,8 +320,8 @@ static void drop_task(void *const userdata) {
                WM_DROP_TARGET_EVENT,
                DROP_TARGET_DROP,
                (LPARAM) & (struct drag_drop_handler_data){&d->f, &d->ddi});
-  bool succeeded = d->ddi.effect == DROPEFFECT_COPY;
-  ereportmsg(files_free(&d->f, succeeded), &native_unmanaged(NSTR("使用済みファイルの整理に失敗しました。")));
+  bool const succeeded = d->ddi.effect == DROPEFFECT_COPY;
+  ereportmsg_i18n(files_free(&d->f, succeeded), gettext("Failed to clean up used files."));
   files_cleanup(!succeeded);
   ereport(mem_free(&d));
 }
@@ -418,7 +335,7 @@ static void drop_callback(struct files *const f, struct drag_drop_info *const dd
   if (efailed(err)) {
     err = ethru(err);
     ddi->effect = DROPEFFECT_NONE;
-    ereportmsg(err, &native_unmanaged(NSTR("タスク用データのメモリ確保に失敗しました。")));
+    ereportmsg_i18n(err, gettext("Failed to allocate memory for task."));
     return;
   }
 
@@ -472,7 +389,7 @@ cleanup:
   ereport(scpopup_menu_free(&m));
   files_cleanup(efailed(err));
   if (efailed(err)) {
-    generic_lua_error_handler(err, L"拡張ポップアップメニューの表示に失敗しました。");
+    generic_lua_error_handler(err, gettext("Failed to display extended pop-up menu."));
   }
   return 0;
 }
@@ -489,9 +406,8 @@ NODISCARD static error get_exedit_scrollbars(HWND const exedit_window, HWND *con
   while (!hh || !vv) {
     h = FindWindowExW(exedit_window, h, L"ScrollBar", NULL);
     if (!h) {
-      return emsg(err_type_generic,
-                  err_fail,
-                  &native_unmanaged(NSTR("拡張編集ウィンドウ内のスクロールバーを検出できませんでした。")));
+      return emsg_i18n(
+          err_type_generic, err_fail, gettext("Could not detect scrollbars in the Advanced Editing window."));
     }
     if (GetWindowLongPtrW(h, GWL_ID) != ID_SCROLLBAR) {
       continue;
@@ -591,7 +507,7 @@ NODISCARD static error process_api(struct api_request_params const *const params
       goto cleanup;
     }
     if (ai.edit_cursor.x == -1 && ai.edit_cursor.y == -1) {
-      err = emsg(err_type_generic, err_fail, &native_unmanaged(NSTR("現在のカーソル位置の検出に失敗しました。")));
+      err = emsg_i18n(err_type_generic, err_fail, gettext("Failed to detect the current edit cursor position."));
       goto cleanup;
     }
   }
@@ -698,7 +614,7 @@ NODISCARD static error adjust_window_visibility(struct api_request_params const 
   visible = IsWindowVisible(exedit_window);
   if (!visible) {
     // The process we are about to perform requires that the window be visible on the screen.
-    // When using External API, it is preferable to succeed than to fail due to hiding.
+    // When using the external integration API, it is preferable to succeed than to fail due to hiding.
     // So we work around the problem by showing an invisible window.
     GetLayeredWindowAttributes(exedit_window, NULL, &old_alpha, NULL);
     SetWindowLongPtrW(exedit_window, GWL_EXSTYLE, GetWindowLongPtrW(exedit_window, GWL_EXSTYLE) | WS_EX_TRANSPARENT);
@@ -756,51 +672,52 @@ static void request_callback(struct api_request_params *const params, api_reques
 cleanup:
   files_cleanup(efailed(err));
   if (efailed(err)) {
-    error_message_box(err,
-                      (HWND)params->userdata,
-                      L"外部連携 API の処理中にエラーが発生しました。",
-                      GCMZDROPS_NAME_VERSION_WIDE,
-                      false);
+    gcmz_error_message_box(err,
+                           (HWND)params->userdata,
+                           false,
+                           gettext("Error"),
+                           NULL,
+                           "%1$s",
+                           gettext("An error occurred during processing of the external integration API."));
   }
   complete(params);
   return;
 }
 
-#define ERRMSG_INIT GCMZDROPS_NAME_WIDE L"の初期化中にエラーが発生しました。"
-
 static BOOL wndproc_init(HWND const window) {
+  char const *const title = gettext("Error");
+  char const *const msg_head = gettext("An error occurred during initialization.");
+  char const *msg = NULL;
   task_init(window);
-  ereportmsg(gui_init(window), &native_unmanaged(NSTR("GUI の初期化中にエラーが発生しました。")));
-
-  error err = aviutl_init();
+  error err = gui_init(window);
   if (efailed(err)) {
-    wchar_t const *msg = NULL;
+    ereportmsg_i18nf(err, NULL, "%1$s\n\n%2$s", msg_head, gettext("Failed to initialize the GUI."));
+  }
+
+  err = aviutl_init();
+  if (efailed(err)) {
     if (eis(err, err_type_gcmz, err_gcmz_unsupported_aviutl_version)) {
-      msg = ERRMSG_INIT L"\r\n\r\n" GCMZDROPS_NAME_WIDE L"を使うには AviUtl version 1.00 以降が必要です。";
+      msg = gettext("AviUtl version 1.00 or later is required.");
       efree(&err);
     } else if (eis(err, err_type_gcmz, err_gcmz_exedit_not_found)) {
-      msg = ERRMSG_INIT L"\r\n\r\n"
-                        L"拡張編集プラグインが見つかりません。";
+      msg = gettext("Advanced Editing plug-in cannot be found.");
       efree(&err);
     } else if (eis(err, err_type_gcmz, err_gcmz_exedit_not_found_in_same_dir)) {
-      msg = ERRMSG_INIT L"\r\n\r\n"
-                        L"インストール状態が正しくありません。\r\n"
-                        L"付属のドキュメントに従ってインストールしてください。";
+      msg = gettext("The plug-in is not properly installed.\n"
+                    "Please check the installation instructions in the included documentation.");
       efree(&err);
     } else if (eis(err, err_type_gcmz, err_gcmz_unsupported_exedit_version)) {
-      msg = ERRMSG_INIT L"\r\n\r\n" GCMZDROPS_NAME_WIDE L"を使うには 拡張編集 version 0.92 以降が必要です。";
+      msg = gettext("Advanced Editing version 0.92 or later is required.");
       efree(&err);
     } else if (eis(err, err_type_gcmz, err_gcmz_extext_found)) {
-      msg = ERRMSG_INIT L"\r\n\r\n" GCMZDROPS_NAME_WIDE L"は字幕アシストプラグイン(extext.auf) とは共存できません。";
+      msg = gettext("This plug-in is not compatible with extext.auf.");
       efree(&err);
     } else if (eis(err, err_type_gcmz, err_gcmz_oledd_found)) {
-      msg = ERRMSG_INIT L"\r\n\r\n" GCMZDROPS_NAME_WIDE L"の古いバージョンである oledd.auf とは共存できません。";
+      msg = gettext("This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops.");
       efree(&err);
-    } else {
-      msg = ERRMSG_INIT;
     }
     gui_lock();
-    error_message_box(err, window, msg, GCMZDROPS_NAME_VERSION_WIDE, false);
+    gcmz_error_message_box(err, window, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
     return FALSE;
   }
 
@@ -817,12 +734,8 @@ static BOOL wndproc_init(HWND const window) {
   err = drop_target_new(&dt);
   if (efailed(err)) {
     gui_lock();
-    error_message_box(err,
-                      window,
-                      ERRMSG_INIT L"\r\n\r\n"
-                                  L"ドラッグ＆ドロップハンドラーの作成に失敗しました。",
-                      GCMZDROPS_NAME_VERSION_WIDE,
-                      false);
+    gcmz_error_message_box(
+        err, window, false, title, L"%1$s%2$s", "%1$s\n\n%2$s", msg_head, gettext("Failed to create IDropTarget."));
     return FALSE;
   }
   dt->super.lpVtbl->AddRef((void *)dt);
@@ -839,50 +752,49 @@ static BOOL wndproc_init(HWND const window) {
   dt->super.lpVtbl->Release((void *)dt);
   if (FAILED(hr)) {
     err = errhr(hr);
-    wchar_t const *msg = NULL;
     if (eis_hr(err, DRAGDROP_E_ALREADYREGISTERED)) {
-      msg = ERRMSG_INIT L"\r\n\r\n"
-                        L"ドラッグ＆ドロップハンドラーの登録に失敗しました。\r\n"
-                        L"ドラッグ＆ドロップ処理に介入する他のプラグインと競合している可能性があります。\r\n"
-                        L"導入済みプラグインを見直してください。";
+      msg = gettext("Failed to register the drag & drop handler.\n"
+                    "There may be a conflict with other plugins that affect drag & drop processing.\n"
+                    "Please review your installed plugins.");
       efree(&err);
-    } else {
-      msg = ERRMSG_INIT;
     }
     gui_lock();
-    error_message_box(err, window, msg, GCMZDROPS_NAME_VERSION_WIDE, false);
+    gcmz_error_message_box(err, window, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
     return FALSE;
   }
   g_drop_target_registered = SUCCEEDED(hr);
 
   err = scpopup_init(&g_scpopup, exedit_window);
   if (efailed(err)) {
-#define ERRMSG_INITSCDROPPER                                                                                           \
-  L"コンテキストメニューハンドラーの登録に失敗しました。\r\n"                                \
-  L"拡張ポップアップメニューは使用できません。"
-    error_message_box(err, window, ERRMSG_INITSCDROPPER, GCMZDROPS_NAME_VERSION_WIDE, false);
-#undef ERRMSG_INITSCDROPPER
+    gcmz_error_message_box(err,
+                           window,
+                           false,
+                           title,
+                           NULL,
+                           "%1$s",
+                           gettext("Failed to register context menu handler.\n"
+                                   "Extended pop-up menus are not available."));
   } else {
     g_scpopup.popup = popup_callback;
   }
 
   err = api_init(&g_api);
   if (efailed(err)) {
-#define ERRMSG_INITAPI                                                                                                 \
-  L"外部連携用 API の初期化中にエラーが発生しました。\r\n"                                       \
-  L"外部連携用 API は利用できません。"
-
-    wchar_t const *msg = NULL;
+    char const *apimsg = NULL;
     if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))) {
-      msg = ERRMSG_INITAPI L"\r\n\r\n"
-                           L"このエラーは主に AviUtl を多重起動した場合に発生します。\r\n"
-                           L"一度すべての AviUtl を閉じて、ひとつだけを起動してください。";
+      apimsg = gettext("This error mainly occurs when multiple instances of AviUtl are running.\n"
+                       "Please close all instances of AviUtl and launch only one.");
       efree(&err);
-    } else {
-      msg = ERRMSG_INITAPI;
     }
-#undef ERRMSG_INITAPI
-    error_message_box(err, window, msg, GCMZDROPS_NAME_VERSION_WIDE, false);
+    gcmz_error_message_box(err,
+                           window,
+                           false,
+                           title,
+                           NULL,
+                           apimsg ? "%1$s\n\n%2$s" : "%1$s",
+                           gettext("An error occurred during the initialization of the external integration API.\n"
+                                   "The external integration API is not available."),
+                           apimsg);
   } else {
     api_set_callback(g_api, request_callback, (void *)aviutl_get_my_window_must());
   }
@@ -897,18 +809,17 @@ static BOOL wndproc_exit(void) {
   ereport(lua_exit(&g_lua));
 
   if (api_initialized(g_api)) {
-    ereportmsg(api_exit(&g_api), &native_unmanaged(NSTR("外部連携用 API の終了に失敗しました。")));
+    ereportmsg_i18n(api_exit(&g_api), gettext("Failed to terminate external integration API."));
   }
 
   if (g_scpopup.window) {
-    ereportmsg(scpopup_exit(&g_scpopup),
-               &native_unmanaged(NSTR("コンテキストメニューハンドラーの登録解除に失敗しました。")));
+    ereportmsg_i18n(scpopup_exit(&g_scpopup), gettext("Unregistration of context menu handler failed."));
   }
 
   if (g_drop_target_registered) {
     HRESULT hr = RevokeDragDrop(aviutl_get_exedit_window_must());
     if (FAILED(hr)) {
-      ereportmsg(errhr(hr), &native_unmanaged(NSTR("ドラッグ＆ドロップハンドラーの登録解除に失敗しました。")));
+      ereportmsg_i18n(errhr(hr), gettext("Failed to unregister the context menu handler."));
     }
   }
   ereport(exoloadhook_destroy());
@@ -989,17 +900,35 @@ static BOOL wndproc(HWND const window,
   return r;
 }
 
-FILTER_DLL g_gcmzdrops_filter_dll = {
-    .flag = FILTER_FLAG_ALWAYS_ACTIVE | FILTER_FLAG_EX_INFORMATION | FILTER_FLAG_DISP_FILTER,
-    .name = GCMZDROPS_NAME_MBCS,
-    .func_WndProc = wndproc,
-    .information = GCMZDROPS_NAME_VERSION_MBCS,
-    .func_project_load = filter_project_load,
-    .func_project_save = filter_project_save,
-};
-
 FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void);
 FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void) {
+  static char g_name[64] = {0};
+  static char g_information[64] = {0};
+  static FILTER_DLL g_gcmzdrops_filter_dll = {
+      .flag = FILTER_FLAG_ALWAYS_ACTIVE | FILTER_FLAG_EX_INFORMATION | FILTER_FLAG_DISP_FILTER,
+      .name = g_name,
+      .func_WndProc = wndproc,
+      .information = g_information,
+      .func_project_load = filter_project_load,
+      .func_project_save = filter_project_save,
+  };
+  static struct mo *g_mp = NULL;
+  if (g_name[0] == '\0') {
+    // It is preferable to use the same name for plug-ins in all languages, since the name of the plug-ins also affects
+    // the name when saving settings, etc. For backward compatibility, use the same name as before for Japanese code
+    // pages, but use "GCMZDrops" in other environments.
+    strcpy(g_name,
+           GetACP() == 932 ? "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"
+                           : "GCMZDrops");
+    strcpy(g_information, g_name);
+    strcat(g_information, " " VERSION);
+    error err = mo_parse_from_resource(&g_mp, get_hinstance());
+    if (efailed(err)) {
+      ereport(err);
+    } else {
+      mo_set_default(g_mp);
+    }
+  }
   static FILTER_DLL *filter_list[] = {&g_gcmzdrops_filter_dll, NULL};
   return (FILTER_DLL **)&filter_list;
 }
