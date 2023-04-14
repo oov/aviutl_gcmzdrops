@@ -7,7 +7,7 @@ add_subdirectory(3rd/ovutil)
 
 option(JANSSON_WITHOUT_TESTS "" ON)
 option(JANSSON_BUILD_DOCS "" OFF)
-set(CMAKE_REQUIRED_LINK_OPTIONS -no-pthread)
+# set(CMAKE_REQUIRED_LINK_OPTIONS -no-pthread)
 add_subdirectory(3rd/jansson)
 
 add_custom_target(generate_version_h COMMAND
@@ -147,6 +147,7 @@ foreach(target ${targets})
   endif()
   target_include_directories(${target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
+    "${jansson_BINARY_DIR}/include"
   )
   target_link_directories(${target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}" # for liblua51_delayed.a
