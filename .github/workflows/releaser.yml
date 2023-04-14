@@ -14,10 +14,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - msystem: MINGW32
-            arch: i686
+          - msystem: CLANG32
+            arch: clang-i686
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - uses: msys2/setup-msys2@v2
@@ -39,7 +39,7 @@ jobs:
           cd build
           rm -rf CMakeCache.txt && cmake -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_RC_COMPILER=llvm-rc -DCMAKE_RC_FLAGS="-C 65001" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DLEAK_DETECTOR=OFF -DALLOCATE_LOGGER=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build . && ctest --output-on-failure
       - name: Upload binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: bin
           path: |
@@ -50,22 +50,20 @@ jobs:
     steps:
       - name: Get the version
         id: get_version
-        run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
+        run: echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
       - name: Zip
         run: |
-          cd bin && zip -r ../package.zip * && cd ..
+          mkdir -p release && cd bin && zip -r ../release/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip * && cd ..
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          tag_name: ${{ steps.get_version.outputs.tag }}
           draft: true
           prerelease: false
+          files: release/*
           body: |
             ### 注意事項
             
@@ -80,13 +78,3 @@ jobs:
             ### 変更点
             
             - ＊＊＊＊
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: package.zip
-          asset_name: gcmzdrops_${{ steps.get_version.outputs.tag }}.zip
-          asset_content_type: application/zip
