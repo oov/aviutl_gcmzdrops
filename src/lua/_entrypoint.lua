@@ -49,7 +49,7 @@ function P.ondragover(files, state)
         debug_print(string.format(i18n({
           ja_JP = [=[%s: ondragover で false を返しました]=],
           en_US = [=[%s: false returned on ondragover]=],
-          zh_CN = [=[%s: 在ondragenter上返回false]=],
+          zh_CN = [=[%s: 在ondragover上返回false]=],
         }), h.name))
         P.handlers[i] = false
       end
