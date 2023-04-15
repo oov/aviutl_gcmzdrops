@@ -19,28 +19,28 @@ msgstr "\"%1$s\" 不是一个字符串。"
 
 #, c-format
 msgid "\"%1$s\" is too long."
-msgstr "\"%1$s\" 太长了。"
+msgstr "\"%1$s\" 过长。"
 
 msgid "Aborted."
-msgstr "已中止。"
+msgstr "中止。"
 
 msgid "Advanced Editing plug-in cannot be found."
-msgstr "无法找到扩展编辑插件。"
+msgstr "找不到扩展编辑插件。"
 
 msgid "Advanced Editing plug-in exedit.auf cannot be found in the same folder as GCMZDrops.auf."
-msgstr "无法在与 GCMZDrops.auf 相同的文件夹中找到扩展编辑插件 exedit.auf。"
+msgstr "GCMZDrops.auf 同级目录下找不到扩展编辑插件 exedit.auf。"
 
 msgid "Advanced Editing plug-in exedit.auf cannot be found."
-msgstr "无法找到扩展编辑插件 exedit.auf。"
+msgstr "找不到扩展编辑插件 exedit.auf。"
 
 msgid "Advanced Editing version 0.92 or later is required."
 msgstr "需要0.92或更高版本的扩展编辑。"
 
 msgid "An error occurred during initialization."
-msgstr "初始化过程中出现错误。"
+msgstr "初始化时发生错误。"
 
 msgid "An error occurred during processing of the external integration API."
-msgstr "处理外部集成API过程中出现错误。"
+msgstr "处理外部集成API时发生错误。"
 
 msgid ""
 "An error occurred during the initialization of the external integration API.\n"
@@ -72,10 +72,10 @@ msgid "Auto detect"
 msgstr "自动检测"
 
 msgid "AviUtl project file (*.aup) has not yet been opened."
-msgstr "尚未打开AviUtl项目文件(*.aup)。"
+msgstr "尚未打开AviUtl工程文件(*.aup)。"
 
 msgid "AviUtl project file (*.aup) has not yet been saved."
-msgstr "尚未保存AviUtl项目文件(*.aup)。"
+msgstr "尚未保存AviUtl工程文件(*.aup)。"
 
 msgid "AviUtl version 1.00 or later is required."
 msgstr "需要1.00或更高版本的AviUtl。"
@@ -87,10 +87,10 @@ msgid "Choose Save Directory"
 msgstr "选择保存目录"
 
 msgid "Copy"
-msgstr "创建副本"
+msgstr "复制"
 
 msgid "Could not detect scrollbars in the Advanced Editing window."
-msgstr "无法检测到扩展编辑窗口中的滚动条。"
+msgstr "无法检测扩展编辑窗口中的滚动条。"
 
 msgid "Direct read"
 msgstr "直接读取"
@@ -102,22 +102,22 @@ msgid "Failed to allocate memory for task."
 msgstr "无法为任务分配内存。"
 
 msgid "Failed to build error message."
-msgstr "构建错误消息失败。"
+msgstr "错误消息构建失败。"
 
 msgid "Failed to call _entrypoint.ondragenter."
-msgstr "调用 _entrypoint.ondragenter 失败。"
+msgstr "_entrypoint.ondragenter 调用失败。"
 
 msgid "Failed to call _entrypoint.ondragleave."
-msgstr "调用 _entrypoint.ondragleave 失败。"
+msgstr "_entrypoint.ondragleave 调用失败。"
 
 msgid "Failed to call _entrypoint.ondragover."
-msgstr "调用 _entrypoint.ondragover 失败。"
+msgstr "_entrypoint.ondragover 调用失败。"
 
 msgid "Failed to call _entrypoint.ondrop."
-msgstr "调用 _entrypoint.ondrop 失败。"
+msgstr "_entrypoint.ondrop 调用失败。"
 
 msgid "Failed to clean up used files."
-msgstr "无法清理已使用的文件。"
+msgstr "无法清理使用过的文件。"
 
 msgid "Failed to create IDropTarget."
 msgstr "无法创建 IDropTarget。"
@@ -132,7 +132,7 @@ msgid "Failed to detect the layer height."
 msgstr "无法检测图层高度。"
 
 msgid "Failed to detect the zoom rate of the timeline."
-msgstr "无法检测时间轴的缩放比例。"
+msgstr "无法检测时间轴缩放比例。"
 
 msgid "Failed to display error dialog."
 msgstr "无法显示错误对话框。"
@@ -147,19 +147,19 @@ msgid "Failed to load lua51.dll."
 msgstr "无法加载 lua51.dll。"
 
 msgid "Failed to obtain my filter window handle."
-msgstr "无法获取我的过滤器窗口句柄。"
+msgstr "无法获取我的滤镜窗口句柄。"
 
 msgid "Failed to obtain the window handle for Advanced Editing."
-msgstr "无法获取扩展编辑窗口的句柄。"
+msgstr "无法获取扩展编辑窗口句柄。"
 
 msgid "Failed to output the error content to the log file."
-msgstr "无法将错误内容输出到日志文件。"
+msgstr "无法将错误内容导出为日志文件。"
 
 msgid ""
 "Failed to register context menu handler.\n"
 "Extended pop-up menus are not available."
 msgstr ""
-"注册上下文菜单处理器失败。\n"
+"快捷菜单处理器注册失败。\n"
 "无法使用扩展弹出菜单。"
 
 msgid ""
@@ -167,8 +167,8 @@ msgid ""
 "There may be a conflict with other plugins that affect drag & drop processing.\n"
 "Please review your installed plugins."
 msgstr ""
-"无法注册拖放处理器。\n"
-"可能与影响拖放处理的其他插件冲突。\n"
+"注册拖放处理器注册失败。\n"
+"可能与影响拖放处理的插件冲突。\n"
 "请检查已安装的插件。"
 
 msgid "Failed to terminate external integration API."
@@ -178,19 +178,19 @@ msgid "Failed to terminate the API thread."
 msgstr "无法终止API线程。"
 
 msgid "Failed to unregister the context menu handler."
-msgstr "无法注销上下文菜单处理器。"
+msgstr "无法注销快捷菜单处理器。"
 
 msgid "Failed to update the FileMappingObject of the external integration API."
 msgstr "无法更新外部集成API的FileMappingObject。"
 
 msgid "Failed."
-msgstr "处理失败。"
+msgstr "失败。"
 
 msgid "File cannot be saved because a file with different contents already exists in the destination folder."
 msgstr "无法保存文件，因为目标文件夹中已存在内容不同的文件。"
 
 msgid "If you have installed a plugin that customizes the look and feel of GUI, that may be the cause of this error."
-msgstr "如果您安装了自定义GUI外观的插件，可能导致此错误。"
+msgstr "如果您安装了GUI自定义插件，可能会导致此错误。"
 
 msgid "Invalid API format."
 msgstr "无效的API格式。"
@@ -212,19 +212,19 @@ msgstr "无效的图层值。"
 
 #, c-format
 msgid "More than %zu elements in the language name table."
-msgstr "语言名称表中的元素超过 %zu 个。"
+msgstr "语言名表中的元素超过 %zu 个。"
 
 msgid "NULL pointer."
 msgstr "空指针。"
 
 msgid "Not found."
-msgstr "找不到目标。"
+msgstr "找不到。"
 
 msgid "Not implemented yet."
-msgstr "尚未实现。"
+msgstr "尚未实装。"
 
 msgid "Not sufficient buffer."
-msgstr "缓冲区太小。"
+msgstr "缓冲区不足。"
 
 msgid "OK"
 msgstr "确定"
@@ -233,10 +233,10 @@ msgid "Out of memory."
 msgstr "内存不足。"
 
 msgid "Process aborted because there were no files to drop."
-msgstr "由于不存在要拖放的文件，进程被中止。"
+msgstr "由于无文件拖放，进程中止。"
 
 msgid "Processing mode:"
-msgstr "处理模式:"
+msgstr "处理模式："
 
 msgid "Revert to default"
 msgstr "恢复默认设置"
@@ -248,16 +248,16 @@ msgid "Save as default"
 msgstr "将当前设置保存为默认"
 
 msgid "Save to:"
-msgstr "保存到:"
+msgstr "保存到："
 
 msgid "The currently running version of AviUtl is not supported."
-msgstr "不支持当前正在运行的AviUtl版本。"
+msgstr "不支持当前运行的AviUtl版本。"
 
 msgid "The currently using version of exedit.auf is not supported."
-msgstr "不支持当前正在使用的exedit.auf版本。"
+msgstr "不支持当前使用的exedit.auf版本。"
 
 msgid "The display area of the Advanced Editing window is too small."
-msgstr "扩展编辑窗口的显示区域太小。"
+msgstr "扩展编辑窗口的显示区域过小。"
 
 msgid "The filename contains characters that cannot be used in AviUtl."
 msgstr "文件名包含无法在AviUtl中使用的字符。"
@@ -279,7 +279,7 @@ msgid ""
 "\n"
 "%1$ls"
 msgstr ""
-"以下临时文件无法注册为删除候选：\n"
+"以下临时文件无法被注册为删除候补文件：\n"
 "文件不会自动删除。\n"
 "\n"
 "%1$ls"
@@ -288,33 +288,33 @@ msgid ""
 "The plug-in is not properly installed.\n"
 "Please check the installation instructions in the included documentation."
 msgstr ""
-"插件未正确安装。\n"
+"未正确安装插件。\n"
 "请查看附带文档中的安装说明。"
 
 msgid ""
 "This error mainly occurs when multiple instances of AviUtl are running.\n"
 "Please close all instances of AviUtl and launch only one."
 msgstr ""
-"此错误主要发生在多个AviUtl实例正在运行时。\n"
-"请关闭所有AviUtl实例，仅启动一个。"
+"此错误主要发生在多个AviUtl实例同时运行时。\n"
+"请关闭所有AviUtl实例，只启动一个。"
 
 msgid "This plug-in is not compatible with extext.auf."
-msgstr "此插件与extext.auf不兼容。"
+msgstr "此插件不兼容extext.auf。"
 
 msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
-msgstr "此插件与oledd.auf（GCMZDrops的旧版本）不兼容。"
+msgstr "此插件不兼容oledd.auf（旧版GCMZDrops）。"
 
 msgid "Unexpected API version."
 msgstr "未知的API版本。"
 
 msgid "Unexpected."
-msgstr "意外错误。"
+msgstr "异常。"
 
 msgid "Unknown error code."
 msgstr "未知的错误代码。"
 
 msgid "Unregistration of context menu handler failed."
-msgstr "上下文菜单处理器取消注册失败。"
+msgstr "快捷菜单处理器注销失败。"
 
 #. trans: This dagger helps UTF-8 detection. You don't need to translate this.
 msgid "†"

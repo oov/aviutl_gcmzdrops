@@ -30,6 +30,7 @@ function P.ondragenter(files, state)
         debug_print(string.format(i18n({
           ja_JP = [=[%s: ondragenter で false を返しました]=],
           en_US = [=[%s: false returned on ondragenter]=],
+          zh_CN = [=[%s: 在ondragenter上返回false]=],
         }), h.name))
         P.handlers[i] = false
       end
@@ -48,6 +49,7 @@ function P.ondragover(files, state)
         debug_print(string.format(i18n({
           ja_JP = [=[%s: ondragover で false を返しました]=],
           en_US = [=[%s: false returned on ondragover]=],
+          zh_CN = [=[%s: 在ondragenter上返回false]=],
         }), h.name))
         P.handlers[i] = false
       end
@@ -73,6 +75,7 @@ function P.ondrop(files, state)
         debug_print(string.format(i18n({
           ja_JP = [=[%s: 処理がキャンセルされました]=],
           en_US = [=[%s: The process has been canceled]=],
+          zh_CN = [=[%s: 处理已取消]=],
         }), h.name))
         return false
       elseif f ~= false then
@@ -83,12 +86,14 @@ function P.ondrop(files, state)
         debug_print(string.format(i18n({
           ja_JP = [=[%s: 処理が完了しました。]=],
           en_US = [=[%s: The process has been completed.]=],
+          zh_CN = [=[%s: 处理已完成]=],
         }), h.name))
         return true
       else
         debug_print(string.format(i18n({
           ja_JP = [=[%s: 処理を続行します。]=],
           en_US = [=[%s: Continue processing.]=],
+          zh_CN = [=[%s: 继续处理]=],
         }), h.name))
       end
     end
