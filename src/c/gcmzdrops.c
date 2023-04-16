@@ -848,17 +848,31 @@ static BOOL wndproc(HWND const window,
                     LPARAM const lparam,
                     void *const editp,
                     FILTER *const fp) {
+  static int instances = 0;
+  static struct mo *mp = NULL;
   aviutl_set_pointers(fp, editp);
 
   BOOL r = FALSE;
   switch (message) {
   case WM_FILTER_INIT:
+    if (++instances == 1) {
+      error err = mo_parse_from_resource(&mp, get_hinstance());
+      if (efailed(err)) {
+        ereport(err);
+      } else {
+        mo_set_default(mp);
+      }
+    }
     r = wndproc_init(window);
     aviutl_set_pointers(NULL, NULL);
     break;
   case WM_FILTER_EXIT:
     r = wndproc_exit();
     aviutl_set_pointers(NULL, NULL);
+    if (--instances == 0) {
+      mo_set_default(NULL);
+      mo_free(&mp);
+    }
     break;
   case WM_FILTER_FILE_OPEN:
     r = wndproc_file_open();
@@ -902,33 +916,28 @@ static BOOL wndproc(HWND const window,
 
 FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void);
 FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void) {
-  static char g_name[64] = {0};
-  static char g_information[64] = {0};
-  static FILTER_DLL g_gcmzdrops_filter_dll = {
+  static FILTER_DLL gcmzdrops_filter_dll = {
       .flag = FILTER_FLAG_ALWAYS_ACTIVE | FILTER_FLAG_EX_INFORMATION | FILTER_FLAG_DISP_FILTER,
-      .name = g_name,
       .func_WndProc = wndproc,
-      .information = g_information,
       .func_project_load = filter_project_load,
       .func_project_save = filter_project_save,
   };
-  static struct mo *g_mp = NULL;
-  if (g_name[0] == '\0') {
-    // It is preferable to use the same name for plug-ins in all languages, since the name of the plug-ins also affects
-    // the name when saving settings, etc. For backward compatibility, use the same name as before for Japanese code
-    // pages, but use "GCMZDrops" in other environments.
-    strcpy(g_name,
-           GetACP() == 932 ? "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"
-                           : "GCMZDrops");
-    strcpy(g_information, g_name);
-    strcat(g_information, " " VERSION);
-    error err = mo_parse_from_resource(&g_mp, get_hinstance());
-    if (efailed(err)) {
-      ereport(err);
+  if (gcmzdrops_filter_dll.name == NULL) {
+    // It is preferable to use the same name in all languages,
+    // since these names also affects when saving settings, etc.
+    // But for backward compatibility, use the same name as before for Japanese code pages.
+    if (GetACP() != 932) {
+#define GCMZDROPS_NAME "GCMZDrops"
+      gcmzdrops_filter_dll.name = GCMZDROPS_NAME;
+      gcmzdrops_filter_dll.information = GCMZDROPS_NAME " " VERSION;
+#undef GCMZDROPS_NAME
     } else {
-      mo_set_default(g_mp);
+#define GCMZDROPS_NAME "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"
+      gcmzdrops_filter_dll.name = GCMZDROPS_NAME;
+      gcmzdrops_filter_dll.information = GCMZDROPS_NAME " " VERSION;
+#undef GCMZDROPS_NAME
     }
   }
-  static FILTER_DLL *filter_list[] = {&g_gcmzdrops_filter_dll, NULL};
+  static FILTER_DLL *filter_list[] = {&gcmzdrops_filter_dll, NULL};
   return (FILTER_DLL **)&filter_list;
 }
