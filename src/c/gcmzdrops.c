@@ -926,17 +926,11 @@ FILTER_DLL __declspec(dllexport) * *APIENTRY GetFilterTableList(void) {
     // It is preferable to use the same name in all languages,
     // since these names also affects when saving settings, etc.
     // But for backward compatibility, use the same name as before for Japanese code pages.
-    if (GetACP() != 932) {
+    bool const sjis = GetACP() == 932;
 #define GCMZDROPS_NAME "GCMZDrops"
-      gcmzdrops_filter_dll.name = GCMZDROPS_NAME;
-      gcmzdrops_filter_dll.information = GCMZDROPS_NAME " " VERSION;
-#undef GCMZDROPS_NAME
-    } else {
-#define GCMZDROPS_NAME "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"
-      gcmzdrops_filter_dll.name = GCMZDROPS_NAME;
-      gcmzdrops_filter_dll.information = GCMZDROPS_NAME " " VERSION;
-#undef GCMZDROPS_NAME
-    }
+#define GCMZDROPS_NAME_SJIS "\x82\xB2\x82\xBF\x82\xE1\x82\xDC\x82\xBA\x83\x68\x83\x8D\x83\x62\x83\x76\x83\x58"
+    gcmzdrops_filter_dll.name = sjis ? GCMZDROPS_NAME_SJIS : GCMZDROPS_NAME;
+    gcmzdrops_filter_dll.information = sjis ? GCMZDROPS_NAME_SJIS " " VERSION : GCMZDROPS_NAME " " VERSION;
   }
   static FILTER_DLL *filter_list[] = {&gcmzdrops_filter_dll, NULL};
   return (FILTER_DLL **)&filter_list;
