@@ -202,6 +202,10 @@ NODISCARD static error gcmz_is_need_copy_mode_auto(struct wstr const *const path
   for (size_t i = 0; i < n; ++i) {
     HRESULT const hr = SHGetFolderPathW(0, csidls[i], NULL, SHGFP_TYPE_CURRENT, dir.ptr);
     if (FAILED(hr)) {
+      // It may not exist if deleted by the user.
+      if (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)) {
+        continue;
+      }
       err = errhr(hr);
       goto cleanup;
     }
