@@ -10,7 +10,7 @@
   - 同じファイルが既に保存されている場合は再利用されます
 - UTF-8 や EUC-JP のテキストファイルを事前に Shift_JIS に変換してから読み込ませられる
   - 文字コードの自動判定に失敗した場合は化けます
-- [7zip](https://sevenzip.osdn.jp/) で開いた圧縮ファイル内から直接ドラッグ＆ドロップしてファイルを読み込めるようになる
+- [7zip](https://7-zip.opensource.jp/) で開いた圧縮ファイル内から直接ドラッグ＆ドロップしてファイルを読み込めるようになる
   - ドラッグ＆ドロップでエクスプローラにファイルを作れるソフトなら他のソフトでも対応しているかも
 - 複数ファイルを一度にドロップできるようになる
   - 音声とテキストを同時に投げ込んだりできます
@@ -163,7 +163,7 @@ int main(){
   HANDLE hFMO = OpenFileMapping(FILE_MAP_READ, FALSE, TEXT("GCMZDrops"));
   if (hFMO == NULL) {
     printf("OpenFileMapping に失敗しました。\n");
-    return 0;
+    goto CloseMutex;
   }
 
   struct GCMZDropsData *p = MapViewOfFile(hFMO, FILE_MAP_READ, 0, 0, 0);
@@ -258,6 +258,7 @@ Unmap:
 
 CloseFMO:
   CloseHandle(hFMO);
+CloseMutex:
   CloseHandle(hMutex);
   return 0;
 }
