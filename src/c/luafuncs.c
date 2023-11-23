@@ -5,6 +5,8 @@
 #include "ovutil/str.h"
 #include "ovutil/win32.h"
 
+#include "ovutf.h"
+
 #include <combaseapi.h>
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
@@ -1049,6 +1051,29 @@ cleanup:
   return efailed(err) ? luautil_throw(L, err) : 1;
 }
 
+static bool luafn_isutf8_core(char const *const s, size_t const slen) {
+  if (!s) {
+    return false;
+  }
+  if (!slen) {
+    return true;
+  }
+  if (slen >= 3 && memcmp(s, (uint8_t[3]){0xef, 0xbb, 0xbf}, 3) == 0) {
+    if (slen == 3) {
+      return true;
+    }
+    return ov_utf8_to_wchar_len(s + 3, slen - 3) > 0;
+  }
+  return ov_utf8_to_wchar_len(s, slen) > 0;
+}
+
+static int luafn_isutf8(lua_State *const L) {
+  size_t slen = 0;
+  char const *s = lua_tolstring(L, 1, &slen);
+  lua_pushboolean(L, luafn_isutf8_core(s, slen));
+  return 1;
+}
+
 static int luafn_detectencoding(lua_State *const L) {
   error err = eok();
   size_t slen = 0;
@@ -1554,6 +1579,8 @@ void luafn_register_funcs(lua_State *const L) {
   lua_setfield(L, -2, "decodeexotextutf8");
   lua_pushcfunction(L, luafn_encodeluastring);
   lua_setfield(L, -2, "encodeluastring");
+  lua_pushcfunction(L, luafn_isutf8);
+  lua_setfield(L, -2, "isutf8");
   lua_pushcfunction(L, luafn_detectencoding);
   lua_setfield(L, -2, "detectencoding");
   lua_pushcfunction(L, luafn_convertencoding);

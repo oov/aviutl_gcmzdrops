@@ -410,6 +410,17 @@ cleanup:
   ereport(sfree(&got));
 }
 
+static void test_luafn_isutf8(void) {
+  TEST_CHECK(luafn_isutf8_core("", 0) == 1);
+  TEST_CHECK(luafn_isutf8_core("hello", 5) == 1);
+  TEST_CHECK(luafn_isutf8_core("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", 9) == 1);
+  TEST_CHECK(luafn_isutf8_core("\x89", 1) == 0);
+  TEST_CHECK(luafn_isutf8_core("\xef\xbb\xbf", 3) == 1);
+  TEST_CHECK(luafn_isutf8_core("\xef\xbb\xbfhello", 8) == 1);
+  TEST_CHECK(luafn_isutf8_core("\xef\xbb\xbf\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", 12) == 1);
+  TEST_CHECK(luafn_isutf8_core("\xef\xbb\xbf\x89", 4) == 0);
+}
+
 static void test_convertencoding(void) {
   static const struct test_data {
     void *input;
@@ -623,6 +634,7 @@ TEST_LIST = {
     {"test_decode_exo_text", test_decode_exo_text},
     {"test_encode_lua_string", test_encode_lua_string},
     {"test_convertencoding", test_convertencoding},
+    {"test_luafn_isutf8", test_luafn_isutf8},
     {"test_get_preferred_language", test_get_preferred_language},
     {"test_choose_language", test_choose_language},
     {NULL, NULL},
