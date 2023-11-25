@@ -65,11 +65,6 @@ jobs:
           prerelease: false
           files: release/*
           body: |
-            ### 注意事項
-            
-            - これはリリース候補版です。  
-            まだ正式リリースには至っていませんが、リリース版と同じぐらい安定しています。
-            
             ### ダウンロード
             
             - [gcmzdrops_${{ steps.get_version.outputs.tag }}.zip](https://github.com/oov/aviutl_gcmzdrops/releases/download/${{ steps.get_version.outputs.tag }}/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip)
