@@ -407,6 +407,8 @@ error gcmz_advance_frame(int const n) {
     goto cleanup;
   }
 
+  // To avoid slowdowns from high-frequency API calls, delay screen redraws after cursor moves.
+  SetTimer(aviutl_get_my_window_must(), gcmz_redraw_timer, 400, NULL);
 cleanup:
   return err;
 }

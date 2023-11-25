@@ -902,6 +902,14 @@ static BOOL wndproc(HWND const window,
       aviutl_set_pointers(NULL, NULL);
     }
     break;
+  case WM_TIMER:
+    switch (wparam) {
+    case gcmz_redraw_timer:
+      r = TRUE;
+      KillTimer(window, gcmz_redraw_timer);
+      break;
+    }
+    break;
   case WM_COMMAND:
     gui_handle_wm_command(window, wparam, lparam);
     aviutl_set_pointers(NULL, NULL);

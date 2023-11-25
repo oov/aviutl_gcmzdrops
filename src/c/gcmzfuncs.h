@@ -7,6 +7,10 @@
 
 #include "ovbase.h"
 
+enum {
+  gcmz_redraw_timer = 1,
+};
+
 NODISCARD error gcmz_get_script_dir(struct wstr *const dest);
 NODISCARD error gcmz_get_project_dir(struct wstr *const dest);
 NODISCARD error gcmz_get_save_dir(struct wstr *const dest);

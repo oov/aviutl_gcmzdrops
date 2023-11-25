@@ -502,6 +502,8 @@ error aviutl_get_project_path(struct wstr *dest) {
   return scpy(dest, g_aviutl_project_path);
 }
 
+HWND aviutl_get_my_window_must(void) { return GetDesktopWindow(); }
+
 error aviutl_get_exedit_window(HWND *h) {
   (void)h;
   return errg(err_not_implemented_yet);
