@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <lua5.1/lua.h>
+#include <lua.h>
 
 #include "ovbase.h"
 

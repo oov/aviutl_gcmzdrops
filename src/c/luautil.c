@@ -6,7 +6,7 @@
 #include "ovutil/str.h"
 #include "ovutil/win32.h"
 
-#include <lua5.1/lauxlib.h>
+#include <lauxlib.h>
 
 void *luautil_alloc(void *const ud, void *ptr, size_t const osize, size_t const nsize) {
   (void)ud;

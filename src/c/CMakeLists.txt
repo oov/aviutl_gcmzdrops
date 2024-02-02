@@ -1,4 +1,39 @@
 option(USE_COMPILER_RT "use compiler-rt runtime" OFF)
+option(FORMAT_SOURCES "execute clang-format" ON)
+enable_testing()
+enable_language(RC)
+
+if(FORMAT_SOURCES)
+  file(GLOB_RECURSE sources LIST_DIRECTORIES false CONFIGURE_DEPENDS "*.h" "*.c")
+  list(FILTER sources EXCLUDE REGEX "${CMAKE_CURRENT_SOURCE_DIR}/3rd")
+  find_program(CLANG_FORMAT_EXE clang-format)
+  add_custom_target(${PROJECT_NAME}-format ALL
+    COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${sources}
+  )
+endif()
+
+set(LUA51_PLATFORM i686)
+set(LUA51_URL "https://github.com/oov/lua-5.1.5/releases/download/v5.1.5/lua_v5.1.5_${LUA51_PLATFORM}.zip")
+string(REGEX MATCH "[^/]+$" LUA51_ARCHIVE_NAME "${LUA51_URL}")
+set(LUA51_ARCHIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${LUA51_ARCHIVE_NAME}")
+set(LUA51_DIR "${CMAKE_CURRENT_BINARY_DIR}/lua51")
+set(LUA51_DLL "${LUA51_DIR}/bin/lua51.dll")
+set(LUA51_INCLUDE "${LUA51_DIR}/include")
+if(NOT EXISTS "${LUA51_DIR}")
+  if(NOT EXISTS "${LUA51_ARCHIVE_PATH}")
+    file(DOWNLOAD "${LUA51_URL}" "${LUA51_ARCHIVE_PATH}")
+  endif()
+  string(REGEX REPLACE "\\.[^.]+$" "" LUA51_ARCHIVE_NOEXT "${LUA51_ARCHIVE_NAME}")
+  file(MAKE_DIRECTORY "${LUA51_DIR}")
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E tar xf ${LUA51_ARCHIVE_PATH}
+    WORKING_DIRECTORY "${LUA51_DIR}"
+  )
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy "${LUA51_DLL}" "${CMAKE_CURRENT_BINARY_DIR}/lua51.dll"
+  )
+endif()
+
 add_compile_options(-flto)
 add_link_options(-fuse-ld=lld)
 
@@ -49,16 +84,6 @@ add_custom_command(
 )
 add_custom_target(generate_rc DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/i18n.rc")
 
-find_program(LUA51DLL lua51.dll REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
-add_custom_target(generate_lua51_importlib COMMAND
-  ${CMAKE_COMMAND}
-  -Dlocal_dir="${CMAKE_CURRENT_BINARY_DIR}"
-  -Ddll="${LUA51DLL}"
-  -Ddef="${CMAKE_CURRENT_BINARY_DIR}/lua51.def"
-  -Dlib="${CMAKE_CURRENT_BINARY_DIR}/liblua51.a"
-  -P "${ovutil_SOURCE_DIR}/src/cmake/makelib-llvm.cmake"
-)
-
 add_custom_target(copy_related_files
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/lua/" "${CMAKE_BINARY_DIR}/bin/GCMZDrops/"
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/README.md" "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt"
@@ -78,6 +103,7 @@ add_dependencies(gentransmap generate_version_h)
 add_custom_target(generate_transmap
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/src/lua/_iniobj.lua" "_iniobj.lua"
   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/gentransmap.lua" "gentransmap.lua"
+  COMMAND ${CMAKE_COMMAND} -E copy "${LUA51_DLL}" "./"
   COMMAND
     "gentransmap"
     "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
@@ -120,7 +146,7 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_rc generate_lua51_importlib copy_related_files generate_transmap)
+add_dependencies(gcmzdrops_auf generate_version_h generate_rc copy_related_files generate_transmap)
 list(APPEND targets gcmzdrops_auf)
 target_link_options(gcmzdrops_auf PRIVATE
   -Wl,-delayload,lua51.dll
@@ -148,9 +174,7 @@ foreach(target ${targets})
   target_include_directories(${target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
     "${jansson_BINARY_DIR}/include"
-  )
-  target_link_directories(${target} PRIVATE
-    "${CMAKE_CURRENT_BINARY_DIR}" # for liblua51_delayed.a
+    "${LUA51_INCLUDE}"
   )
   target_compile_definitions(${target} PRIVATE
     _WIN32_WINNT=0x0501
@@ -191,7 +215,7 @@ foreach(target ${targets})
     $<$<NOT:$<STREQUAL:${target},crc64>>:crc64>
     $<$<NOT:$<STREQUAL:${target},detect>>:detect>
     jansson
-    lua51
+    "${LUA51_DLL}"
     ovbase
     ovutil
     shlwapi

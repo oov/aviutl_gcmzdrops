@@ -8,59 +8,21 @@
   "configurePresets": [
     {
       "name": "default",
-      "displayName": "Default Debug build",
-      "description": "Default Debug build using Ninja generator",
+      "displayName": "Default build",
+      "description": "Default build using Ninja generator",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_SHARED_LIBS": "OFF",
-        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_STANDARD": "11",
         "CMAKE_C_STANDARD_REQUIRED": "ON",
         "CMAKE_C_EXTENSIONS": "OFF",
-        "CMAKE_RC_COMPILER": "llvm-rc",
-        "CMAKE_RC_FLAGS": "-C 65001",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "LEAK_DETECTOR": "OFF",
         "ALLOCATE_LOGGER": "OFF",
         "FORMAT_SOURCES": "ON"
       },
       "environment": {}
-    },
-    {
-      "name": "release",
-      "inherits": "default",
-      "displayName": "Release build",
-      "description": "Release build using Ninja generator",
-      "binaryDir": "${sourceDir}/build/release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_SHARED_LIBS": "OFF",
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_C_STANDARD": "11",
-        "CMAKE_C_STANDARD_REQUIRED": "ON",
-        "CMAKE_C_EXTENSIONS": "OFF",
-        "FORMAT_SOURCES": "OFF"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "default",
-      "configurePreset": "default"
-    },
-    {
-      "name": "release",
-      "configurePreset": "release"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "default",
-      "configurePreset": "default",
-      "output": {"outputOnFailure": true},
-      "execution": {"noTestsAction": "error", "stopOnFailure": true}
     }
   ]
 }

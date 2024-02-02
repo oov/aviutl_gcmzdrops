@@ -4,8 +4,8 @@
 
 #include "ovutil/win32.h"
 
-#include <lua5.1/lauxlib.h>
-#include <lua5.1/lualib.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
 #include "luautil.h"
 

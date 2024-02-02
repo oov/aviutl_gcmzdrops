@@ -2,8 +2,8 @@
 
 #include "ovutil/str.h"
 
-#include <lua5.1/lauxlib.h>
-#include <lua5.1/lualib.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
 #include "error_gcmz.h"
 #include "gcmzfuncs.h"

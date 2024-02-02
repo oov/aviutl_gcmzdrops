@@ -10,52 +10,21 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        include:
-          - msystem: CLANG32
-            arch: clang-i686
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.msystem }}
-          install: >-
-            git
-            mingw-w64-${{ matrix.arch }}-clang
-            mingw-w64-${{ matrix.arch }}-cmake
-            mingw-w64-${{ matrix.arch }}-compiler-rt
-            mingw-w64-${{ matrix.arch }}-lld
-            mingw-w64-${{ matrix.arch }}-lua51
-            mingw-w64-${{ matrix.arch }}-ninja
-            mingw-w64-${{ matrix.arch }}-tools
-      - name: Build
-        shell: msys2 {0}
-        run: |
-          mkdir build
-          cd build
-          rm -f CmakeCache.txt && cmake -S .. -B . --preset release && cmake --build . && ctest --output-on-failure
-      - name: Upload binaries
-        uses: actions/upload-artifact@v3
-        with:
-          name: bin
-          path: |
-            build/bin/**/*
-  create-release:
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
       - name: Get the version
         id: get_version
-        run: echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
-      - name: Zip
+        shell: bash
         run: |
-          mkdir -p release && cd bin && zip -r ../release/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip * && cd ..
+          echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
+      - name: Build
+        shell: bash
+        run: |
+          docker run --net host -i -v .:/root/repo -w /root/repo ubuntu:jammy /bin/bash -c 'apt update && apt install -y git curl && bash build.bash --skip-tests --zip'
+          mv build/Release/dist/Release.zip build/Release/dist/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -63,7 +32,7 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.tag }}
           draft: true
           prerelease: false
-          files: release/*
+          files: build/Release/dist/*
           body: |
             ### ダウンロード
             

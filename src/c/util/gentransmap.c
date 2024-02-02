@@ -1,13 +1,13 @@
 #include "ovbase.h"
-#include "ovutil/win32.h"
 #include "ovnum.h"
+#include "ovutil/win32.h"
 
 #include "../error_gcmz.h"
-#include "../luautil.h"
 #include "../luafuncs_convertencoding.h"
+#include "../luautil.h"
 
-#include <lua5.1/lua.h>
-#include <lua5.1/lualib.h>
+#include <lua.h>
+#include <lualib.h>
 #include <stdio.h>
 
 static int luafn_output(lua_State *const L) {
@@ -26,7 +26,7 @@ int main(int argc, char const *argv[]) {
   lua_State *L = NULL;
   error err = eok();
 
-  char const*const fn1 = argv[1];
+  char const *const fn1 = argv[1];
   int cp1 = 0;
   {
     int64_t x;
@@ -36,7 +36,7 @@ int main(int argc, char const *argv[]) {
     }
     cp1 = (int)x;
   }
-  char const*const fn2 = argv[3];
+  char const *const fn2 = argv[3];
   int cp2 = 0;
   {
     int64_t x;

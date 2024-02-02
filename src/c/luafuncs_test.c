@@ -2,8 +2,8 @@
 #include "luafuncs_convertencoding.c"
 
 #include <combaseapi.h>
-#include <lua5.1/lauxlib.h>
-#include <lua5.1/lualib.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
 NODISCARD static error get_test_dir(struct wstr *dest) {
   struct wstr tmp = {0};

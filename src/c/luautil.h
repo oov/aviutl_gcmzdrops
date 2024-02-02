@@ -1,5 +1,5 @@
 #include "ovbase.h"
-#include <lua5.1/lua.h>
+#include <lua.h>
 
 void *luautil_alloc(void *const ud, void *ptr, size_t const osize, size_t const nsize);
 
