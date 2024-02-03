@@ -206,14 +206,18 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_rc copy_related_files)
 target_link_options(gcmzdrops_auf PRIVATE
-  gcmzdrops_intf
   -Wl,-delayload,lua51.dll
 )
+target_link_libraries(gcmzdrops_auf PRIVATE
+  gcmzdrops_intf
+  crc64
+  detect
+)
+add_dependencies(gcmzdrops_auf generate_version_h generate_rc copy_related_files)
 
 add_executable(datauri_test error_gcmz.c task.c sniffer.c datauri_test.c)
-target_link_libraries(gentransmap PRIVATE gcmzdrops_intf gcmzdrops_test_intf)
+target_link_libraries(datauri_test PRIVATE gcmzdrops_intf crc64 detect gcmzdrops_test_intf)
 add_dependencies(datauri_test generate_version_h)
 add_test(NAME datauri_test COMMAND datauri_test)
 
@@ -223,6 +227,6 @@ add_dependencies(gcmzfuncs_test generate_version_h)
 add_test(NAME gcmzfuncs_test COMMAND gcmzfuncs_test)
 
 add_executable(luafuncs_test error_gcmz.c task.c files.c luautil.c luafuncs_test.c)
-target_link_libraries(luafuncs_test PRIVATE gcmzdrops_intf gcmzdrops_test_intf)
+target_link_libraries(luafuncs_test PRIVATE gcmzdrops_intf crc64 detect gcmzdrops_test_intf)
 add_dependencies(luafuncs_test generate_version_h)
 add_test(NAME luafuncs_test COMMAND luafuncs_test)
