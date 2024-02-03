@@ -86,20 +86,80 @@ add_custom_target(generate_rc DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/i18n.rc")
 
 add_custom_target(copy_related_files
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/src/lua/" "${CMAKE_BINARY_DIR}/bin/GCMZDrops/"
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/_transmap1.lua" "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap1.lua"
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/_transmap2.lua" "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap2.lua"
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/README.md" "${CMAKE_BINARY_DIR}/bin/GCMZDrops.txt"
 )
 
-add_library(crc64 STATIC 3rd/crc64/crc64.c)
-list(APPEND targets crc64)
-add_library(detect STATIC 3rd/detect/detect.c)
-list(APPEND targets detect)
+set(is_clang "$<C_COMPILER_ID:Clang>")
+set(v16_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>")
 
-add_executable(gentransmap error_gcmz.c task.c luafuncs_convertencoding.c luautil.c util/gentransmap.c)
+add_library(gcmzdrops_intf INTERFACE)
+target_include_directories(gcmzdrops_intf INTERFACE
+  "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
+  "${jansson_BINARY_DIR}/include"
+  "${LUA51_INCLUDE}"
+)
+target_compile_definitions(gcmzdrops_intf INTERFACE
+  _WIN32_WINNT=0x0501
+  _WINDOWS
+  $<$<CONFIG:Release>:NDEBUG>
+)
+target_compile_options(gcmzdrops_intf INTERFACE
+  $<$<AND:$<BOOL:${WIN32}>,$<BOOL:${USE_COMPILER_RT}>>:--rtlib=compiler-rt>
+  -mstackrealign
+  -Wall
+  -Wextra
+  -Werror
+  -Weverything
+  -Wshadow
+  -Werror=return-type
+  -pedantic-errors
+  -Wno-declaration-after-statement
+  -Wno-padded
+  $<$<AND:${is_clang},${v16_or_later}>:-Wno-unsafe-buffer-usage>
+  -ffunction-sections
+  -fdata-sections
+  $<$<CONFIG:Debug>:-O0>
+  $<$<CONFIG:Release>:-O2>
+  -flto
+)
+target_link_options(gcmzdrops_intf INTERFACE
+  -fuse-ld=lld
+  -Wl,--gc-sections
+  # -Wl,--print-gc-sections
+  --rtlib=compiler-rt
+  -no-pthread
+  -static
+  -Wl,--kill-at
+  $<$<CONFIG:Release>:-s>
+)
+target_link_libraries(gcmzdrops_intf INTERFACE
+  comctl32
+  shlwapi
+  ovbase
+  ovutil
+  jansson
+  "${LUA51_DLL}"
+)
+
+add_library(gcmzdrops_test_intf INTERFACE)
+target_compile_definitions(gcmzdrops_test_intf INTERFACE
+  TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test
+)
+
+add_library(crc64 STATIC 3rd/crc64/crc64.c)
+target_link_libraries(crc64 PRIVATE gcmzdrops_intf)
+add_library(detect STATIC 3rd/detect/detect.c)
+target_link_libraries(detect PRIVATE gcmzdrops_intf)
+
+add_executable(gentransmap EXCLUDE_FROM_ALL error_gcmz.c task.c luafuncs_convertencoding.c luautil.c util/gentransmap.c)
+target_link_libraries(gentransmap PRIVATE gcmzdrops_intf)
 set_target_properties(gentransmap PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
 )
-list(APPEND targets gentransmap)
 add_dependencies(gentransmap generate_version_h)
+
 add_custom_target(generate_transmap
   COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/src/lua/_iniobj.lua" "_iniobj.lua"
   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/util/gentransmap.lua" "gentransmap.lua"
@@ -108,15 +168,15 @@ add_custom_target(generate_transmap
     "gentransmap"
     "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
     "${CMAKE_CURRENT_SOURCE_DIR}/util/1.exo" 932
-    "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap1.lua"
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/_transmap1.lua"
   COMMAND
     "gentransmap"
     "${CMAKE_CURRENT_SOURCE_DIR}/util/0.exo" 932
     "${CMAKE_CURRENT_SOURCE_DIR}/util/2.exo" 936
-    "${CMAKE_BINARY_DIR}/bin/GCMZDrops/_transmap2.lua"
+    "${CMAKE_CURRENT_SOURCE_DIR}/util/_transmap2.lua"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/util"
 )
-add_dependencies(generate_transmap gentransmap copy_related_files)
+add_dependencies(generate_transmap gentransmap)
 
 add_library(gcmzdrops_auf SHARED
   api.c
@@ -146,78 +206,23 @@ set_target_properties(gcmzdrops_auf PROPERTIES
   SUFFIX ""
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-add_dependencies(gcmzdrops_auf generate_version_h generate_rc copy_related_files generate_transmap)
-list(APPEND targets gcmzdrops_auf)
+add_dependencies(gcmzdrops_auf generate_version_h generate_rc copy_related_files)
 target_link_options(gcmzdrops_auf PRIVATE
+  gcmzdrops_intf
   -Wl,-delayload,lua51.dll
 )
 
 add_executable(datauri_test error_gcmz.c task.c sniffer.c datauri_test.c)
+target_link_libraries(gentransmap PRIVATE gcmzdrops_intf gcmzdrops_test_intf)
 add_dependencies(datauri_test generate_version_h)
-list(APPEND targets datauri_test)
-add_executable(gcmzfuncs_test error_gcmz.c task.c gcmzfuncs_test.c)
-add_dependencies(gcmzfuncs_test generate_version_h)
-list(APPEND targets gcmzfuncs_test)
-add_executable(luafuncs_test error_gcmz.c task.c files.c luautil.c luafuncs_test.c)
-add_dependencies(luafuncs_test generate_version_h)
-list(APPEND targets luafuncs_test)
+add_test(NAME datauri_test COMMAND datauri_test)
 
-set(is_clang "$<C_COMPILER_ID:Clang>")
-set(v16_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>")
-foreach(target ${targets})
-  if(target MATCHES "_test$")
-    add_test(NAME ${target} COMMAND ${target})
-    target_compile_definitions(${target} PRIVATE
-      TEST_IMAGE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/test
-    )
-  endif()
-  target_include_directories(${target} PRIVATE
-    "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
-    "${jansson_BINARY_DIR}/include"
-    "${LUA51_INCLUDE}"
-  )
-  target_compile_definitions(${target} PRIVATE
-    _WIN32_WINNT=0x0501
-    _WINDOWS
-    $<$<CONFIG:Release>:NDEBUG>
-  )
-  target_compile_options(${target} PRIVATE
-  $<$<AND:$<BOOL:${WIN32}>,$<BOOL:${USE_COMPILER_RT}>>:--rtlib=compiler-rt>
-    -mstackrealign
-    -Wall
-    -Wextra
-    -Werror
-    -Weverything
-    -Wshadow
-    -Werror=return-type
-    -pedantic-errors
-    -Wno-declaration-after-statement
-    -Wno-padded
-    $<$<AND:${is_clang},${v16_or_later}>:-Wno-unsafe-buffer-usage>
-    -ffunction-sections
-    -fdata-sections
-    $<$<CONFIG:Debug>:-O0>
-    $<$<CONFIG:Release>:-O2>
-    -flto
-  )
-  target_link_options(${target} PRIVATE
-    -fuse-ld=lld
-    -Wl,--gc-sections
-    # -Wl,--print-gc-sections
-    --rtlib=compiler-rt
-    -no-pthread
-    -static
-    -Wl,--kill-at
-    $<$<CONFIG:Release>:-s>
-  )
-  target_link_libraries(${target} PRIVATE
-    comctl32
-    $<$<NOT:$<STREQUAL:${target},crc64>>:crc64>
-    $<$<NOT:$<STREQUAL:${target},detect>>:detect>
-    jansson
-    "${LUA51_DLL}"
-    ovbase
-    ovutil
-    shlwapi
-  )
-endforeach(target)
+add_executable(gcmzfuncs_test error_gcmz.c task.c gcmzfuncs_test.c)
+target_link_libraries(gcmzfuncs_test PRIVATE gcmzdrops_intf gcmzdrops_test_intf)
+add_dependencies(gcmzfuncs_test generate_version_h)
+add_test(NAME gcmzfuncs_test COMMAND gcmzfuncs_test)
+
+add_executable(luafuncs_test error_gcmz.c task.c files.c luautil.c luafuncs_test.c)
+target_link_libraries(luafuncs_test PRIVATE gcmzdrops_intf gcmzdrops_test_intf)
+add_dependencies(luafuncs_test generate_version_h)
+add_test(NAME luafuncs_test COMMAND luafuncs_test)

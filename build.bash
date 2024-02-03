@@ -15,6 +15,7 @@ REBUILD=1
 SKIP_TESTS=0
 CREATE_ZIP=0
 CMAKE_BUILD_TYPE=Release
+GENERATE_TRANSMAP=0
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -34,6 +35,10 @@ while [[ $# -gt 0 ]]; do
       CREATE_ZIP=1
       shift
       ;;
+    --generate-transmap)
+      GENERATE_TRANSMAP=1
+      shift
+      ;;
     -*|--*)
       echo "Unknown option $1"
       exit 1
@@ -44,6 +49,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+TARGETS=ALL
+if [ "${GENERATE_TRANSMAP}" -eq 1 ]; then
+  TARGETS=generate_transmap
+fi
+
 for arch in i686; do
   destdir="${PWD}/${CMAKE_BUILD_TYPE}/${arch}"
   if [ "${REBUILD}" -eq 1 ]; then
@@ -53,6 +63,10 @@ for arch in i686; do
       -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
       -DCMAKE_TOOLCHAIN_FILE="src/c/3rd/ovbase/cmake/llvm-mingw.cmake" \
       -DCMAKE_C_COMPILER="${arch}-w64-mingw32-clang"
+  fi
+  if [ "${GENERATE_TRANSMAP}" -eq 1 ]; then
+    cmake --build "${destdir}" --target "${TARGETS}"
+    exit
   fi
   cmake --build "${destdir}"
   if [ "${SKIP_TESTS}" -eq 0 ]; then
