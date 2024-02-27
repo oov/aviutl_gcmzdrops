@@ -783,7 +783,8 @@ static BOOL wndproc_init(HWND const window) {
     char const *apimsg = NULL;
     if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))) {
       apimsg = gettext("This error mainly occurs when multiple instances of AviUtl are running.\n"
-                       "Please close all instances of AviUtl and launch only one.");
+                       "If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
+                       "If you do not need external integration API, you can ignore this message.");
       efree(&err);
     }
     gcmz_error_message_box(err,
