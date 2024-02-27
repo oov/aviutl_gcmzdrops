@@ -60,7 +60,7 @@ static void generic_lua_error_handler(error e, char const *const default_msg) {
   msg = default_msg;
 cleanup:
   if (msg) {
-    gcmz_error_message_box(e, aviutl_get_exedit_window_must(), true, gettext("Error"), NULL, "%1$s", msg);
+    gcmz_error_message_box(e, aviutl_get_exedit_window_must(), MB_ICONERROR, true, gettext("Error"), NULL, "%1$s", msg);
   }
   files_cleanup(true);
 }
@@ -674,6 +674,7 @@ cleanup:
   if (efailed(err)) {
     gcmz_error_message_box(err,
                            (HWND)params->userdata,
+                           MB_ICONERROR,
                            false,
                            gettext("Error"),
                            NULL,
@@ -717,7 +718,7 @@ static BOOL wndproc_init(HWND const window) {
       efree(&err);
     }
     gui_lock();
-    gcmz_error_message_box(err, window, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
+    gcmz_error_message_box(err, window, MB_ICONERROR, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
     return FALSE;
   }
 
@@ -734,8 +735,15 @@ static BOOL wndproc_init(HWND const window) {
   err = drop_target_new(&dt);
   if (efailed(err)) {
     gui_lock();
-    gcmz_error_message_box(
-        err, window, false, title, L"%1$s%2$s", "%1$s\n\n%2$s", msg_head, gettext("Failed to create IDropTarget."));
+    gcmz_error_message_box(err,
+                           window,
+                           MB_ICONERROR,
+                           false,
+                           title,
+                           L"%1$s%2$s",
+                           "%1$s\n\n%2$s",
+                           msg_head,
+                           gettext("Failed to create IDropTarget."));
     return FALSE;
   }
   dt->super.lpVtbl->AddRef((void *)dt);
@@ -759,7 +767,7 @@ static BOOL wndproc_init(HWND const window) {
       efree(&err);
     }
     gui_lock();
-    gcmz_error_message_box(err, window, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
+    gcmz_error_message_box(err, window, MB_ICONERROR, false, title, NULL, msg ? "%1$s\n\n%2$s" : "%1$s", msg_head, msg);
     return FALSE;
   }
   g_drop_target_registered = SUCCEEDED(hr);
@@ -768,6 +776,7 @@ static BOOL wndproc_init(HWND const window) {
   if (efailed(err)) {
     gcmz_error_message_box(err,
                            window,
+                           MB_ICONWARNING,
                            false,
                            title,
                            NULL,
@@ -782,13 +791,15 @@ static BOOL wndproc_init(HWND const window) {
   if (efailed(err)) {
     char const *apimsg = NULL;
     if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))) {
-      apimsg = gettext("This error mainly occurs when multiple instances of AviUtl are running.\n"
-                       "If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
-                       "If you do not need external integration API, you can ignore this message.");
+      apimsg = gettext(
+          "This error mainly occurs when multiple instances of AviUtl are running.\n"
+          "If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
+          "If you do not need external integration API, you can ignore this message.");
       efree(&err);
     }
     gcmz_error_message_box(err,
                            window,
+                           MB_ICONWARNING,
                            false,
                            title,
                            NULL,

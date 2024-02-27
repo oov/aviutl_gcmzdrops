@@ -38,6 +38,7 @@ NODISCARD error
 gcmz_error_format(error e, struct wstr *const dest, wchar_t const *const reference, char const *const format, ...);
 void gcmz_error_message_box(error e,
                             HWND const window,
+                            UINT const flags,
                             bool const deferred,
                             char const *const title,
                             wchar_t const *const reference,

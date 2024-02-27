@@ -180,6 +180,7 @@ gcmz_error_format(error e, struct wstr *const dest, wchar_t const *const referen
 
 struct error_message_box_task_data {
   HWND window;
+  UINT flags;
 
   struct wstr msg;
   struct wstr title;
@@ -187,7 +188,7 @@ struct error_message_box_task_data {
 
 static void error_message_box_task(void *userdata) {
   struct error_message_box_task_data *d = userdata;
-  message_box(d->window, d->msg.ptr, d->title.ptr, MB_ICONERROR);
+  message_box(d->window, d->msg.ptr, d->title.ptr, d->flags);
   ereport(sfree(&d->title));
   ereport(sfree(&d->msg));
   ereport(mem_free(&d));
@@ -195,6 +196,7 @@ static void error_message_box_task(void *userdata) {
 
 void gcmz_error_message_box(error e,
                             HWND const window,
+                            UINT const flags,
                             bool const deferred,
                             char const *const title,
                             wchar_t const *const reference,
@@ -223,6 +225,7 @@ void gcmz_error_message_box(error e,
     goto cleanup;
   }
   d->window = window;
+  d->flags = flags;
   d->msg = msg;
   msg = (struct wstr){0};
   d->title = wide_title;
