@@ -23,7 +23,7 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          docker run --net host -i -v .:/root/repo -w /root/repo ubuntu:jammy /bin/bash -c 'apt update && apt install -y git curl && bash build.bash --skip-tests --zip'
+          docker run --net host -i -v .:/root/repo -w /root/repo ubuntu:jammy /bin/bash -c 'apt update && apt install -y git curl && git config --global --add safe.directory /root/repo && bash build.bash --skip-tests --zip'
           sudo mv build/Release/dist/Release.zip build/Release/dist/gcmzdrops_${{ steps.get_version.outputs.tag }}.zip
       - name: Create Release
         id: create_release
