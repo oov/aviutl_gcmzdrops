@@ -94,8 +94,11 @@ static NODISCARD error get_gcmz_message(int const type, int const code, struct N
   case err_gcmz_lua:
     return to_wstr(&str_unmanaged_const(gettext("An error occurred while executing a Lua script.")), dest);
   case err_gcmz_invalid_char:
-    return to_wstr(&str_unmanaged_const(gettext("The filename contains characters that cannot be used in AviUtl.")),
-                   dest);
+    return ssprintf(dest,
+                    NULL,
+                    L"%1$s\n%2$s",
+                    gettext("The filename contains characters that cannot be used in AviUtl."),
+                    gettext("To load this file, you need to change the ? part."));
   }
   return to_wstr(&str_unmanaged_const(gettext("Unknown error code.")), dest);
 }

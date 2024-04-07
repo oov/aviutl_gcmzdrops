@@ -307,6 +307,9 @@ msgstr "字幕アシストプラグイン extext.auf とは互換性がありま
 msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
 msgstr "ごちゃまぜドロップスの古いバージョンである oledd.auf とは互換性がありません。"
 
+msgid "To load this file, you need to change the ? part."
+msgstr "このファイルを読み込むには、? の場所を変更する必要があります。"
+
 msgid "Unexpected API version."
 msgstr "未知の API バージョンです。"
 

@@ -306,6 +306,9 @@ msgstr "此插件不兼容extext.auf。"
 msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
 msgstr "此插件不兼容oledd.auf（旧版GCMZDrops）。"
 
+msgid "To load this file, you need to change the ? part."
+msgstr "要加载此文件，您需要更改 ? 部分。"
+
 msgid "Unexpected API version."
 msgstr "未知的API版本。"
 
