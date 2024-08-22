@@ -132,7 +132,7 @@ error gui_init(HWND const window) {
 
   int save_mode_height = padding;
   {
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Processing mode:"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Processing mode:"));
     HWND h = CreateWindowExW(0,
                              L"STATIC",
                              buf,
@@ -161,11 +161,11 @@ error gui_init(HWND const window) {
                         (HMENU)1,
                         hinst,
                         NULL);
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Auto detect"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Auto detect"));
     SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Copy"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Copy"));
     SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Direct read"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Direct read"));
     SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     save_mode_height += control_height;
@@ -175,7 +175,7 @@ error gui_init(HWND const window) {
   int save_dir_height = padding;
   {
     int const button_width = font_height * 2;
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save to:"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save to:"));
     HWND h = CreateWindowExW(0,
                              L"STATIC",
                              buf,
@@ -228,7 +228,7 @@ error gui_init(HWND const window) {
     enum {
       button_width = 128,
     };
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to initial"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to initial"));
     HWND h = CreateWindowExW(0,
                              L"BUTTON",
                              buf,
@@ -243,7 +243,7 @@ error gui_init(HWND const window) {
                              NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     g_restore_initial = h;
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to default"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to default"));
     h = CreateWindowExW(0,
                         L"BUTTON",
                         buf,
@@ -258,7 +258,7 @@ error gui_init(HWND const window) {
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     g_restore_default = h;
-    mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save as default"));
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Save as default"));
     h = CreateWindowExW(0,
                         L"BUTTON",
                         buf,
@@ -393,7 +393,7 @@ NODISCARD static error click_select_folder_button(HWND const window) {
     buf_size = 1024,
   };
   wchar_t buf[buf_size];
-  mo_sprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Choose Save Directory"));
+  mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Choose Save Directory"));
   err = select_directory(window, &wstr_unmanaged(buf), &dir, &ret);
   if (efailed(err)) {
     err = ethru(err);

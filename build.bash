@@ -5,11 +5,9 @@ CUR_DIR="${PWD}"
 cd "$(dirname "${BASH_SOURCE:-$0}")"
 
 mkdir -p build/tools
-cd build/tools
+. src/c/3rd/ovbase/setup-llvm-mingw.bash --dir $PWD/build/tools
 
-. ../../src/c/3rd/ovbase/setup-llvm-mingw.bash --dir $PWD
-
-cd ..
+cd build
 
 REBUILD=0
 SKIP_TESTS=0

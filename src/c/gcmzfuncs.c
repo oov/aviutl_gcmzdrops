@@ -1004,7 +1004,7 @@ error gcmz_confirm(struct wstr const *const caption, bool *const result) {
     buf_size = 1024,
   };
   wchar_t buf[buf_size];
-  mo_sprintf_wchar(buf, buf_size, NULL, "%1$s %2  $s", "GCMZDrops", VERSION);
+  mo_snprintf_wchar(buf, buf_size, NULL, "%1$s %2  $s", "GCMZDrops", VERSION);
   int r = MessageBoxW(h, caption->ptr, buf, MB_ICONQUESTION | MB_OKCANCEL);
   if (!r) {
     return errhr(HRESULT_FROM_WIN32(GetLastError()));
