@@ -133,6 +133,10 @@ Lua スクリプト内で使えるごちゃまぜドロップス専用の関数�
 
 この API は試験運用中のため、予告なく変更または削除されることがあります。
 
+### 使用例
+
+C言語から呼び出す例です。
+
 ```c
 #include <stdint.h>
 #include <stdio.h>
@@ -148,47 +152,52 @@ struct GCMZDropsData {
   int32_t VideoScale;
   int32_t AudioRate;
   int32_t AudioCh;
-  int32_t GCMZAPIVer;
+  int32_t GCMZAPIVer; /* 1 = v0.3.12 以降 / 2 = v0.3.23 以降 */
   wchar_t ProjectPath[MAX_PATH];
-  uint32_t Flags; // GCMZAPIVer が 2 以上なら存在する
+  uint32_t Flags; /* GCMZAPIVer が 2 以上なら存在する */
 };
 
-int main(){
-  HANDLE hMutex = OpenMutex(MUTEX_ALL_ACCESS, FALSE, TEXT("GCMZDropsMutex"));
+int main(int argc, char *argv[]) {
+  HANDLE hMutex = NULL;
+  HANDLE hFMO = NULL;
+  struct GCMZDropsData *p = NULL;
+  BOOL mutexLocked = FALSE;
+
+  hMutex = OpenMutex(MUTEX_ALL_ACCESS, FALSE, TEXT("GCMZDropsMutex"));
   if (hMutex == NULL) {
-    printf("OpenMutex に失敗しました。\n");
-    return 0;
+    printf("OpenMutex failed.\n");
+    goto Cleanup;
   }
 
-  HANDLE hFMO = OpenFileMapping(FILE_MAP_READ, FALSE, TEXT("GCMZDrops"));
+  hFMO = OpenFileMapping(FILE_MAP_READ, FALSE, TEXT("GCMZDrops"));
   if (hFMO == NULL) {
-    printf("OpenFileMapping に失敗しました。\n");
-    goto CloseMutex;
+    printf("OpenFileMapping failed.\n");
+    goto Cleanup;
   }
 
-  struct GCMZDropsData *p = MapViewOfFile(hFMO, FILE_MAP_READ, 0, 0, 0);
+  p = MapViewOfFile(hFMO, FILE_MAP_READ, 0, 0, 0);
   if (p == NULL) {
-    printf("MapViewOfFile に失敗しました。\n");
-    goto CloseFMO;
+    printf("MapViewOfFile failed.\n");
+    goto Cleanup;
   }
 
-  WaitForSingleObject(hMutex, INFINITE);
+  if (WaitForSingleObject(hMutex, INFINITE) != WAIT_OBJECT_0) {
+    printf("WaitForSingleObject failed.\n");
+    goto Cleanup;
+  }
+  mutexLocked = TRUE;
 
-  HWND targetWnd = (HWND)(ULONG_PTR)p->Window;
-  if (targetWnd == NULL) {
-    printf("対象ウィンドウの取得に失敗しました。\n");
-    goto Unmap;
+  if (!p->Window) {
+    printf("The target window is NULL.\n");
+    goto Cleanup;
   }
 
-  if (p->Width == 0) {
-    printf("プロジェクトが開かれていません。\n");
-    goto Unmap;
+  if (!p->Width) {
+    printf("The project is not open.\n");
+    goto Cleanup;
   }
 
-  // v0.3.23 以降なら 2
-  // v0.3.12 以降なら 1
   printf("GCMZAPIVer: %d\n", p->GCMZAPIVer);
-
   printf("ProjectPath(%d): %ls\n", (int)wcslen(p->ProjectPath), p->ProjectPath);
   printf("Window: %d\n", p->Window);
   printf("Width: %d\n", p->Width);
@@ -198,68 +207,85 @@ int main(){
   printf("AudioRate: %d\n", p->AudioRate);
   printf("AudioCh: %d\n", p->AudioCh);
 
-  // GCMZAPIVer が 2 以上なら Flags が存在する
   if (p->GCMZAPIVer >= 2) {
+    /* Flags にアクセスできるのは GCMZAPIVer が 2 以上のときだけ */
     printf("Flags: %d\n", (int)p->Flags);
     if (p->Flags & 1) {
-      // 英語化パッチが当たっている拡張編集だった
+      /* 英語化パッチが当たっている拡張編集だった */
       printf("  English Patched\n");
     }
     if (p->Flags & 2) {
-      // 中国語簡体字パッチが当たっている拡張編集だった
+      /* 中国語簡体字パッチが当たっている拡張編集だった */
       printf("  Simplified Chinese Patched\n");
     }
   }
 
-  // GCMZAPIVer が 0 のときは対応しない　※API 仕様が異なります
+  /*
+    GCMZAPIVer が 0 のときは仕様が異なるため動作しません
+    その場合は対応せずにバージョンアップを呼びかけるようにしてください
+  */
   if (p->GCMZAPIVer == 0) {
-    printf("GCMZDrops too old, please update to v0.3.12 or later.");
-    goto Unmap;
+    printf("GCMZDrops too old, please update to v0.3.12 or later.\n");
+    goto Cleanup;
   }
 
-  HWND myWnd = GetConsoleWindow();
+  {
+    COPYDATASTRUCT cds = {0};
+    /* 必ず 1 を指定してください */
+    cds.dwData = 1;
 
-  COPYDATASTRUCT cds;
+    /*
+      JSON を UTF-8 エンコーディングで渡します
+      layer:
+        ドロップするレイヤーを決めます。
+        指定を省略することはできません。
+        -1 ～ -100
+            拡張編集上での現在の表示位置からの相対位置へ挿入
+            例: 縦スクロールによって一番上に見えるレイヤーが Layer 3 のとき、-1 を指定すると Layer 3、-2 を指定すると Layer 4 へ挿入
+        1 ～  100
+            スクロール位置に関わらず指定したレイヤー番号へ挿入
+      frameAdvance:
+        ファイルのドロップした後、指定されたフレーム数だけカーソルを先に進めます。
+        進める必要がない場合は省略可能です。
+      files:
+        投げ込むファイルへのフルパスを配列で渡します。
+        ファイル名は UTF-8 にする必要がありますが、拡張編集の仕様上 ShiftJIS の範囲内の文字しか扱えません。
+    */
+    cds.lpData = "{\"layer\":-1,\"frameAdvance\":12,\"files\":[\"C:\\\\test.bmp\"]}";
+    cds.cbData = strlen(cds.lpData);
 
-  // 必ず 1 を指定してください。
-  cds.dwData = 1;
-
-  // JSON を UTF-8 エンコーディングで渡します。
-  // layer:
-  //   ドロップするレイヤーを決めます。
-  //   指定を省略することはできません。
-  //   -1 ～ -100
-  //       拡張編集上での現在の表示位置からの相対位置へ挿入
-  //       例: 縦スクロールによって一番上に見えるレイヤーが Layer 3 のとき、-1 を指定すると Layer 3、-2 を指定すると Layer 4 へ挿入
-  //    1 ～  100
-  //       スクロール位置に関わらず指定したレイヤー番号へ挿入
-  // frameAdvance:
-  //   ファイルのドロップした後、指定されたフレーム数だけカーソルを先に進めます。
-  //   進める必要がない場合は省略可能です。
-  // files:
-  //   投げ込むファイルへのフルパスを配列で渡します。
-  //   ファイル名は UTF-8 にする必要がありますが、拡張編集の仕様上 ShiftJIS の範囲内の文字しか扱えません。
-  cds.lpData = u8"{\"layer\":-1,\"frameAdvance\":12,\"files\":[\"C:\\\\test.bmp\"]}";
-  cds.cbData = strlen(cds.lpData);
-
-  // API を呼び出します
-  //   cds.dwData の値が間違っている場合や JSON がおかしい場合など、
-  //   API としての送信フォーマットに問題がある場合には OutputDebugString でエラーメッセージを出力します。
-  //   ドロップするファイルが見つからないなど、ファイルの内容に問題がある場合はメッセージボックスで表示します。
-  SendMessage(targetWnd, WM_COPYDATA, (WPARAM)myWnd, (LPARAM)&cds);
-
-Unmap:
-  ReleaseMutex(hMutex);
-
-  if (UnmapViewOfFile(p) == 0) {
-    printf("UnmapViewOfVile に失敗しました。\n");
-    goto CloseFMO;
+    /*
+        API を呼び出します
+        WM_COPYDATA の仕様に従って、WPARAM には データを渡すウィンドウへのハンドル、LPARAM には COPYDATASTRUCT 構造体へのポインタを渡します。
+        https://learn.microsoft.com/ja-jp/windows/win32/dataxchg/wm-copydata
+        cds.dwData の値が間違っている場合や JSON がおかしい場合など、
+        API としての送信フォーマットに問題がある場合には OutputDebugString でエラーメッセージを出力します。
+        ドロップするファイルが見つからないなど、ファイルの内容に問題がある場合はメッセージボックスで表示します。
+    */
+    SendMessage((HWND)(intptr_t)p->Window, WM_COPYDATA, (WPARAM)(GetConsoleWindow()), (LPARAM)&cds);
   }
 
-CloseFMO:
-  CloseHandle(hFMO);
-CloseMutex:
-  CloseHandle(hMutex);
+Cleanup:
+  if (p) {
+    if (!UnmapViewOfFile(p)) {
+      printf("UnmapViewOfVile failed.\n");
+    }
+  }
+  if (mutexLocked) {
+    if (!ReleaseMutex(hMutex)) {
+      printf("ReleaseMutex failed.\n");
+    }
+  }
+  if (hFMO) {
+    if (!CloseHandle(hFMO)) {
+      printf("CloseHandle failed.\n");
+    }
+  }
+  if (hMutex) {
+    if (!CloseHandle(hMutex)) {
+      printf("CloseHandle failed.\n");
+    }
+  }
   return 0;
 }
 ```
@@ -305,8 +331,13 @@ FAQ
 バイナリのビルドについて
 ------------------------
 
-ごちゃまぜドロップスは [MSYS2](https://www.msys2.org/) + CLANG32 上で開発しています。  
-ビルド方法や必要になるパッケージなどは [GitHub Actions の設定ファイル](https://github.com/oov/aviutl_gcmzdrops/blob/main/.github/workflows/releaser.yml) を参考にしてください。
+Windows に Git Bash をインストールした環境で、以下のコマンドでビルドできます。
+
+```bash
+$ git clone https://github.com/oov/aviutl_gcmzdrops
+$ cd aviutl_gcmzdrops
+$ bash build.bash
+```
 
 Contributors
 ------------
@@ -318,10 +349,12 @@ Credits
 
 ごちゃまぜドロップス is made possible by the following open source softwares.
 
-### Acutest
+### [Acutest](https://github.com/mity/acutest)
 
-https://github.com/mity/acutest
+<details>
+<summary>The MIT License</summary>
 
+```
 The MIT License (MIT)
 
 Copyright © 2013-2019 Martin Mitáš
@@ -343,11 +376,15 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+```
+</details>
 
-### AviUtl Plugin SDK
+### [AviUtl Plugin SDK](http://spring-fragrance.mints.ne.jp/aviutl/)
 
-http://spring-fragrance.mints.ne.jp/aviutl/
+<details>
+<summary>The MIT License</summary>
 
+```
 The MIT License
 
 Copyright (c) 1999-2012 Kenkun
@@ -369,11 +406,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+```
+</details>
 
-### crc64.c
+### [crc64.c](https://github.com/redis/redis/blob/2.6/src/crc64.c)
 
-https://github.com/redis/redis/blob/2.6/src/crc64.c
+<details>
+<summary>The 3-Clause BSD License</summary>
 
+```
 Copyright (c) 2012, Salvatore Sanfilippo <antirez at gmail dot com>
 All rights reserved.
 
@@ -400,13 +441,15 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
+```
+</details>
 
-### detect.c
+### [detect.c](https://github.com/monochromegane/the_platinum_searcher)
 
-https://github.com/monochromegane/the_platinum_searcher
+<details>
+<summary>The MIT License</summary>
 
-The MIT License (MIT)
-
+```
 Copyright (c) [2014] [the_platinum_searcher]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -426,16 +469,18 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+</details>
 
-### hashmap.c
+### [hashmap.c](https://github.com/tidwall/hashmap.c)
 
-https://github.com/tidwall/hashmap.c
+> [!NOTE]
+> This program/library used [a modified version of hashmap.c](https://github.com/oov/hashmap.c/tree/simplify).
 
-NOTICE: This program used a modified version of hashmap.c.  
-        https://github.com/oov/hashmap.c/tree/simplify
+<details>
+<summary>The MIT License (MIT)</summary>
 
-The MIT License (MIT)
-
+```
 Copyright (c) 2020 Joshua J Baker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -454,11 +499,15 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+</details>
 
-### Jansson
+### [Jansson](https://github.com/akheron/jansson)
 
-https://github.com/akheron/jansson
+<details>
+<summary>The MIT License (MIT)</summary>
 
+```
 Copyright (c) 2009-2020 Petri Lehtinen <petri@digip.org>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -478,11 +527,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+```
+</details>
 
-### Lua
+### [Lua](http://www.lua.org/)
 
-http://www.lua.org/
+<details>
+<summary>The MIT License (MIT)</summary>
 
+```
 Copyright (C) 1994-2003 Tecgraf, PUC-Rio.  All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -503,37 +556,331 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+</details>
 
-### stb_image.h
+### [Mingw-w64](https://github.com/mingw-w64/mingw-w64)
 
-https://github.com/nothings/stb
+<details>
+<summary>MinGW-w64 runtime licensing</summary>
 
-Public Domain (www.unlicense.org)
+```
+MinGW-w64 runtime licensing
+***************************
 
+This program or library was built using MinGW-w64 and statically
+linked against the MinGW-w64 runtime. Some parts of the runtime
+are under licenses which require that the copyright and license
+notices are included when distributing the code in binary form.
+These notices are listed below.
+
+
+========================
+Overall copyright notice
+========================
+
+Copyright (c) 2009, 2010, 2011, 2012, 2013 by the mingw-w64 project
+
+This license has been certified as open source. It has also been designated
+as GPL compatible by the Free Software Foundation (FSF).
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions in source code must retain the accompanying copyright
+      notice, this list of conditions, and the following disclaimer.
+   2. Redistributions in binary form must reproduce the accompanying
+      copyright notice, this list of conditions, and the following disclaimer
+      in the documentation and/or other materials provided with the
+      distribution.
+   3. Names of the copyright holders must not be used to endorse or promote
+      products derived from this software without prior written permission
+      from the copyright holders.
+   4. The right to distribute this software or to use it for any purpose does
+      not give you the right to use Servicemarks (sm) or Trademarks (tm) of
+      the copyright holders.  Use of them is covered by separate agreement
+      with the copyright holders.
+   5. If any files are modified, you must cause the modified files to carry
+      prominent notices stating that you changed the files and the date of
+      any change.
+
+Disclaimer
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY EXPRESSED
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+======================================== 
+getopt, getopt_long, and getop_long_only
+======================================== 
+
+Copyright (c) 2002 Todd C. Miller <Todd.Miller@courtesan.com> 
+ 
+Permission to use, copy, modify, and distribute this software for any 
+purpose with or without fee is hereby granted, provided that the above 
+copyright notice and this permission notice appear in all copies. 
+ 	 
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Sponsored in part by the Defense Advanced Research Projects
+Agency (DARPA) and Air Force Research Laboratory, Air Force
+Materiel Command, USAF, under agreement number F39502-99-1-0512.
+
+        *       *       *       *       *       *       * 
+
+Copyright (c) 2000 The NetBSD Foundation, Inc.
+All rights reserved.
+
+This code is derived from software contributed to The NetBSD Foundation
+by Dieter Baron and Thomas Klausner.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+
+===============================================================
+gdtoa: Converting between IEEE floating point numbers and ASCII
+===============================================================
+
+The author of this software is David M. Gay.
+
+Copyright (C) 1997, 1998, 1999, 2000, 2001 by Lucent Technologies
+All Rights Reserved
+
+Permission to use, copy, modify, and distribute this software and
+its documentation for any purpose and without fee is hereby
+granted, provided that the above copyright notice appear in all
+copies and that both that the copyright notice and this
+permission notice and warranty disclaimer appear in supporting
+documentation, and that the name of Lucent or any of its entities
+not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior
+permission.
+
+LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+        *       *       *       *       *       *       *
+
+The author of this software is David M. Gay.
+
+Copyright (C) 2005 by David M. Gay
+All Rights Reserved
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appear in all copies and that
+both that the copyright notice and this permission notice and warranty
+disclaimer appear in supporting documentation, and that the name of
+the author or any of his current or former employers not be used in
+advertising or publicity pertaining to distribution of the software
+without specific, written prior permission.
+
+THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.  IN
+NO EVENT SHALL THE AUTHOR OR ANY OF HIS CURRENT OR FORMER EMPLOYERS BE
+LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY
+DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+SOFTWARE.
+
+        *       *       *       *       *       *       *
+
+The author of this software is David M. Gay.
+
+Copyright (C) 2004 by David M. Gay.
+All Rights Reserved
+Based on material in the rest of /netlib/fp/gdota.tar.gz,
+which is copyright (C) 1998, 2000 by Lucent Technologies.
+
+Permission to use, copy, modify, and distribute this software and
+its documentation for any purpose and without fee is hereby
+granted, provided that the above copyright notice appear in all
+copies and that both that the copyright notice and this
+permission notice and warranty disclaimer appear in supporting
+documentation, and that the name of Lucent or any of its entities
+not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior
+permission.
+
+LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+
+=========================
+Parts of the math library
+=========================
+
+Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+
+Developed at SunSoft, a Sun Microsystems, Inc. business.
+Permission to use, copy, modify, and distribute this
+software is freely granted, provided that this notice
+is preserved.
+
+        *       *       *       *       *       *       *
+
+Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+
+Developed at SunPro, a Sun Microsystems, Inc. business.
+Permission to use, copy, modify, and distribute this
+software is freely granted, provided that this notice
+is preserved.
+
+        *       *       *       *       *       *       *
+
+FIXME: Cephes math lib
+Copyright (C) 1984-1998 Stephen L. Moshier
+
+It sounds vague, but as to be found at
+<http://lists.debian.org/debian-legal/2004/12/msg00295.html>, it gives an
+impression that the author could be willing to give an explicit
+permission to distribute those files e.g. under a BSD style license. So
+probably there is no problem here, although it could be good to get a
+permission from the author and then add a license into the Cephes files
+in MinGW runtime. At least on follow-up it is marked that debian sees the
+version a-like BSD one. As MinGW.org (where those cephes parts are coming
+from) distributes them now over 6 years, it should be fine.
+
+===================================
+Headers and IDLs imported from Wine
+===================================
+
+Some header and IDL files were imported from the Wine project. These files
+are prominent maked in source. Their copyright belongs to contributors and
+they are distributed under LGPL license.
+
+Disclaimer
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+```
+</details>
+
+### [nanoprintf](https://github.com/charlesnicholson/nanoprintf)
+
+> [!NOTE]
+> This program/library used [a modified version of nanoprintf](https://github.com/oov/nanoprintf/tree/custom).
+
+<details>
+<summary>UNLICENSE</summary>
+
+```
 This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to <http://unlicense.org>
+```
+</details>
+
+### [stb_image.h](https://github.com/nothings/stb)
+
+<details>
+<summary>UNLICENSE</summary>
+
+```
+This is free and unencumbered software released into the public domain.
+
 Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
 software, either in source code form or as a compiled binary, for any purpose,
 commercial or non-commercial, and by any means.
+
 In jurisdictions that recognize copyright laws, the author or authors of this
 software dedicate any and all copyright interest in the software to the public
 domain. We make this dedication for the benefit of the public at large and to
 the detriment of our heirs and successors. We intend this dedication to be an
 overt act of relinquishment in perpetuity of all present and future rights to
 this software under copyright law.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+</details>
 
-### TinyCThread
+### [TinyCThread](https://github.com/tinycthread/tinycthread)
 
-https://github.com/tinycthread/tinycthread
+> [!NOTE]
+> This program/library used [a modified version of TinyCThread](https://github.com/oov/tinycthread).
 
-NOTICE: This program used a modified version of TinyCThread.  
-        https://github.com/oov/tinycthread
+<details>
+<summary>The zlib/libpng License</summary>
 
+```
 Copyright (c) 2012 Marcus Geelnard
               2013-2016 Evan Nemerson
 
@@ -555,3 +902,5 @@ freely, subject to the following restrictions:
 
     3. This notice may not be removed or altered from any source
     distribution.
+```
+</details>
