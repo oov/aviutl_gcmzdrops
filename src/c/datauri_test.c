@@ -81,7 +81,7 @@ static void test_base64_decode(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d %ls", i, td->input);
+    TEST_CASE_("test #%zu %ls", i, td->input);
 
     size_t decoded_len = 0;
     TEST_EISG_F(base64_decoded_len(td->input, wcslen(td->input), &decoded_len), td->code);
@@ -91,8 +91,8 @@ static void test_base64_decode(void) {
 
     size_t expected_len = strlen(td->output);
     TEST_CHECK(decoded_len == expected_len);
-    TEST_MSG("expected %d", expected_len);
-    TEST_MSG("got %d", decoded_len);
+    TEST_MSG("expected %zu", expected_len);
+    TEST_MSG("got %zu", decoded_len);
 
     void *p = malloc(expected_len);
     TEST_ASSERT(p != NULL);
@@ -186,7 +186,7 @@ static void test_percent_decode(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d %ls", i, td->input);
+    TEST_CASE_("test #%zu %ls", i, td->input);
 
     size_t decoded_len = 0;
     TEST_EISG_F(percent_decoded_len(td->input, wcslen(td->input), &decoded_len), td->code);
@@ -196,8 +196,8 @@ static void test_percent_decode(void) {
 
     size_t expected_len = strlen(td->output);
     TEST_CHECK(decoded_len == expected_len);
-    TEST_MSG("expected %d", expected_len);
-    TEST_MSG("got %d", decoded_len);
+    TEST_MSG("expected %zu", expected_len);
+    TEST_MSG("got %zu", decoded_len);
 
     void *p = malloc(expected_len);
     TEST_ASSERT(p != NULL);
@@ -316,7 +316,7 @@ static void test_parse_decode(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d \"%ls\"", i, td->input);
+    TEST_CASE_("test #%zu \"%ls\"", i, td->input);
 
     struct data_uri d = {0};
     TEST_EISG_F(data_uri_parse(td->input, wcslen(td->input), &d), td->code);
@@ -333,8 +333,8 @@ static void test_parse_decode(void) {
     TEST_MSG("got %ls", d.charset);
 
     TEST_CHECK(wcscmp(td->output.ext_filename, d.ext_filename) == 0);
-    TEST_MSG("expected %ls(%d)", td->output.ext_filename, wcslen(td->output.ext_filename));
-    TEST_MSG("got %ls(%d)", d.ext_filename, wcslen(d.ext_filename));
+    TEST_MSG("expected %ls(%zu)", td->output.ext_filename, wcslen(td->output.ext_filename));
+    TEST_MSG("got %ls(%zu)", d.ext_filename, wcslen(d.ext_filename));
 
     TEST_CHECK(td->output.encoding == d.encoding);
     TEST_MSG("expected %d", td->output.encoding);
@@ -358,8 +358,8 @@ static void test_parse_decode(void) {
     struct wstr fn = {0};
     if (TEST_SUCCEEDED_F(data_uri_suggest_filename(&d, &fn))) {
       TEST_CHECK(wcscmp(fn.ptr, td->suggest_filename) == 0);
-      TEST_MSG("expected %ls(%d)", td->suggest_filename, wcslen(td->suggest_filename));
-      TEST_MSG("got %ls(%d)", fn.ptr, fn.len);
+      TEST_MSG("expected %ls(%zu)", td->suggest_filename, wcslen(td->suggest_filename));
+      TEST_MSG("got %ls(%zu)", fn.ptr, fn.len);
     }
     ereport(sfree(&fn));
 

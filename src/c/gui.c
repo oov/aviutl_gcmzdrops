@@ -225,9 +225,7 @@ error gui_init(HWND const window) {
 
   int y = (save_mode_height > save_dir_height ? save_mode_height : save_dir_height) + padding;
   {
-    enum {
-      button_width = 128,
-    };
+    static int const button_width = 128;
     mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Revert to initial"));
     HWND h = CreateWindowExW(0,
                              L"BUTTON",

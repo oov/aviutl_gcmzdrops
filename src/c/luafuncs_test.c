@@ -345,7 +345,7 @@ static void test_hashtostring(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d \"%ls\"", i, td->output);
+    TEST_CASE_("test #%zu \"%ls\"", i, td->output);
     if (TEST_EISG_F(luafn_hashtostring_core(td->input, &tmp), td->code) && td->code) {
       TEST_CHECK(tmp.len > 0);
       TEST_CHECK(wcscmp(tmp.ptr, td->output) == 0);
@@ -367,7 +367,7 @@ static void test_encode_exo_text(void) {
   TEST_CHECK(strncmp(expected, got.ptr, strlen(expected)) == 0);
   TEST_CHECK(got.len == 4096);
   TEST_MSG("expected %d", 4096);
-  TEST_MSG("got %d", got.len);
+  TEST_MSG("got %zu", got.len);
 
 cleanup:
   ereport(sfree(&got));
@@ -559,7 +559,7 @@ static void test_convertencoding(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d %d -> %d", i, td->input_cp, td->output_cp);
+    TEST_CASE_("test #%zu %u -> %u", i, td->input_cp, td->output_cp);
     size_t input_len = (td->input_cp == 1200 || td->input_cp == 1201) ? wcslen(td->input) * 2 : strlen(td->input);
     error err = luafn_convertencoding_core(td->input, input_len, td->input_cp, td->output_cp, &tmp);
     if (TEST_SUCCEEDED_F(err)) {
@@ -609,7 +609,7 @@ static void test_choose_language(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d", i);
+    TEST_CASE_("test #%zu", i);
     int r = luaL_dostring(L, td->script);
     if (!TEST_CHECK((td->ret == 0 && r != 0) || (td->ret != 0 && r == 0))) {
       continue;

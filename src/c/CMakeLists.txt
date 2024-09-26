@@ -94,6 +94,7 @@ add_custom_target(copy_related_files
 set(is_clang "$<C_COMPILER_ID:Clang>")
 set(v16_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>")
 set(v18_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,18>")
+set(v19_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,19>")
 add_library(gcmzdrops_intf INTERFACE)
 target_include_directories(gcmzdrops_intf INTERFACE
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
@@ -119,6 +120,7 @@ target_compile_options(gcmzdrops_intf INTERFACE
   -Wno-padded
   $<$<AND:${is_clang},${v16_or_later}>:-Wno-unsafe-buffer-usage>
   $<$<AND:${is_clang},${v18_or_later}>:-Wno-switch-default>
+  $<$<AND:${is_clang},${v19_or_later}>:-Wno-pre-c11-compat>
   -ffunction-sections
   -fdata-sections
   $<$<CONFIG:Debug>:-O0>
@@ -130,7 +132,6 @@ target_link_options(gcmzdrops_intf INTERFACE
   -Wl,--gc-sections
   # -Wl,--print-gc-sections
   --rtlib=compiler-rt
-  -no-pthread
   -static
   -Wl,--kill-at
   $<$<CONFIG:Release>:-s>

@@ -187,7 +187,7 @@ static void test_gcmz_is_need_copy(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d mode = %d \"%ls\"", i, td->mode, td->input);
+    TEST_CASE_("test #%zu mode = %d \"%ls\"", i, td->mode, td->input);
     g_gui_mode = td->mode;
     if (!TEST_SUCCEEDED_F(scpy(&tmp, td->input))) {
       goto cleanup;
@@ -444,7 +444,7 @@ static void test_analyse_exedit_window_image(void) {
   size_t n = sizeof(test_data) / sizeof(test_data[0]);
   for (size_t i = 0; i < n; ++i) {
     struct test_data const *const td = test_data + i;
-    TEST_CASE_("test #%d \"%ls\"", i, td->filename);
+    TEST_CASE_("test #%zu \"%ls\"", i, td->filename);
     if (!TEST_SUCCEEDED_F(scpy(&bmppath, testdir.ptr))) {
       continue;
     }
