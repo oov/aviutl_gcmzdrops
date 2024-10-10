@@ -30,8 +30,7 @@ function P.ondragover(files, state)
   return true
 end
 
-function P.ondragleave()
-end
+function P.ondragleave() end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
@@ -39,22 +38,30 @@ function P.ondrop(files, state)
     if GCMZDrops.needcopy(v.filepath) then
       local filepath, created = P.getfile(v.filepath)
       if created then
-        debug_print(string.format(i18n({
-          ja_JP = [=[%s: %s をハッシュ値付きのファイル名に差し替えました。]=],
-          en_US = [=[%s: Renamed %s to filename with hash value.]=],
-        }), P.name, v.filepath))
+        debug_print(string.format(
+          i18n({
+            ja_JP = [=[%s: %s をハッシュ値付きのファイル名に差し替えました。]=],
+            en_US = [=[%s: Renamed %s to filename with hash value.]=],
+          }),
+          P.name,
+          v.filepath
+        ))
       else
-        if filepath ~= '' then
-          debug_print(string.format(i18n({
-            ja_JP = [=[%s: %s と同じファイルが既にあるので既存のファイルに差し替えました。]=],
-            en_US = [=[%s: %s already exists, so it has been replaced with the existing file.]=],
-          }), P.name, v.filepath))
+        if filepath ~= "" then
+          debug_print(string.format(
+            i18n({
+              ja_JP = [=[%s: %s と同じファイルが既にあるので既存のファイルに差し替えました。]=],
+              en_US = [=[%s: %s already exists, so it has been replaced with the existing file.]=],
+            }),
+            P.name,
+            v.filepath
+          ))
         else
           -- ユーザーがキャンセルしたのでそのまま全体をキャンセル
           return nil
         end
       end
-      files[i] = {filepath=filepath, orgfilepath=v.filepath}
+      files[i] = { filepath = filepath, orgfilepath = v.filepath }
     end
   end
   -- 他のイベントハンドラーにも処理をさせたいのでここは常に false
@@ -81,23 +88,26 @@ function P.getfile(filepath)
   -- ファイルパスをディレクトリ、ファイル名、拡張子に分解
   local ext = filepath:match("[^.]+$")
   local name = filepath:match("[^/\\]+$")
-  local dir = filepath:sub(1, #filepath-#name)
+  local dir = filepath:sub(1, #filepath - #name)
   name = name:sub(1, #name - #ext - 1)
 
   -- 既に同じハッシュ値と拡張子を持ったファイルがないか探す
-  local exists = GCMZDrops.findallfile("*."..hash.."."..ext)
+  local exists = GCMZDrops.findallfile("*." .. hash .. "." .. ext)
   if #exists > 0 then
     return exists[1], false
   end
 
   if P.renamable then
-    local ok, newname = GCMZDrops.prompt(string.format(i18n({
-      ja_JP = [=[ファイル名を入力してください]=],
-      en_US = [=[Please enter a file name]=],
-    })), name)
+    local ok, newname = GCMZDrops.prompt(
+      string.format(i18n({
+        ja_JP = [=[ファイル名を入力してください]=],
+        en_US = [=[Please enter a file name]=],
+      })),
+      name
+    )
     if not ok then
       -- ユーザーがキャンセルした
-      return '', false
+      return "", false
     end
     -- ファイル名に使えない文字をフィルタリングする
     name = GCMZDrops.convertencoding(newname, "ansi", "utf8")
@@ -113,7 +123,7 @@ function P.getfile(filepath)
   local data = f:read("*all")
   f:close()
   -- 保存先にファイルを作成して書き込む
-  filepath = GCMZDrops.createfile(name, "."..hash.."."..ext)
+  filepath = GCMZDrops.createfile(name, "." .. hash .. "." .. ext)
   f, err = io.open(filepath, "wb")
   if f == nil then
     error(err)

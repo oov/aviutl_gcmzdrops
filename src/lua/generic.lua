@@ -18,8 +18,7 @@ function P.ondragover(files, state)
   return true
 end
 
-function P.ondragleave()
-end
+function P.ondragleave() end
 
 function P.ondrop(files, state)
   return files, state

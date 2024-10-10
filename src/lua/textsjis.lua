@@ -18,7 +18,11 @@ function P.ondragenter(files, state)
     return false
   end
   for i, v in ipairs(files) do
-    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
+    if
+      (v.filepath:match("[^.]+$"):lower() == "txt")
+      and (v.mediatype ~= "text/plain; charset=Shift_JIS")
+      and (v.mediatype ~= "text/plain; x-gcmz-charset=ACP")
+    then
       -- ファイルの拡張子が txt で mediatype で Shift_JIS またはアクティブなコードページだという事が明示されていなければ調査する必要があるので true
       return true
     end
@@ -31,12 +35,15 @@ function P.ondragover(files, state)
   return true
 end
 
-function P.ondragleave()
-end
+function P.ondragleave() end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
-    if (v.filepath:match("[^.]+$"):lower() == "txt")and(v.mediatype ~= "text/plain; charset=Shift_JIS")and(v.mediatype ~= "text/plain; x-gcmz-charset=ACP") then
+    if
+      (v.filepath:match("[^.]+$"):lower() == "txt")
+      and (v.mediatype ~= "text/plain; charset=Shift_JIS")
+      and (v.mediatype ~= "text/plain; x-gcmz-charset=ACP")
+    then
       -- ファイルを全部読み込む
       local f, err = io.open(v.filepath, "rb")
       if f == nil then
@@ -46,7 +53,7 @@ function P.ondrop(files, state)
       f:close()
       -- 文字エンコーディングが Shift_JIS 以外で変換可能なものなら差し替え
       local enc = GCMZDrops.detectencoding(text)
-      if (enc == "utf8")or(enc == "utf16le")or(enc == "utf16be")or(enc == "eucjp")or(enc == "iso2022jp") then
+      if (enc == "utf8") or (enc == "utf16le") or (enc == "utf16be") or (enc == "eucjp") or (enc == "iso2022jp") then
         local filepath = GCMZDrops.createtempfile("gcmztmp", ".txt")
         f, err = io.open(filepath, "wb")
         if f == nil then
@@ -54,11 +61,15 @@ function P.ondrop(files, state)
         end
         f:write(GCMZDrops.convertencoding(text, enc, "sjis"))
         f:close()
-        debug_print(string.format(i18n({
-          ja_JP = [=[%s: %s を Shift_JIS に変換して差し替えました。]=],
-        }), P.name, v.filepath))
+        debug_print(string.format(
+          i18n({
+            ja_JP = [=[%s: %s を Shift_JIS に変換して差し替えました。]=],
+          }),
+          P.name,
+          v.filepath
+        ))
         -- The original file is saved in the orgfilepath
-        files[i] = {filepath=filepath, orgfilepath=v.filepath, mediatype="text/plain; charset=Shift_JIS"}
+        files[i] = { filepath = filepath, orgfilepath = v.filepath, mediatype = "text/plain; charset=Shift_JIS" }
       end
     end
   end

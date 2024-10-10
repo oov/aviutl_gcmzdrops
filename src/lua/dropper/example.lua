@@ -40,7 +40,7 @@ function P.onselect(index, state)
   -- イベントハンドラースクリプトで ondragenter に渡されてくる
   -- files と state と同じものをスクリプト内で作成し、両方を返してください。
   -- return files, state
-  -- 
+  --
   -- 一時的なファイルを作成したい場合は GCMZDrops.createtempfile で作成するか、
   -- 別の手段で作成したファイルを GCMZDrops.deleteonfinish で削除予約してください。
   -- また、一時的なファイルを作成する場合は Temp フォルダーを使用するのを強く推奨します。

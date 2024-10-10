@@ -33,8 +33,7 @@ function P.ondragover(files, state)
   return true
 end
 
-function P.ondragleave()
-end
+function P.ondragleave() end
 
 function P.ondrop(files, state)
   for i, v in ipairs(files) do
@@ -46,10 +45,13 @@ function P.ondrop(files, state)
       local proj = GCMZDrops.getexeditfileinfo()
       local ok, fi = pcall(GCMZDrops.getfileinfo, v.filepath)
       if not ok then
-        debug_print(string.format(i18n({
-          ja_JP = [=[動画 %s の読み込みに失敗しました]=],
-          en_US = [=[Failed to load video %s]=],
-        }), fi))
+        debug_print(string.format(
+          i18n({
+            ja_JP = [=[動画 %s の読み込みに失敗しました]=],
+            en_US = [=[Failed to load video %s]=],
+          }),
+          fi
+        ))
         return nil
       end
 
@@ -105,13 +107,17 @@ function P.ondrop(files, state)
       if f == nil then
         error(err)
       end
-      f:write(GCMZDrops.convertencoding(tostring(oini), 'utf8', 'sjis'))
+      f:write(GCMZDrops.convertencoding(tostring(oini), "utf8", "sjis"))
       f:close()
-      debug_print(string.format(i18n({
-        ja_JP = [=[%s: %s を exo ファイルに差し替えました。]=],
-        en_US = [=[%s: Replaced %s with exo file.]=],
-      }), P.name, v.filepath))
-      files[i] = {filepath=filepath, orgfilepath=v.filepath}
+      debug_print(string.format(
+        i18n({
+          ja_JP = [=[%s: %s を exo ファイルに差し替えました。]=],
+          en_US = [=[%s: Replaced %s with exo file.]=],
+        }),
+        P.name,
+        v.filepath
+      ))
+      files[i] = { filepath = filepath, orgfilepath = v.filepath }
     end
   end
   -- 他のイベントハンドラーにも処理をさせたいのでここは常に false

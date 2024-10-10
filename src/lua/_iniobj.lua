@@ -1,7 +1,7 @@
 local P = {}
 
 function P.new(str)
-  return P.new_core(tostring(str):gmatch('[^\r\n]+'))
+  return P.new_core(tostring(str):gmatch("[^\r\n]+"))
 end
 
 function P.newfile(file)
@@ -9,14 +9,14 @@ function P.newfile(file)
 end
 
 function P.new_core(iter)
-  local o = setmetatable({data = {}, idx = 0}, {__index = P, __tostring = P.__tostring})
+  local o = setmetatable({ data = {}, idx = 0 }, { __index = P, __tostring = P.__tostring })
   local sect = ""
   for line in iter do
-    local m = line:match('^%[([^%]]+)%]$')
+    local m = line:match("^%[([^%]]+)%]$")
     if m ~= nil then
       sect = m
     else
-      local key, value = line:match('^([^=]+)=(.*)$')
+      local key, value = line:match("^([^=]+)=(.*)$")
       if key ~= nil then
         o:set(sect, key, value)
       end
@@ -32,10 +32,14 @@ function P:__tostring()
     for k, v in pairs(t.t) do
       table.insert(values, v)
     end
-    table.sort(values, function(a, b) return (a.idx < b.idx) end)
+    table.sort(values, function(a, b)
+      return (a.idx < b.idx)
+    end)
     table.insert(sects, { key = sect, idx = t.idx, values = values })
   end
-  table.sort(sects, function(a, b) return (a.idx < b.idx) end)
+  table.sort(sects, function(a, b)
+    return (a.idx < b.idx)
+  end)
   local r = {}
   for i, sect in ipairs(sects) do
     table.insert(r, "[" .. sect.key .. "]")
@@ -49,7 +53,7 @@ end
 function P:get(sect, key, default)
   sect = tostring(sect)
   key = tostring(key)
-  if (self.data[sect] ~= nil)and(self.data[sect].t[key] ~= nil) then
+  if (self.data[sect] ~= nil) and (self.data[sect].t[key] ~= nil) then
     return self.data[sect].t[key].v
   end
   return default
@@ -87,7 +91,9 @@ function P:sections()
   for sect, t in pairs(self.data) do
     table.insert(sects, t)
   end
-  table.sort(sects, function(a, b) return (a.idx < b.idx) end)
+  table.sort(sects, function(a, b)
+    return (a.idx < b.idx)
+  end)
   local r = {}
   for i, v in ipairs(sects) do
     table.insert(r, v.sect)
@@ -103,7 +109,9 @@ function P:keys(sect)
     for key, v in pairs(self.data[sect].t) do
       table.insert(values, v)
     end
-    table.sort(values, function(a, b) return (a.idx < b.idx) end)
+    table.sort(values, function(a, b)
+      return (a.idx < b.idx)
+    end)
     for i, v in ipairs(values) do
       table.insert(r, v.key)
     end
@@ -119,7 +127,7 @@ end
 function P:exists(sect, key)
   sect = tostring(sect)
   key = tostring(key)
-  return (self.data[sect] ~= nil)and(self.data[sect].t[key] ~= nil)
+  return (self.data[sect] ~= nil) and (self.data[sect].t[key] ~= nil)
 end
 
 return P

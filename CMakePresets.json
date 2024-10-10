@@ -7,13 +7,13 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default build",
-      "description": "Default build using Ninja generator",
+      "name": "debug",
+      "displayName": "debug build",
+      "description": "debug build using Ninja generator",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/default",
+      "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_STANDARD": "11",
         "CMAKE_C_STANDARD_REQUIRED": "ON",
         "CMAKE_C_EXTENSIONS": "OFF",

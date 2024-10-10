@@ -3,17 +3,19 @@ local P = {}
 P.translation_table = {
   -- The following files are generated at build time so do not exist in the repository.
   -- patchid: 1 - English patched environment
-  [ 1 ] = require("_transmap1"),
+  [1] = require("_transmap1"),
   -- patchid: 2 - Simplified Chinese patched environment
-  [ 2 ] = require("_transmap2"),
+  [2] = require("_transmap2"),
 }
 
 function P.getpatchid()
   return GCMZDrops.getpatchid()
 end
 
-local function return_key(self, key) return key end
-local empty_table = setmetatable({}, {__index = return_key})
+local function return_key(self, key)
+  return key
+end
+local empty_table = setmetatable({}, { __index = return_key })
 
 local function gen_table(dest, table)
   if table ~= nil then
@@ -22,7 +24,7 @@ local function gen_table(dest, table)
       for k, v in pairs(map) do
         t[k] = v
       end
-      dest[name] = setmetatable(t, {__index = return_key})
+      dest[name] = setmetatable(t, { __index = return_key })
     end
   end
 end
@@ -34,7 +36,7 @@ local function gen_reverse_table(dest, table)
       for k, v in pairs(map) do
         t[v] = k
       end
-      dest[map[name]] = setmetatable(t, {__index = return_key})
+      dest[map[name]] = setmetatable(t, { __index = return_key })
     end
   end
 end
@@ -48,7 +50,11 @@ function P.to0()
       gen_table(r, table)
     end
   end
-  return setmetatable(r, {__index = function(self, key) return empty_table end})
+  return setmetatable(r, {
+    __index = function(self, key)
+      return empty_table
+    end,
+  })
 end
 
 function P.new()
@@ -61,7 +67,11 @@ function P.new()
       gen_table(r, table)
     end
   end
-  return setmetatable(r, {__index = function(self, key) return empty_table end})
+  return setmetatable(r, {
+    __index = function(self, key)
+      return empty_table
+    end,
+  })
 end
 
 return P
