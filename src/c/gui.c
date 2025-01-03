@@ -10,6 +10,15 @@
 #include "gcmzfuncs.h"
 #include "i18n.h"
 
+enum {
+  id_save_mode = 1,
+  id_save_dir = 2,
+  id_choose_folder = 3,
+  id_restore_initial = 4,
+  id_restore_default = 5,
+  id_save_as_default = 6,
+};
+
 static HWND g_save_mode_label = NULL;
 static HWND g_save_mode = NULL;
 static HWND g_save_dir_label = NULL;
@@ -158,7 +167,7 @@ error gui_init(HWND const window) {
                         save_mode_width,
                         control_height + 300,
                         window,
-                        (HMENU)1,
+                        (HMENU)id_save_mode,
                         hinst,
                         NULL);
     mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Auto detect"));
@@ -201,7 +210,7 @@ error gui_init(HWND const window) {
                         save_dir_width - button_width,
                         control_height,
                         window,
-                        (HMENU)2,
+                        (HMENU)id_save_dir,
                         hinst,
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
@@ -215,7 +224,7 @@ error gui_init(HWND const window) {
                         button_width,
                         control_height,
                         window,
-                        (HMENU)3,
+                        (HMENU)id_choose_folder,
                         hinst,
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
@@ -236,7 +245,7 @@ error gui_init(HWND const window) {
                              button_width,
                              control_height,
                              window,
-                             (HMENU)4,
+                             (HMENU)id_restore_initial,
                              hinst,
                              NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
@@ -251,7 +260,7 @@ error gui_init(HWND const window) {
                         button_width,
                         control_height,
                         window,
-                        (HMENU)5,
+                        (HMENU)id_restore_default,
                         hinst,
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
@@ -266,7 +275,7 @@ error gui_init(HWND const window) {
                         client_width - button_width * 2,
                         control_height,
                         window,
-                        (HMENU)6,
+                        (HMENU)id_save_as_default,
                         hinst,
                         NULL);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
@@ -469,16 +478,16 @@ cleanup:
 void gui_handle_wm_command(HWND const window, WPARAM const wparam, LPARAM const lparam) {
   (void)lparam;
   switch (LOWORD(wparam)) {
-  case 3:
+  case id_choose_folder:
     ereport(click_select_folder_button(window));
     break;
-  case 4:
+  case id_restore_initial:
     ereport(click_set_to_initial_button(window));
     break;
-  case 5:
+  case id_restore_default:
     ereport(click_set_to_default_button(window));
     break;
-  case 6:
+  case id_save_as_default:
     ereport(click_save_as_default_button(window));
     break;
   }
