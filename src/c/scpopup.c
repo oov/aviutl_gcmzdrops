@@ -2,6 +2,13 @@
 
 #include <commctrl.h>
 
+#include "gui.h"
+
+#ifndef GET_X_LPARAM
+#  define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#  define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#endif
+
 error scpopup_show_popup(HWND const window, POINT const pt, struct scpopup_menu *const m, UINT_PTR *const selected) {
   if (!window || !m) {
     return errg(err_invalid_arugment);
@@ -74,12 +81,21 @@ static LRESULT WINAPI window_proc(HWND const window,
                                   DWORD_PTR const ref_data) {
   struct scpopup *p = (void *)ref_data;
   (void)uid_subclass;
-  if (p->popup) {
-    if ((message == WM_MBUTTONDOWN) ||
-        (message == WM_RBUTTONDOWN && (wparam & (MK_SHIFT | MK_CONTROL)) == (MK_SHIFT | MK_CONTROL))) {
-      return p->popup(p, (POINT){.x = lparam & 0xffff, .y = (lparam >> 16) & 0xffff});
-    }
+  if (!p->popup) {
+    goto failed;
   }
+  int m;
+  error err = gui_get_activation_method(&m);
+  if (efailed(err)) {
+    ereport(err);
+    goto failed;
+  }
+  if ((m == gui_extended_menu_wheel_click && message == WM_MBUTTONDOWN) ||
+      (m == gui_extended_menu_shift_ctrl_right_click && message == WM_RBUTTONDOWN &&
+       (wparam & (MK_SHIFT | MK_CONTROL)) == (MK_SHIFT | MK_CONTROL))) {
+    return p->popup(p, (POINT){.x = GET_X_LPARAM(lparam), .y = GET_Y_LPARAM(lparam)});
+  }
+failed:
   return DefSubclassProc(window, message, wparam, lparam);
 }
 

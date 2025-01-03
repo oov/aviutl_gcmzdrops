@@ -17,6 +17,7 @@ enum {
   id_restore_initial = 4,
   id_restore_default = 5,
   id_save_as_default = 6,
+  id_activation_method = 7,
 };
 
 static HWND g_save_mode_label = NULL;
@@ -29,11 +30,17 @@ static HWND g_restore_initial = NULL;
 static HWND g_restore_default = NULL;
 static HWND g_save_as_default = NULL;
 
+static HWND g_extended_menu_group = NULL;
+static HWND g_activation_method_label = NULL;
+static HWND g_activation_method = NULL;
+
 static int const g_initial_save_mode = 0;
 static wchar_t const g_initial_save_dir[] = L"%PROJECTDIR%";
 
 static int g_default_save_mode = 0;
 static struct wstr g_default_save_dir = {0};
+
+static int const g_initial_activation_method = gui_extended_menu_shift_ctrl_right_click;
 
 NODISCARD static error create_font(HWND const window, HFONT *const font, int *const font_height) {
   if (!window) {
@@ -89,6 +96,17 @@ static NODISCARD error load_defaults(void) {
     err = ethru(err);
     goto cleanup;
   }
+  int v;
+  err = aviutl_ini_load_int(&str_unmanaged_const("activation_method"), g_initial_activation_method, &v);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  err = gui_set_activation_method(v);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
 cleanup:
   ereport(sfree(&tmp));
   return err;
@@ -107,6 +125,17 @@ static NODISCARD error save_defaults(void) {
     goto cleanup;
   }
   err = aviutl_ini_save_str(&str_unmanaged_const("save_dir"), &tmp);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  int v;
+  err = gui_get_activation_method(&v);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  err = aviutl_ini_save_int(&str_unmanaged_const("activation_method"), v);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -283,6 +312,67 @@ error gui_init(HWND const window) {
     y += control_height;
   }
 
+  y += padding;
+
+  // Add extended menu group box and combo box
+  {
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Timeline Extended Popup Menu"));
+    HWND h = CreateWindowExW(0,
+                             L"BUTTON",
+                             buf,
+                             WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+                             padding,
+                             y,
+                             client_width,
+                             control_height * 3,
+                             window,
+                             NULL,
+                             hinst,
+                             NULL);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_extended_menu_group = h;
+
+    int extended_menu_y = control_height;
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Activation method:"));
+    h = CreateWindowExW(0,
+                        L"STATIC",
+                        buf,
+                        WS_CHILD | WS_VISIBLE | ES_LEFT,
+                        padding,
+                        extended_menu_y,
+                        client_width - padding * 2,
+                        label_height,
+                        g_extended_menu_group,
+                        NULL,
+                        hinst,
+                        NULL);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_activation_method_label = h;
+
+    h = CreateWindowExW(0,
+                        L"COMBOBOX",
+                        NULL,
+                        WS_CHILD | WS_TABSTOP | WS_VISIBLE | CBS_DROPDOWNLIST,
+                        padding,
+                        extended_menu_y + label_height,
+                        client_width - padding * 2,
+                        control_height + 300,
+                        g_extended_menu_group,
+                        (HMENU)id_activation_method,
+                        hinst,
+                        NULL);
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Disable"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Wheel click"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Shift+Ctrl+Right click"));
+    SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_activation_method = h;
+  }
+
+  y += control_height * 3;
+
   ereport(set_client_size(window, padding + client_width + padding, y + padding));
 
   g_default_save_mode = g_initial_save_mode;
@@ -305,6 +395,9 @@ void gui_exit(void) {
   SendMessageW(g_restore_initial, WM_SETFONT, 0, 0);
   SendMessageW(g_restore_default, WM_SETFONT, 0, 0);
   SendMessageW(g_save_as_default, WM_SETFONT, 0, 0);
+  SendMessageW(g_extended_menu_group, WM_SETFONT, 0, 0);
+  SendMessageW(g_activation_method_label, WM_SETFONT, 0, 0);
+  SendMessageW(g_activation_method, WM_SETFONT, 0, 0);
 }
 
 void gui_lock(void) {
@@ -316,6 +409,9 @@ void gui_lock(void) {
   EnableWindow(g_restore_initial, FALSE);
   EnableWindow(g_restore_default, FALSE);
   EnableWindow(g_save_as_default, FALSE);
+  EnableWindow(g_extended_menu_group, FALSE);
+  EnableWindow(g_activation_method_label, FALSE);
+  EnableWindow(g_activation_method, FALSE);
 }
 
 static int CALLBACK select_directory_callback(HWND const window,
@@ -556,6 +652,36 @@ error gui_get_save_mode(int *const mode) {
   case gui_mode_copy:
   case gui_mode_direct:
     *mode = m;
+    break;
+  default:
+    return errg(err_unexpected);
+  }
+  return eok();
+}
+
+error gui_set_activation_method(int const method) {
+  switch (method) {
+  case gui_extended_menu_disable:
+  case gui_extended_menu_wheel_click:
+  case gui_extended_menu_shift_ctrl_right_click:
+    break;
+  default:
+    return errg(err_unexpected);
+  }
+  SendMessageW(g_activation_method, CB_SETCURSEL, (WPARAM)method, 0);
+  return eok();
+}
+
+error gui_get_activation_method(int *const method) {
+  if (!method) {
+    return errg(err_null_pointer);
+  }
+  int const m = SendMessageW(g_activation_method, CB_GETCURSEL, 0, 0);
+  switch (m) {
+  case gui_extended_menu_disable:
+  case gui_extended_menu_wheel_click:
+  case gui_extended_menu_shift_ctrl_right_click:
+    *method = m;
     break;
   default:
     return errg(err_unexpected);

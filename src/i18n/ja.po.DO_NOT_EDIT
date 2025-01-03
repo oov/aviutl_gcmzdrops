@@ -25,6 +25,9 @@ msgstr "\"%1$s\" は長すぎます。"
 msgid "Aborted."
 msgstr "中断されました。"
 
+msgid "Activation method:"
+msgstr "発動方法:"
+
 msgid "Advanced Editing plug-in cannot be found."
 msgstr "拡張編集プラグインが見つかりません。"
 
@@ -95,6 +98,9 @@ msgstr "拡張編集ウィンドウ内のスクロールバーを検出できま
 
 msgid "Direct read"
 msgstr "直接読み込み"
+
+msgid "Disable"
+msgstr "使用しない"
 
 msgid "Error"
 msgstr "エラー"
@@ -251,6 +257,9 @@ msgstr "現在の設定をデフォルトにする"
 msgid "Save to:"
 msgstr "データ保存先:"
 
+msgid "Shift+Ctrl+Right click"
+msgstr "Shift+Ctrl+右クリック"
+
 msgid "The currently running version of AviUtl is not supported."
 msgstr "現在実行中の AviUtl のバージョンはサポートされていません。"
 
@@ -307,6 +316,9 @@ msgstr "字幕アシストプラグイン extext.auf とは互換性がありま
 msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
 msgstr "ごちゃまぜドロップスの古いバージョンである oledd.auf とは互換性がありません。"
 
+msgid "Timeline Extended Popup Menu"
+msgstr "タイムライン拡張ポップアップメニュー"
+
 msgid "To load this file, you need to change the ? part."
 msgstr "このファイルを読み込むには、? の場所を変更する必要があります。"
 
@@ -321,6 +333,9 @@ msgstr "未知のエラーコードです。"
 
 msgid "Unregistration of context menu handler failed."
 msgstr "コンテキストメニューハンドラーの登録解除に失敗しました。"
+
+msgid "Wheel click"
+msgstr "ホイールクリック"
 
 #. trans: This dagger helps UTF-8 detection. You don't need to translate this.
 msgid "†"
