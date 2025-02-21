@@ -145,7 +145,6 @@ static BOOL filter_project_load(FILTER *const fp, void *const editp, void *const
 cleanup:
   ereport(sfree(&tmp2));
   ereport(sfree(&tmp));
-  aviutl_set_pointers(NULL, NULL);
   if (efailed(err)) {
     ereportmsg_i18n(err, gettext("An error occurred while loading the settings."));
     return FALSE;
@@ -195,7 +194,6 @@ cleanup:
   ereport(sfree(&savepathstr));
   ereport(sfree(&tmp));
   ereport(sfree(&u8buf));
-  aviutl_set_pointers(NULL, NULL);
   if (efailed(err)) {
     ereportmsg_i18n(err, gettext("An error occurred while saving the settings."));
     return FALSE;
@@ -876,11 +874,9 @@ static BOOL wndproc(HWND const window,
       }
     }
     r = wndproc_init(window);
-    aviutl_set_pointers(NULL, NULL);
     break;
   case WM_FILTER_EXIT:
     r = wndproc_exit();
-    aviutl_set_pointers(NULL, NULL);
     if (--instances == 0) {
       mo_set_default(NULL);
       mo_free(&mp);
@@ -888,11 +884,9 @@ static BOOL wndproc(HWND const window,
     break;
   case WM_FILTER_FILE_OPEN:
     r = wndproc_file_open();
-    aviutl_set_pointers(NULL, NULL);
     break;
   case WM_FILTER_FILE_CLOSE:
     r = wndproc_file_close();
-    aviutl_set_pointers(NULL, NULL);
     break;
   case WM_DROP_TARGET_EVENT:
     if (lparam) {
@@ -911,7 +905,6 @@ static BOOL wndproc(HWND const window,
         wndproc_drop(d->f, d->ddi);
         break;
       }
-      aviutl_set_pointers(NULL, NULL);
     }
     break;
   case WM_TIMER:
@@ -924,7 +917,6 @@ static BOOL wndproc(HWND const window,
     break;
   case WM_COMMAND:
     gui_handle_wm_command(window, wparam, lparam);
-    aviutl_set_pointers(NULL, NULL);
     break;
   default:
     if (task_process(window, message, wparam, lparam)) {
