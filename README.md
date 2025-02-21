@@ -339,12 +339,14 @@ FAQ
 バイナリのビルドについて
 ------------------------
 
-Windows に Git Bash をインストールした環境で、以下のコマンドでビルドできます。
+Windows の Git Bash で以下のコマンドを入力してください。  
+必要なコンパイラーなども含めて自動的に準備されリリース用バイナリーが生成されます。
 
 ```bash
-$ git clone https://github.com/oov/aviutl_gcmzdrops
+$ git clone --depth 1 --recursive https://github.com/oov/aviutl_gcmzdrops
 $ cd aviutl_gcmzdrops
 $ bash build.bash
+$ ls -la build/Release/bin
 ```
 
 Contributors
