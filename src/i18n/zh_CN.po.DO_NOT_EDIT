@@ -24,6 +24,9 @@ msgstr "\"%1$s\" 过长。"
 msgid "Aborted."
 msgstr "中止。"
 
+msgid "Activation method:"
+msgstr ""
+
 msgid "Advanced Editing plug-in cannot be found."
 msgstr "找不到扩展编辑插件。"
 
@@ -36,18 +39,21 @@ msgstr "找不到扩展编辑插件 exedit.auf。"
 msgid "Advanced Editing version 0.92 or later is required."
 msgstr "需要0.92或更高版本的扩展编辑。"
 
+msgid ""
+"An External Integration API cannot be started because one has already been initiated.\n"
+"Even if multiple instances of AviUtl are launched, only one External Integration API can be active at any given time."
+msgstr ""
+"由于已启动外部集成API，无法启动新的外部集成API。\n"
+"即使同时启动多个AviUtl实例，同一时刻只能存在一个激活的外部集成API。"
+
 msgid "An error occurred during initialization."
 msgstr "初始化时发生错误。"
 
 msgid "An error occurred during processing of the external integration API."
 msgstr "处理外部集成API时发生错误。"
 
-msgid ""
-"An error occurred during the initialization of the external integration API.\n"
-"The external integration API is not available."
-msgstr ""
-"初始化外部集成API时发生错误。\n"
-"外部集成API不可用。"
+msgid "An error occurred during the initialization of the external integration API."
+msgstr "初始化外部集成API时发生错误。"
 
 #, c-format
 msgid "An error occurred in %1$s."
@@ -95,8 +101,17 @@ msgstr "无法检测扩展编辑窗口中的滚动条。"
 msgid "Direct read"
 msgstr "直接读取"
 
+msgid "Disable"
+msgstr ""
+
 msgid "Error"
 msgstr "错误"
+
+msgid "Error occurred"
+msgstr "发生错误"
+
+msgid "External Integration API"
+msgstr "外部集成API"
 
 msgid "Failed to allocate memory for task."
 msgstr "无法为任务分配内存。"
@@ -244,11 +259,23 @@ msgstr "恢复默认设置"
 msgid "Revert to initial"
 msgstr "恢复初始设置"
 
+msgid "Running"
+msgstr "运行中"
+
 msgid "Save as default"
 msgstr "将当前设置保存为默认"
 
 msgid "Save to:"
 msgstr "保存到："
+
+msgid "Shift+Ctrl+Right click"
+msgstr ""
+
+msgid "State:"
+msgstr "状态:"
+
+msgid "Stopped"
+msgstr "停止"
 
 msgid "The currently running version of AviUtl is not supported."
 msgstr "不支持当前运行的AviUtl版本。"
@@ -291,20 +318,14 @@ msgstr ""
 "未正确安装插件。\n"
 "请查看附带文档中的安装说明。"
 
-msgid ""
-"This error mainly occurs when multiple instances of AviUtl are running.\n"
-"If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
-"If you do not need external integration API, you can ignore this message."
-msgstr ""
-"这个错误主要发生在多个AviUtl实例同时运行时。\n"
-"如果你需要外部集成API，请关闭所有AviUtl实例，只启动一个实例。\n"
-"如果你不需要外部集成API，你可以忽略这个消息。"
-
 msgid "This plug-in is not compatible with extext.auf."
 msgstr "此插件不兼容extext.auf。"
 
 msgid "This plug-in is not compatible with oledd.auf, which is an older version of GCMZDrops."
 msgstr "此插件不兼容oledd.auf（旧版GCMZDrops）。"
+
+msgid "Timeline Extended Popup Menu"
+msgstr ""
 
 msgid "To load this file, you need to change the ? part."
 msgstr "要加载此文件，您需要更改 ? 部分。"
@@ -320,6 +341,12 @@ msgstr "未知的错误代码。"
 
 msgid "Unregistration of context menu handler failed."
 msgstr "快捷菜单处理器注销失败。"
+
+msgid "Use External Integration API"
+msgstr "使用外部集成API"
+
+msgid "Wheel click"
+msgstr ""
 
 #. trans: This dagger helps UTF-8 detection. You don't need to translate this.
 msgid "†"

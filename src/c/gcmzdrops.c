@@ -683,6 +683,33 @@ cleanup:
   return;
 }
 
+static NODISCARD error update_external_integration_api_state(bool use_api) {
+  error err = eok();
+  if (use_api) {
+    if (!api_initialized(g_api)) {
+      err = api_init(&g_api);
+      if (efailed(err)) {
+        ereport(gui_set_external_integration_api_state(gui_external_integration_api_state_error));
+        err = ethru(err);
+        goto cleanup;
+      }
+      api_set_callback(g_api, request_callback, (void *)aviutl_get_my_window_must());
+      ereport(gui_set_external_integration_api_state(gui_external_integration_api_state_running));
+    }
+  } else {
+    if (api_initialized(g_api)) {
+      err = api_exit(&g_api);
+      if (efailed(err)) {
+        err = ethru(err);
+        goto cleanup;
+      }
+    }
+    ereport(gui_set_external_integration_api_state(gui_external_integration_api_state_stopped));
+  }
+cleanup:
+  return err;
+}
+
 static BOOL wndproc_init(HWND const window) {
   char const *const title = gettext("Error");
   char const *const msg_head = gettext("An error occurred during initialization.");
@@ -785,29 +812,9 @@ static BOOL wndproc_init(HWND const window) {
     g_scpopup.popup = popup_callback;
   }
 
-  err = api_init(&g_api);
-  if (efailed(err)) {
-    char const *apimsg = NULL;
-    if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))) {
-      apimsg = gettext(
-          "This error mainly occurs when multiple instances of AviUtl are running.\n"
-          "If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
-          "If you do not need external integration API, you can ignore this message.");
-      efree(&err);
-    }
-    gcmz_error_message_box(err,
-                           window,
-                           MB_ICONWARNING,
-                           false,
-                           title,
-                           NULL,
-                           apimsg ? "%1$s\n\n%2$s" : "%1$s",
-                           gettext("An error occurred during the initialization of the external integration API.\n"
-                                   "The external integration API is not available."),
-                           apimsg);
-  } else {
-    api_set_callback(g_api, request_callback, (void *)aviutl_get_my_window_must());
-  }
+  bool b = false;
+  ereport(gui_get_use_external_integration_api(&b));
+  ereport(update_external_integration_api_state(b));
 
   ereport(gui_set_save_mode_to_default());
   ereport(gui_set_save_dir_to_default());
@@ -918,6 +925,27 @@ static BOOL wndproc(HWND const window,
   case WM_COMMAND:
     gui_handle_wm_command(window, wparam, lparam);
     break;
+  case WM_GUI_NOTIFY_EXTERNAL_INTEGRATION_API: {
+    error err = update_external_integration_api_state(!!wparam);
+    if (efailed(err)) {
+      char const *apimsg = NULL;
+      if (eis_hr(err, HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))) {
+        apimsg = gettext("An External Integration API cannot be started because one has already been initiated.\n"
+                         "Even if multiple instances of AviUtl are launched, only one External Integration API can be "
+                         "active at any given time.");
+        efree(&err);
+      }
+      gcmz_error_message_box(err,
+                             window,
+                             MB_ICONWARNING,
+                             false,
+                             gettext("Error"),
+                             NULL,
+                             apimsg ? "%1$s\n\n%2$s" : "%1$s",
+                             gettext("An error occurred during the initialization of the external integration API."),
+                             apimsg);
+    }
+  } break;
   default:
     if (task_process(window, message, wparam, lparam)) {
       break;

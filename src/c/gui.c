@@ -18,6 +18,7 @@ enum {
   id_restore_default = 5,
   id_save_as_default = 6,
   id_activation_method = 7,
+  id_use_external_integration_api = 8,
 };
 
 static HWND g_save_mode_label = NULL;
@@ -34,6 +35,10 @@ static HWND g_extended_menu_group = NULL;
 static HWND g_activation_method_label = NULL;
 static HWND g_activation_method = NULL;
 
+static HWND g_external_integration_api_group = NULL;
+static HWND g_external_integration_api_state = NULL;
+static HWND g_use_external_integration_api = NULL;
+
 static int const g_initial_save_mode = 0;
 static wchar_t const g_initial_save_dir[] = L"%PROJECTDIR%";
 
@@ -41,6 +46,23 @@ static int g_default_save_mode = 0;
 static struct wstr g_default_save_dir = {0};
 
 static int const g_initial_activation_method = gui_extended_menu_shift_ctrl_right_click;
+static int const g_initial_use_extenal_integration_api = 1;
+
+static LRESULT CALLBACK external_integration_api_group_proc(
+    HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+  (void)uIdSubclass;
+  (void)dwRefData;
+  switch (msg) {
+  case WM_COMMAND:
+    if (LOWORD(wparam) == id_use_external_integration_api && HIWORD(wparam) == BN_CLICKED) {
+      int state = (int)SendMessageW(g_use_external_integration_api, BM_GETCHECK, 0, 0);
+      HWND parent = aviutl_get_my_window_must();
+      PostMessageW(parent, WM_GUI_NOTIFY_EXTERNAL_INTEGRATION_API, (WPARAM)state, 0);
+    }
+    break;
+  }
+  return DefSubclassProc(hwnd, msg, wparam, lparam);
+}
 
 NODISCARD static error create_font(HWND const window, HFONT *const font, int *const font_height) {
   if (!window) {
@@ -107,6 +129,17 @@ static NODISCARD error load_defaults(void) {
     err = ethru(err);
     goto cleanup;
   }
+  err = aviutl_ini_load_int(
+      &str_unmanaged_const("use_external_integration_api"), g_initial_use_extenal_integration_api, &v);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  err = gui_set_use_external_integration_api(v != 0);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
 cleanup:
   ereport(sfree(&tmp));
   return err;
@@ -136,6 +169,17 @@ static NODISCARD error save_defaults(void) {
     goto cleanup;
   }
   err = aviutl_ini_save_int(&str_unmanaged_const("activation_method"), v);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  bool b;
+  err = gui_get_use_external_integration_api(&b);
+  if (efailed(err)) {
+    err = ethru(err);
+    goto cleanup;
+  }
+  err = aviutl_ini_save_int(&str_unmanaged_const("use_external_integration_api"), b ? 1 : 0);
   if (efailed(err)) {
     err = ethru(err);
     goto cleanup;
@@ -323,7 +367,7 @@ error gui_init(HWND const window) {
                              WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
                              padding,
                              y,
-                             client_width,
+                             client_width / 2 - padding,
                              control_height * 3,
                              window,
                              NULL,
@@ -340,7 +384,7 @@ error gui_init(HWND const window) {
                         WS_CHILD | WS_VISIBLE | ES_LEFT,
                         padding,
                         extended_menu_y,
-                        client_width - padding * 2,
+                        client_width / 2 - padding * 3,
                         label_height,
                         g_extended_menu_group,
                         NULL,
@@ -355,7 +399,7 @@ error gui_init(HWND const window) {
                         WS_CHILD | WS_TABSTOP | WS_VISIBLE | CBS_DROPDOWNLIST,
                         padding,
                         extended_menu_y + label_height,
-                        client_width - padding * 2,
+                        client_width / 2 - padding * 3,
                         control_height + 300,
                         g_extended_menu_group,
                         (HMENU)id_activation_method,
@@ -369,6 +413,61 @@ error gui_init(HWND const window) {
     SendMessageW(h, CB_ADDSTRING, 0, (LPARAM)buf);
     SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
     g_activation_method = h;
+  }
+
+  // Add external integration api group box and combo box
+  {
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("External Integration API"));
+    HWND h = CreateWindowExW(0,
+                             L"BUTTON",
+                             buf,
+                             WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+                             padding + client_width / 2,
+                             y,
+                             client_width / 2,
+                             control_height * 3,
+                             window,
+                             NULL,
+                             hinst,
+                             NULL);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_external_integration_api_group = h;
+
+    int external_integration_api_y = control_height;
+    h = CreateWindowExW(0,
+                        L"STATIC",
+                        L"",
+                        WS_CHILD | WS_VISIBLE | ES_LEFT,
+                        padding,
+                        external_integration_api_y,
+                        client_width / 2 - padding * 2,
+                        label_height,
+                        g_external_integration_api_group,
+                        NULL,
+                        hinst,
+                        NULL);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_external_integration_api_state = h;
+
+    mo_snprintf_wchar(buf, buf_size, NULL, "%1$s", gettext("Use External Integration API"));
+    h = CreateWindowExW(0,
+                        L"BUTTON",
+                        buf,
+                        WS_CHILD | WS_TABSTOP | WS_VISIBLE | BS_AUTOCHECKBOX,
+                        padding,
+                        external_integration_api_y + label_height,
+                        client_width / 2 - padding * 2,
+                        control_height,
+                        g_external_integration_api_group,
+                        (HMENU)id_use_external_integration_api,
+                        hinst,
+                        NULL);
+    SendMessageW(h, WM_SETFONT, (WPARAM)font, 0);
+    g_use_external_integration_api = h;
+    SetWindowSubclass(g_external_integration_api_group,
+                      external_integration_api_group_proc,
+                      (UINT_PTR)external_integration_api_group_proc,
+                      0);
   }
 
   y += control_height * 3;
@@ -387,6 +486,10 @@ void gui_exit(void) {
   g_default_save_mode = g_initial_save_mode;
   ereport(sfree(&g_default_save_dir));
 
+  RemoveWindowSubclass(g_external_integration_api_group,
+                       external_integration_api_group_proc,
+                       (UINT_PTR)external_integration_api_group_proc);
+
   SendMessageW(g_save_mode_label, WM_SETFONT, 0, 0);
   SendMessageW(g_save_mode, WM_SETFONT, 0, 0);
   SendMessageW(g_save_dir_label, WM_SETFONT, 0, 0);
@@ -398,6 +501,9 @@ void gui_exit(void) {
   SendMessageW(g_extended_menu_group, WM_SETFONT, 0, 0);
   SendMessageW(g_activation_method_label, WM_SETFONT, 0, 0);
   SendMessageW(g_activation_method, WM_SETFONT, 0, 0);
+  SendMessageW(g_external_integration_api_group, WM_SETFONT, 0, 0);
+  SendMessageW(g_external_integration_api_state, WM_SETFONT, 0, 0);
+  SendMessageW(g_use_external_integration_api, WM_SETFONT, 0, 0);
 }
 
 void gui_lock(void) {
@@ -412,6 +518,9 @@ void gui_lock(void) {
   EnableWindow(g_extended_menu_group, FALSE);
   EnableWindow(g_activation_method_label, FALSE);
   EnableWindow(g_activation_method, FALSE);
+  EnableWindow(g_external_integration_api_group, FALSE);
+  EnableWindow(g_external_integration_api_state, FALSE);
+  EnableWindow(g_use_external_integration_api, FALSE);
 }
 
 static int CALLBACK select_directory_callback(HWND const window,
@@ -685,6 +794,43 @@ error gui_get_activation_method(int *const method) {
     break;
   default:
     return errg(err_unexpected);
+  }
+  return eok();
+}
+
+NODISCARD error gui_set_use_external_integration_api(bool const use) {
+  SendMessageW(g_use_external_integration_api, BM_SETCHECK, (WPARAM)(use ? BST_CHECKED : BST_UNCHECKED), 0);
+  return eok();
+}
+
+NODISCARD error gui_get_use_external_integration_api(bool *const use) {
+  if (!use) {
+    return errg(err_null_pointer);
+  }
+  *use = SendMessageW(g_use_external_integration_api, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  return eok();
+}
+
+NODISCARD error gui_set_external_integration_api_state(enum gui_external_integration_api_state state) {
+  char const *text = NULL;
+  switch (state) {
+  case gui_external_integration_api_state_stopped:
+    text = gettext("Stopped");
+    break;
+  case gui_external_integration_api_state_running:
+    text = gettext("Running");
+    break;
+  case gui_external_integration_api_state_error:
+    text = gettext("Error occurred");
+    break;
+  }
+  enum {
+    buf_size = 1024,
+  };
+  wchar_t buf[buf_size];
+  mo_snprintf_wchar(buf, buf_size, NULL, "%1$s %2$s", gettext("State:"), text);
+  if (!SetWindowTextW(g_external_integration_api_state, buf)) {
+    return errhr(HRESULT_FROM_WIN32(GetLastError()));
   }
   return eok();
 }

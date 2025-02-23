@@ -294,11 +294,11 @@ static LRESULT WINAPI wndproc(HWND const window, UINT const message, WPARAM cons
 }
 
 static int api_thread(void *const userdata) {
+  static wchar_t const window_class_name[] = L"GCMZDropsAPI";
+  HINSTANCE hinst = get_hinstance();
   struct api *const api = userdata;
   error err = eok();
   {
-    static wchar_t const window_class_name[] = L"GCMZDropsAPI";
-    HINSTANCE hinst = get_hinstance();
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
     wc.lpfnWndProc = wndproc;
@@ -338,6 +338,7 @@ static int api_thread(void *const userdata) {
     TranslateMessage(&msg);
     DispatchMessageW(&msg);
   }
+  UnregisterClassW(window_class_name, hinst);
   return 0;
 
 failed:

@@ -40,18 +40,21 @@ msgstr "拡張編集プラグイン exedit.auf が見つかりません。"
 msgid "Advanced Editing version 0.92 or later is required."
 msgstr "拡張編集 version 0.92 以降が必要です。"
 
+msgid ""
+"An External Integration API cannot be started because one has already been initiated.\n"
+"Even if multiple instances of AviUtl are launched, only one External Integration API can be active at any given time."
+msgstr ""
+"既に開始された外部連携APIが存在するため、外部連携 API を開始できません。\n"
+"AviUtl を複数起動しても、同時に有効にできる外部連携 API はひとつだけです。"
+
 msgid "An error occurred during initialization."
 msgstr "初期化中にエラーが発生しました。"
 
 msgid "An error occurred during processing of the external integration API."
 msgstr "外部連携 API の処理中にエラーが発生しました。"
 
-msgid ""
-"An error occurred during the initialization of the external integration API.\n"
-"The external integration API is not available."
-msgstr ""
-"外部連携 API の初期化中にエラーが発生しました。\n"
-"外部連携 API は利用できません。"
+msgid "An error occurred during the initialization of the external integration API."
+msgstr "外部連携 API の初期化中にエラーが発生しました。"
 
 #, c-format
 msgid "An error occurred in %1$s."
@@ -104,6 +107,12 @@ msgstr "使用しない"
 
 msgid "Error"
 msgstr "エラー"
+
+msgid "Error occurred"
+msgstr "エラーが発生しました"
+
+msgid "External Integration API"
+msgstr "外部連携API"
 
 msgid "Failed to allocate memory for task."
 msgstr "タスク用のメモリ確保に失敗しました。"
@@ -251,6 +260,9 @@ msgstr "デフォルト設定に戻す"
 msgid "Revert to initial"
 msgstr "初期設定に戻す"
 
+msgid "Running"
+msgstr "稼働中"
+
 msgid "Save as default"
 msgstr "現在の設定をデフォルトにする"
 
@@ -259,6 +271,12 @@ msgstr "データ保存先:"
 
 msgid "Shift+Ctrl+Right click"
 msgstr "Shift+Ctrl+右クリック"
+
+msgid "State:"
+msgstr "状態:"
+
+msgid "Stopped"
+msgstr "停止"
 
 msgid "The currently running version of AviUtl is not supported."
 msgstr "現在実行中の AviUtl のバージョンはサポートされていません。"
@@ -301,15 +319,6 @@ msgstr ""
 "プラグインが正しくインストールされていません。\n"
 "付属のドキュメントでインストール手順を確認してください。"
 
-msgid ""
-"This error mainly occurs when multiple instances of AviUtl are running.\n"
-"If you need external integration API, please close all instances of AviUtl and start only one instance.\n"
-"If you do not need external integration API, you can ignore this message."
-msgstr ""
-"このエラーは主に AviUtl を多重起動した場合に発生します。\n"
-"もし外部連携 API が必要な場合は、一度すべての AviUtl を閉じて、ひとつだけを起動してください。\n"
-"外部連携 API が必要ない場合は、このメッセージは無視して構いません。"
-
 msgid "This plug-in is not compatible with extext.auf."
 msgstr "字幕アシストプラグイン extext.auf とは互換性がありません。"
 
@@ -333,6 +342,9 @@ msgstr "未知のエラーコードです。"
 
 msgid "Unregistration of context menu handler failed."
 msgstr "コンテキストメニューハンドラーの登録解除に失敗しました。"
+
+msgid "Use External Integration API"
+msgstr "外部連携APIを使用する"
 
 msgid "Wheel click"
 msgstr "ホイールクリック"
