@@ -490,6 +490,7 @@ void gui_exit(void) {
                        external_integration_api_group_proc,
                        (UINT_PTR)external_integration_api_group_proc);
 
+  SendMessageW(GetParent(g_save_mode_label), WM_SETREDRAW, FALSE, 0);
   SendMessageW(g_save_mode_label, WM_SETFONT, 0, 0);
   SendMessageW(g_save_mode, WM_SETFONT, 0, 0);
   SendMessageW(g_save_dir_label, WM_SETFONT, 0, 0);
