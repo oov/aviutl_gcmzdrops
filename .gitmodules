@@ -7,3 +7,6 @@
 [submodule "src/c/3rd/yyjson"]
 	path = src/c/3rd/yyjson
 	url = https://github.com/ibireme/yyjson
+[submodule "src/c/3rd/aviutl_plugin_sdk"]
+	path = src/c/3rd/aviutl_plugin_sdk
+	url = https://github.com/oov/aviutl_plugin_sdk
