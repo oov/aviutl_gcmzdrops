@@ -43,10 +43,9 @@ add_link_options(-fuse-ld=lld)
 add_subdirectory(3rd/ovbase)
 add_subdirectory(3rd/ovutil)
 
-option(JANSSON_WITHOUT_TESTS "" ON)
-option(JANSSON_BUILD_DOCS "" OFF)
-# set(CMAKE_REQUIRED_LINK_OPTIONS -no-pthread)
-add_subdirectory(3rd/jansson)
+set(YYJSON_DISABLE_NON_STANDARD ON CACHE INTERNAL "")
+set(YYJSON_DISABLE_WRITER ON CACHE INTERNAL "")
+add_subdirectory(3rd/yyjson)
 
 add_custom_target(generate_version_h COMMAND
   ${CMAKE_COMMAND}
@@ -101,7 +100,6 @@ set(v19_or_later "$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,19>")
 add_library(gcmzdrops_intf INTERFACE)
 target_include_directories(gcmzdrops_intf INTERFACE
   "${CMAKE_CURRENT_BINARY_DIR}" # for version.h
-  "${jansson_BINARY_DIR}/include"
   "${LUA51_INCLUDE}"
 )
 target_compile_definitions(gcmzdrops_intf INTERFACE
@@ -144,7 +142,7 @@ target_link_libraries(gcmzdrops_intf INTERFACE
   shlwapi
   ovbase
   ovutil
-  jansson
+  yyjson
   "${LUA51_DLL}"
 )
 

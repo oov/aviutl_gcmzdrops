@@ -1,6 +1,18 @@
 #include "api.h"
 
-#include <jansson.h>
+#ifdef __GNUC__
+#  ifndef __has_warning
+#    define __has_warning(x) 0
+#  endif
+#  pragma GCC diagnostic push
+#  if __has_warning("-Wdocumentation")
+#    pragma GCC diagnostic ignored "-Wdocumentation"
+#  endif
+#endif // __GNUC__
+#include <yyjson.h>
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif // __GNUC__
 
 #include "ovnum.h"
 #include "ovthreads.h"
@@ -11,6 +23,43 @@
 #include "error_gcmz.h"
 #include "i18n.h"
 #include "task.h"
+
+static void *json_malloc(void *ctx, size_t size) {
+  (void)ctx;
+  void *ptr = NULL;
+  error err = mem(&ptr, size, sizeof(char));
+  if (efailed(err)) {
+    ereport(err);
+    return NULL;
+  }
+  return ptr;
+}
+
+static void *json_realloc(void *ctx, void *ptr, size_t old_size, size_t size) {
+  (void)ctx;
+  (void)old_size;
+  error err = mem(&ptr, size, sizeof(char));
+  if (efailed(err)) {
+    ereport(err);
+    return NULL;
+  }
+  return ptr;
+}
+
+static void json_free(void *ctx, void *ptr) {
+  (void)ctx;
+  ereport(mem_free(&ptr));
+}
+
+static struct yyjson_alc const *get_json_alc(void) {
+  static struct yyjson_alc const alc = {
+      .malloc = json_malloc,
+      .realloc = json_realloc,
+      .free = json_free,
+      .ctx = NULL,
+  };
+  return &alc;
+}
 
 struct api {
   api_request_func request;
@@ -131,8 +180,20 @@ NODISCARD static error parse_api1(struct str *const s, struct api_request_params
   error err = eok();
   int added = 0;
   struct wstr tmp = {0};
-  json_t *root = json_loadb(s->ptr, s->len, 0, NULL);
-  if (!json_is_object(root)) {
+  struct yyjson_read_err read_err;
+  yyjson_doc *doc = yyjson_read_opts(s->ptr, s->len, YYJSON_READ_NOFLAG, get_json_alc(), &read_err);
+  if (!doc) {
+    ereport(emsg_i18nf(err_type_generic,
+                       err_fail,
+                       L"%1$hs%2$d",
+                       gettext("Unable to parse JSON: %1$hs (line: %2$d)"),
+                       read_err.msg,
+                       read_err.pos));
+    err = emsg_i18n(err_type_generic, err_fail, gettext("Invalid JSON."));
+    goto cleanup;
+  }
+  yyjson_val *root = yyjson_doc_get_root(doc);
+  if (!yyjson_is_obj(root)) {
     err = emsg_i18n(err_type_generic, err_fail, gettext("Invalid JSON."));
     goto cleanup;
   }
@@ -140,30 +201,31 @@ NODISCARD static error parse_api1(struct str *const s, struct api_request_params
   int64_t layer = 0;
   int64_t frame_advance = 0;
 
-  json_t *v = json_object_get(root, "layer");
-  if (!json_is_number(v)) {
+  yyjson_val *v = yyjson_obj_get(root, "layer");
+  if (!yyjson_is_sint(v)) {
     err = emsg_i18n(err_type_generic, err_fail, gettext("Invalid layer value."));
     goto cleanup;
   }
-  layer = json_integer_value(v);
+  layer = yyjson_get_sint(v);
 
-  v = json_object_get(root, "frameAdvance");
-  if (json_is_number(v)) {
-    frame_advance = json_integer_value(v);
+  v = yyjson_obj_get(root, "frameAdvance");
+  if (yyjson_is_sint(v)) {
+    frame_advance = yyjson_get_sint(v);
   }
 
-  v = json_object_get(root, "files");
-  if (!json_is_array(v)) {
+  v = yyjson_obj_get(root, "files");
+  if (!yyjson_is_arr(v)) {
     err = emsg_i18n(err_type_generic, err_fail, gettext("Invalid files value."));
     goto cleanup;
   }
-  for (size_t i = 0, len = json_array_size(v); i < len; ++i) {
-    json_t *item = json_array_get(v, i);
-    if (!json_is_string(item)) {
+  size_t idx, max;
+  yyjson_val *item;
+  yyjson_arr_foreach(v, idx, max, item) {
+    if (!yyjson_is_str(item)) {
       err = emsg_i18n(err_type_generic, err_fail, gettext("Invalid filename."));
       goto cleanup;
     }
-    err = from_utf8(&str_unmanaged_const(json_string_value(item)), &tmp);
+    err = from_utf8(&str_unmanaged_const(yyjson_get_str(item)), &tmp);
     if (efailed(err)) {
       err = ethru(err);
       goto cleanup;
@@ -186,8 +248,8 @@ cleanup:
     }
   }
   ereport(sfree(&tmp));
-  if (root) {
-    json_decref(root);
+  if (doc) {
+    yyjson_doc_free(doc);
   }
   return err;
 }

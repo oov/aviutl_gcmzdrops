@@ -1,9 +1,9 @@
-[submodule "src/c/3rd/jansson"]
-	path = src/c/3rd/jansson
-	url = https://github.com/akheron/jansson
 [submodule "src/c/3rd/ovbase"]
 	path = src/c/3rd/ovbase
 	url = https://github.com/oov/ovbase
 [submodule "src/c/3rd/ovutil"]
 	path = src/c/3rd/ovutil
 	url = https://github.com/oov/ovutil
+[submodule "src/c/3rd/yyjson"]
+	path = src/c/3rd/yyjson
+	url = https://github.com/ibireme/yyjson

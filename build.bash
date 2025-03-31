@@ -55,7 +55,7 @@ done
 
 if [ "${INSTALL_TOOLS}" -eq 1 ]; then
   mkdir -p "build/tools"
-  . "src/c/3rd/ovbase/setup-llvm-mingw.bash" --dir "${PWD}/build/tools"
+  . "src/c/3rd/ovbase/setup-llvm-mingw.sh" --dir "${PWD}/build/tools"
 fi
 
 TARGETS=ALL
